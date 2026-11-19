@@ -549,8 +549,14 @@ def bake_exterior(h, tex, refs, samples=12, groups=None):
             sc.cycles.samples = samples
             for m in used:
                 _route(m, None)
-            arr = np.array(img.pixels[:], np.float32).reshape(size, size, 4)
-            results[channel] = arr
+            # foreach_get into one float32 buffer: img.pixels[:] would build a
+            # Python float per channel value (about 8.6 GB for an 8K atlas)
+            buf = np.empty(size * size * 4, np.float32)
+            img.pixels.foreach_get(buf)
+            buf = buf.reshape(size, size, 4)
+            # keep only what the maps use, as 8-bit, top row first
+            results[channel] = _to8(buf[..., :3] if channel in ("basecolor", "normal") else buf[..., 0])
+            del buf
             bpy.data.images.remove(img)
         _write_maps(h, group, tex, results)
         for o in objs:
@@ -620,26 +626,33 @@ def _route(mat, channel):
     links.new(em.outputs[0], out.inputs[0])
 
 
+def _to8(a):
+    """Float bake pixels -> uint8, top row first (Blender rows run bottom-up).
+    The EMIT bake of the sRGB base colour is already display-encoded."""
+    import numpy as np
+    out = np.empty(a.shape, np.uint8)
+    rows = 1024                                   # in strips, so the temporaries stay small
+    for r in range(0, a.shape[0], rows):
+        s = np.clip(a[r:r + rows], 0, 1) * 255 + 0.5
+        out[r:r + rows] = s.astype(np.uint8)
+    return out[::-1]
+
+
 def _write_maps(h, group, tex, res):
+    """res: 8-bit maps from bake_exterior (basecolor/normal RGB; ao, roughness,
+    metallic single channel)."""
     import numpy as np
     from PIL import Image
 
-    def to8(a, srgb=False):
-        a = np.clip(a, 0, 1)
-        if srgb:
-            a = np.where(a <= 0.0031308, a * 12.92, 1.055 * np.power(a, 1 / 2.4) - 0.055)
-        return (a * 255 + 0.5).astype(np.uint8)[::-1]          # Blender rows run bottom-up
-
-    base = to8(res["basecolor"][..., :3], srgb=False)           # EMIT bake of sRGB image is display-encoded
-    Image.fromarray(base).save(os.path.join(tex, atlas_name(h, group, "basecolor") + ".jpg"), quality=92,
-                               subsampling=0)
-    orm = np.stack([res["ao"][..., 0], res["roughness"][..., 0], res["metallic"][..., 0]], -1)
+    Image.fromarray(res["basecolor"]).save(os.path.join(tex, atlas_name(h, group, "basecolor") + ".jpg"),
+                                           quality=92, subsampling=0)
+    orm = np.stack([res["ao"], res["roughness"], res["metallic"]], -1)
     # high-quality JPEG without chroma subsampling: channels stay independent enough
     # for ORM / normal use and the files stay a fraction of PNG size
-    Image.fromarray(to8(orm)).save(os.path.join(tex, atlas_name(h, group, "orm") + ".jpg"), quality=95,
-                                   subsampling=0)
-    Image.fromarray(to8(res["normal"][..., :3])).save(os.path.join(tex, atlas_name(h, group, "normal") + ".jpg"),
-                                                      quality=95, subsampling=0)
+    Image.fromarray(orm).save(os.path.join(tex, atlas_name(h, group, "orm") + ".jpg"), quality=95,
+                              subsampling=0)
+    Image.fromarray(res["normal"]).save(os.path.join(tex, atlas_name(h, group, "normal") + ".jpg"),
+                                        quality=95, subsampling=0)
 
 
 def apply_exterior(h, tex):
