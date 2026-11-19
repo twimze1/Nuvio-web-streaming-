@@ -527,7 +527,7 @@ def build_loadouts(h, lib, equip, sockets):
                                offset=(-side * 0.13, 0.0, -e["H"] - 0.12))
                     ob.rotation_euler = (0.0, math.radians(5.0) * side, 0.0)
             elif st in (4, 6) and s["cat"] == "pod":
-                place(h, lib, sid, sock, col, base + sid, offset=(0, -2.00, -0.02))
+                place(h, lib, sid, sock, col, base + sid, offset=(0, -2.15, -0.02))
             else:
                 place(h, lib, sid, sock, col, base + sid)
         col.hide_viewport = True

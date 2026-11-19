@@ -29,7 +29,7 @@ GROUPS = {
               "LEFlap_Outer_L", "LEFlap_Outer_R", "Flap_L", "Flap_R", "Aileron_L", "Aileron_R"],
     "tail": ["Fin_L", "Fin_R", "Rudder_L", "Rudder_R", "Stabilator_L", "Stabilator_R"],
     "gear": ["NoseGear", "LaunchBar", "NoseGearBrace", "NoseGearDoorFwd_L", "NoseGearDoorFwd_R", "NoseGearDoorAft_L",
-             "NoseGearDoorAft_R", "MainGear_L", "MainGear_R", "MainGearDoor_L", "MainGearDoor_R",
+             "NoseGearDoorAft_R", "NoseGearDoorBrace_L", "NoseGearDoorBrace_R", "MainGear_L", "MainGear_R", "MainGearDoor_L", "MainGearDoor_R", "MainGearDoorSide_L", "MainGearDoorSide_R",
              "ArrestingHook", "Nozzle_L", "Nozzle_R", "RefuelProbe_Extended"],
 }
 SIZES = {"fuselage": 4096, "wings": 4096, "tail": 2048, "gear": 2048}

@@ -288,7 +288,9 @@ def top_z(p):
 
 
 def inside_skin(V, P, R, clearance):
-    """Every transformed vertex between the lower and upper skin."""
+    """Every transformed vertex between the lower and upper skin, and at least
+    `clearance` from the skin in any direction (the nacelle sides are steep)."""
+    trees = lower_skin()
     for v in V:
         w = P + R @ (v - P)
         s = skin_z(w)
@@ -296,6 +298,8 @@ def inside_skin(V, P, R, clearance):
             return False
         t = top_z(w)
         if t is None or w.z > t - clearance:
+            return False
+        if any(tr.find_nearest(w, clearance)[0] is not None for tr in trees):
             return False
     return True
 
@@ -470,6 +474,24 @@ def build_clips(parts):
     twists = []
     for kind in ("nose_gear", "main_gear"):
         for o in by(kind):
+            if "stow_angle" in o.keys():
+                # the model carries its own retraction (worked out when its bays were cut)
+                M = o.matrix_world
+                P = M @ Vector(o["stow_pivot"])
+                axis = (M.to_3x3() @ Vector(o["stow_axis"])).normalized()
+                ang = float(o["stow_angle"])
+                piv = make_pivot(o, P, axis)
+                how = "from the model's stow data"
+                if "stow_twist" in o.keys():
+                    tw = float(o["stow_twist"])
+                    post = (M.to_3x3() @ Vector(o["stow_twist_axis"])).normalized()
+                    twi = make_pivot(o, P, post, suffix="_Twist")
+                    twists.append((twi, tw))
+                    how += ", post turned %.0f deg about its axis" % tw
+                gear.append((kind, piv, ang))
+                say("  pivot  %-28s at (%.2f, %.2f, %.2f), retract %.1f deg (%s)"
+                    % (piv.name, P.x, P.y, P.z, ang, how))
+                continue
             P, axis, ang = gear_pivot(o, kind)
             how = "stow direction"
             if kind == "nose_gear":
@@ -496,6 +518,11 @@ def build_clips(parts):
     doors = by("gear_door")
     braces = []
     for o in by("gear_brace"):
+        if "stow_fold" in o.keys():
+            fold, fit = float(o["stow_fold"]), True
+            braces.append((o, fold))
+            say("  brace  %-28s folds %.1f deg" % (o.name, fold))
+            continue
         M = o.matrix_world
         fit = fold_into_skin(o, M.translation.copy(), M.col[0].xyz, 0.0, 120.0, 0.008)
         fold = 32.0 if fit is None else fit + 1.0
@@ -519,8 +546,15 @@ def build_clips(parts):
             ext.key(o, [(1, fold), (36, fold), (116, 0.0), (132, 0.0)])
         for o in doors:
             tr = float(o.get("travel", 90.0))      # closing angle (doors that splay open travel further)
-            ret.key(o, [(1, 0.0), (100, 0.0), (126, tr), (132, tr)])
+            ret.key(o, [(1, 0.0), (106, 0.0), (128, tr), (132, tr)])
             ext.key(o, [(1, tr), (4, tr), (28, 0.0), (132, 0.0)])
+        # a launch bar that folds against its strut for stowage
+        for o in by("launch_bar"):
+            if "stow_fold" in o.keys():
+                f = float(o["stow_fold"])
+                ret.key(o, [(1, 0.0), (10, 0.0), (96, f), (132, f)])
+                ext.key(o, [(1, f), (30, f), (116, 0.0), (132, 0.0)])
+                say("  bar    %-28s folds %.0f deg against the strut as the gear retracts" % (o.name, f))
         made += [ret, ext]
     if not doors:
         say("  NOTE   no separate gear-door objects found. Separate door faces into objects whose names")

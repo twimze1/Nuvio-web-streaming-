@@ -93,6 +93,13 @@ GROUND_Z = FIN_TOP_Z - 4.66          # overall height 4.66 m
 WHEEL_TRACK = 3.11
 MAIN_GEAR_X = 11.02
 NOSE_GEAR_X = MAIN_GEAR_X - 5.42     # wheelbase 5.42 m
+# landing-gear bays (see Hornet.cut_bays)
+LAUNCH_BAR_STOW = -50.0              # deg the launch bar folds up against the strut as the gear retracts
+NOSE_BAY = [(3.60, 3.95, 0.10), (3.95, 4.48, 0.18), (4.48, 4.95, 0.08), (4.95, 5.67, 0.02)]  # x0, x1, ceiling
+BRACE_SLOT = (5.66, 6.42, 0.025, 0.15, -0.22)  # x0, x1, |y| inner, |y| outer, ceiling of the drag-brace slots
+MAIN_BAY_X = (MAIN_GEAR_X - 1.02, MAIN_GEAR_X + 0.98)   # main bay openings, 10.00 .. 12.00 m
+MAIN_BAY_Y_IN = 0.72                 # inboard edge of each main bay opening on the underside
+MAIN_BAY_HINGE_Z = 0.12              # main bay door hinge line, up the nacelle side
 
 MAC = 2 / 3 * C_ROOT * (1 + TAPER + TAPER ** 2) / (1 + TAPER)
 Y_MAC = SEMI_SPAN / 3 * (1 + 2 * TAPER) / (1 + TAPER)
@@ -1066,13 +1073,9 @@ class Hornet:
         # Side view of the drawing: a near-vertical post leaves the nacelle
         # ahead of the wheel, a trailing arm runs aft from its foot to the axle
         # (30 in tyre, 0.38 m radius), and a shock absorber runs diagonally from
-        # the nacelle down to the arm.  A bay door hangs aft of the wheel,
-        # 11.33-12.16 m and 0.46 m deep (drawing positions moved 0.08 m aft to
-        # this model's published-wheelbase axle).  Across the aircraft the legs
-        # splay outboard from the nacelle bottom to the 3.11 m track (photos);
-        # the door hangs from the inboard side of each nacelle.  It is 0.40 m
-        # wide (the drawing shows 0.46 m of door below the nacelle) so that,
-        # closed, it clears a Sparrow semi-recessed on station 4 or 6.
+        # the nacelle down to the arm.  Across the aircraft the legs splay
+        # outboard from the nacelle bottom to the 3.11 m track (photos).  The
+        # bay doors are built later (build_bay_doors), fitted to the motion.
         rm = 0.38
         yw = WHEEL_TRACK / 2
         for side, tag in ((+1, "R"), (-1, "L")):
@@ -1093,8 +1096,305 @@ class Hornet:
             inv = self.world[leg.name].inverted()
             leg["post_top"] = tuple(inv @ to_blender(post_top))
             leg["post_axis"] = tuple((inv.to_3x3() @ (to_blender(foot) - to_blender(post_top))).normalized())
-            self.skin_door("MainGearDoor_" + tag, MAIN_GEAR_X + 0.31, MAIN_GEAR_X + 1.14, side * 0.58,
-                           side * 0.98, side, "door closes (swings outboard)")
+
+    # -- landing-gear retraction and bays -----------------------------------
+    def gear_kinematics(self):
+        """Work out each leg's retraction on the closed skin, before the bays
+        are cut, and record it on the parts (object-local), so that
+        tools/setup_animations.py plays exactly the motion the bays and doors
+        were made for.  Uses that script's fitting functions."""
+        bpy.context.view_layer.update()
+        tools = os.path.join(os.path.dirname(os.path.abspath(__file__)), "tools")
+        if tools not in sys.path:
+            sys.path.insert(0, tools)
+        import setup_animations as SA
+        SA._skin.clear()
+        self.SA = SA
+        pre = self.prefix
+        nose, bar, brace = (self.objects[pre + n] for n in ("NoseGear", "LaunchBar", "NoseGearBrace"))
+        # the launch bar folds up against the strut as the leg swings forward
+        bar["stow_fold"] = LAUNCH_BAR_STOW
+        bar.rotation_euler.x = math.radians(LAUNCH_BAR_STOW)
+        bpy.context.view_layer.update()
+        P, axis, _ = SA.gear_pivot(nose, "nose_gear")
+        ang = SA.fold_into_skin(nose, P, axis, 60.0, 150.0, 0.012)
+        bar.rotation_euler.x = 0.0
+        bpy.context.view_layer.update()
+        self.store_stow(nose, P, axis, ang)
+        M = brace.matrix_world
+        fit = SA.fold_into_skin(brace, M.translation.copy(), M.col[0].xyz, 0.0, 120.0, 0.008)
+        brace["stow_fold"] = (fit if fit is not None else 32.0) + 1.0
+        for tag in "LR":
+            leg = self.objects[pre + "MainGear_" + tag]
+            P0, _, _ = SA.gear_pivot(leg, "main_gear")
+            W = SA.tyre_frame(leg)[0]
+            P, ax1, ang, post, tw, flat, fits = SA.main_stow(leg, P0, W)
+            self.store_stow(leg, P, ax1, ang, post, tw)
+            leg["stow_flat_error_deg"] = round(math.degrees(math.acos(min(1.0, flat))), 1)
+
+    def store_stow(self, leg, P, axis, ang, twist_axis=None, twist=None):
+        Mi = leg.matrix_world.inverted()
+        R3 = Mi.to_3x3()
+        leg["stow_pivot"] = tuple(Mi @ P)
+        leg["stow_axis"] = tuple((R3 @ axis).normalized())
+        leg["stow_angle"] = float(ang)
+        if twist_axis is not None:
+            leg["stow_twist_axis"] = tuple((R3 @ twist_axis).normalized())
+            leg["stow_twist"] = float(twist)
+
+    def stow_pose(self, leg, s=1.0):
+        """(pivot, rotation) in Blender world space for a leg at retraction
+        progress s (0 = down, 1 = stowed); swing and twist run together."""
+        M = leg.matrix_world
+        P = M @ Vector(leg["stow_pivot"])
+        R = Matrix.Rotation(math.radians(s * leg["stow_angle"]), 3, (M.to_3x3() @ Vector(leg["stow_axis"])).normalized())
+        if "stow_twist" in leg.keys():
+            R = R @ Matrix.Rotation(math.radians(s * leg["stow_twist"]), 3,
+                                    (M.to_3x3() @ Vector(leg["stow_twist_axis"])).normalized())
+        return P, R
+
+    def side_contour(self, x, side, n=14):
+        """Design-coordinate points on the skin at station x, from the hinge line
+        up the nacelle side, round its lower outboard corner, to the main bay's
+        inboard edge on the underside: rays fanned from inside the nacelle."""
+        zb = self.skin_bottom(x, side * MAIN_BAY_Y_IN)        # also builds the skin tree
+        tree = self._skin_tree
+        c = Vector((x, side * 0.80, -0.20))
+
+        def hit(dy, dz):
+            h = tree.ray_cast(to_blender(tuple(c)), Vector((-dy, 0.0, dz)).normalized())
+            return Vector((h[0].y + X_REF, -h[0].x, h[0].z + Z_REF))
+
+        p_free = Vector((x, side * MAIN_BAY_Y_IN, zb))
+        h = tree.ray_cast(to_blender((x, side * 0.80, MAIN_BAY_HINGE_Z)), Vector((-side, 0.0, 0.0)))
+        p_hinge = Vector((h[0].y + X_REF, -h[0].x, h[0].z + Z_REF))
+        a0 = math.atan2(p_hinge.z - c.z, (p_hinge.y - c.y) * side)
+        a1 = math.atan2(p_free.z - c.z, (p_free.y - c.y) * side)
+        mid = [hit(side * math.cos(a0 + (a1 - a0) * k / n), math.sin(a0 + (a1 - a0) * k / n)) for k in range(1, n)]
+        return [p_hinge] + mid + [p_free], c
+
+    def build_bay_doors(self):
+        """Drag-brace doors under the nose, and two doors per main bay: a main
+        door hinged on the inboard edge of the nacelle's underside, hanging
+        below it when open (as drawn), and a side door hinged up the nacelle
+        side over the lower outboard corner, which the leg's path crosses.
+        Each opens just far enough to clear its leg all through the retraction
+        and while stowed, the stores on its side's stations at rest, and the
+        other door."""
+        from mathutils.bvhtree import BVHTree
+        x0, x1, yi, yo, _ = BRACE_SLOT
+        for side, tag in ((+1, "R"), (-1, "L")):
+            self.skin_door("NoseGearDoorBrace_" + tag, x0 + 0.015, x1, side * yo, side * yi, side,
+                           "door closes (swings inboard)", flare=35.0, n_y=4)
+        bx0, bx1 = MAIN_BAY_X
+        xs = list(np.linspace(bx0, bx1, 11))
+        self.main_contours = {}
+        for side, tag in ((+1, "R"), (-1, "L")):
+            leg = self.objects[self.prefix + "MainGear_" + tag]
+            contours = [self.side_contour(x, side) for x in xs]
+            self.main_contours[side] = contours
+            # split where the skin turns from the underside to the side (45 deg)
+            pts0, c0 = contours[len(contours) // 2]
+            k = min(range(1, len(pts0) - 1), key=lambda i: abs(math.degrees(math.atan2(pts0[i].z - c0.z, (pts0[i].y - c0.y) * side)) + 45.0))
+            lverts = [leg.matrix_world @ v.co for v in leg.data.vertices]
+            lpolys = [list(p.vertices) for p in leg.data.polygons]
+            poses = []
+            for n in range(13):
+                P, Rl = self.stow_pose(leg, n / 12)
+                poses.append(BVHTree.FromPolygons([P + Rl @ (v - P) for v in lverts], lpolys))
+            stowed = poses[-1]
+            stations = (2, 3, 4) if side < 0 else (6, 7, 8)
+            rest = []
+            for o in bpy.data.objects:
+                if o.type != "MESH" or not any("_STA%d_" % st in o.name for st in stations):
+                    continue
+                m = o.matrix_basis.copy()
+                p_ = o.parent
+                while p_ is not None:
+                    m = p_.matrix_basis @ m
+                    p_ = p_.parent
+                rest.append(BVHTree.FromPolygons([m @ v.co for v in o.data.vertices], [list(q.vertices) for q in o.data.polygons]))
+            for pyl in ("Pylon_STA%d" % st for st in stations):
+                o = self.objects.get(self.prefix + pyl)
+                if o is not None:
+                    rest.append(BVHTree.FromPolygons([o.matrix_world @ v.co for v in o.data.vertices], [list(q.vertices) for q in o.data.polygons]))
+            side_door = self.fit_door("MainGearDoorSide_" + tag, [(p[:k + 1], c) for p, c in contours], poses, stowed,
+                                      rest, "door closes (swings in and down)")
+            rest.append(side_door[1])
+            self.fit_door("MainGearDoor_" + tag, [(p[k:][::-1], c) for p, c in contours], poses, stowed, rest,
+                          "door closes (swings outboard and up)")
+
+    def fit_door(self, name, contours, poses, stowed, rest, closes):
+        """Build a bay door over the given skin contours (each list starts at
+        the hinge), opened by the smallest angle that keeps it clear of the leg
+        (all poses open, and stowed while it swings), the rest-pose obstacles
+        and the airframe.  Returns (door, BVH of the door as built)."""
+        from mathutils.bvhtree import BVHTree
+        T = 0.008
+        rings = []
+        for pts, c in contours:
+            pts = list(pts)
+            pts[-1] = pts[-1] + (pts[-2] - pts[-1]).normalized() * 0.006    # 6 mm seam at the free edge
+            outer = [p + (p - c).normalized() * 0.003 for p in pts]
+            inner = [p - (p - c).normalized() * (T - 0.003) for p in pts]
+            rings.append([tuple(p) for p in outer] + [tuple(p) for p in inner[::-1]])
+        A, B = Vector(rings[0][0]), Vector(rings[-1][0])
+        axis = (B - A).normalized()
+        free = Vector(rings[len(rings) // 2][len(contours[0][0]) - 1])
+        Rt = Matrix.Rotation(math.radians(-20.0), 3, axis)
+        if self.inside_fuselage(to_blender(tuple(A + Rt @ (free - A))), 0.0):
+            axis = -axis                                        # "-angle" must swing it out
+        nring = len(rings[0])
+        faces = [[i * nring + j, i * nring + (j + 1) % nring, (i + 1) * nring + (j + 1) % nring, (i + 1) * nring + j]
+                 for i in range(len(rings) - 1) for j in range(nring)]
+        closed = [to_blender(p) for r in rings for p in r]
+        Ab = to_blender(tuple(A))
+        axb = Vector((-axis.y, axis.x, axis.z)).normalized()
+        far = [i for i, p in enumerate(Vector(p) for r in rings for p in r) if (p - A).cross(axis).length > 0.08]
+
+        def opened(t):
+            Rb = Matrix.Rotation(math.radians(-t), 3, axb)
+            return [Ab + Rb @ (v - Ab) for v in closed]
+
+        def clear_of(t, trees):
+            dt = BVHTree.FromPolygons(opened(t), faces)
+            return not any(dt.overlap(tr) for tr in trees)
+
+        travel = None
+        for t in range(40, 181, 5):
+            ov = opened(t)
+            if any(self.inside_fuselage(ov[i]) for i in far):
+                continue
+            if not clear_of(t, poses + rest):
+                continue
+            if not all(clear_of(a, [stowed]) for a in range(5, t + 1, 5)):
+                continue
+            travel = t + 5
+            break
+        if travel is None:
+            travel = 90.0
+            print("WARNING: no clear opening angle for " + name)
+        R = Matrix.Rotation(math.radians(-travel), 3, axis)
+        b = Builder()
+        b.loft([[tuple(A + R @ (Vector(p) - A)) for p in r] for r in rings])
+        door = self.add(name, b, mats=("Gear",), collection=self.col_gear, smooth=None,
+                        origin=tuple(A), axis=tuple(axis), hinge=closes)
+        door["travel"] = float(travel)
+        return door, BVHTree.FromPolygons(opened(travel), faces)
+
+    def inside_fuselage(self, pb, margin=0.0):
+        """Is Blender-space point pb inside the (uncut) fuselage, by vertical rays?"""
+        tree = self._skin_tree
+        lo = tree.ray_cast(Vector((pb.x, pb.y, -50.0)), Vector((0, 0, 1)))
+        hi = tree.ray_cast(Vector((pb.x, pb.y, 50.0)), Vector((0, 0, -1)))
+        return lo[0] is not None and hi[0] is not None and lo[0].z + margin < pb.z < hi[0].z - margin
+
+    def cut_bays(self):
+        """Cut the wheel wells: the nose bay under its two pairs of doors (its
+        ceiling stepped under the cockpit floor, stick and seat), the drag-brace
+        slots, and a main bay per side: the skin under the curved door, plus a
+        well inside the nacelle that holds the stowed leg.  The well walls take
+        the gear-bay paint (material "Gear")."""
+        fus = self.objects[self.prefix + "Fuselage"]
+        b = Builder()
+        rings = []
+        for x0, x1, top in NOSE_BAY:
+            for x in (x0 + 0.0005, x1 - 0.0005):
+                rings.append([(x, -0.26, -0.80), (x, 0.26, -0.80), (x, 0.26, top), (x, -0.26, top)])
+        b.loft(rings)
+        x0, x1, yi, yo, top = BRACE_SLOT
+        for s_ in (1, -1):
+            ya, yb = s_ * yi, s_ * yo
+            b.box([(x0, ya, -0.80), (x1, ya, -0.80), (x1, yb, -0.80), (x0, yb, -0.80),
+                   (x0, ya, top), (x1, ya, top), (x1, yb, top), (x0, yb, top)])
+            zi = max(self.skin_bottom(x, y) for x in (x1, NOSE_GEAR_X + 1.0) for y in (ya, yb)) + 0.02
+            b.box([(x1 - 0.02, ya, zi), (NOSE_GEAR_X + 1.0, ya, zi), (NOSE_GEAR_X + 1.0, yb, zi), (x1 - 0.02, yb, zi),
+                   (x1 - 0.02, ya, top), (NOSE_GEAR_X + 1.0, ya, top), (NOSE_GEAR_X + 1.0, yb, top), (x1 - 0.02, yb, top)])
+        for side in (1, -1):
+            # skin under the door: the door contour pushed 6 cm out and 5 cm in
+            band = []
+            for pts, c in self.main_contours[side]:
+                out = [p + (p - c).normalized() * 0.06 for p in pts]
+                inn = [p - (p - c).normalized() * 0.05 for p in pts]
+                band.append([tuple(p) for p in out] + [tuple(p) for p in inn[::-1]])
+            b.loft(band)
+            # the well: a height field inside the nacelle over the stowed leg
+            self.well(b, side)
+        mesh = bpy.data.meshes.new("bay_cutter")
+        inv = self.world[fus.name].inverted()
+        mesh.from_pydata([tuple(inv @ to_blender(p)) for p in b.verts], [], b.faces)
+        bm = bmesh.new()
+        bm.from_mesh(mesh)
+        bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+        bm.to_mesh(mesh)
+        bm.free()
+        mesh.materials.append(material("Gear"))
+        cutter = bpy.data.objects.new("bay_cutter", mesh)
+        bpy.context.scene.collection.objects.link(cutter)
+        cutter.matrix_world = fus.matrix_world.copy()
+        if material("Gear").name not in [m.name for m in fus.data.materials]:
+            fus.data.materials.append(material("Gear"))
+        mod = fus.modifiers.new("bays", "BOOLEAN")
+        mod.operation = "DIFFERENCE"
+        mod.solver = "EXACT"
+        mod.use_self = True
+        mod.material_mode = "TRANSFER"
+        mod.object = cutter
+        dg = bpy.context.evaluated_depsgraph_get()
+        dg.update()
+        new = bpy.data.meshes.new_from_object(fus.evaluated_get(dg))
+        fus.modifiers.remove(mod)
+        old = fus.data
+        fus.data = new
+        new.name = old.name
+        bpy.data.meshes.remove(old)
+        bpy.data.objects.remove(cutter)
+        bpy.data.meshes.remove(mesh)
+        self._skin_tree = None
+
+    def well(self, b, side):
+        """Height-field volume inside the nacelle: over each (x, y) node between
+        the bay's ends and 0.12 m from the centreline out to the side, from 6 mm
+        above the lower skin up to 0.40 m (under the buried wing root) or 4 cm
+        under the upper skin.  Fully inside the uncut fuselage, so it only opens
+        to the outside through the cut under the door."""
+        bx0, bx1 = MAIN_BAY_X
+        xs = list(np.linspace(bx0, bx1, 41))
+        ys = [0.12 + 0.03 * k for k in range(44)]
+        node = {}
+        for i, x in enumerate(xs):
+            for j, y in enumerate(ys):
+                pb = to_blender((x, side * y, 0.0))
+                lo = self._skin_tree.ray_cast(Vector((pb.x, pb.y, -50.0)), Vector((0, 0, 1)))
+                hi = self._skin_tree.ray_cast(Vector((pb.x, pb.y, 50.0)), Vector((0, 0, -1)))
+                if lo[0] is None or hi[0] is None:
+                    continue
+                zb = lo[0].z + Z_REF + 0.006
+                zt = min(0.40, hi[0].z + Z_REF - 0.04)
+                if zt > zb + 0.05:
+                    node[i, j] = (zb, zt)
+        idx = {}
+        def v(i, j, top):
+            k = (i, j, top)
+            if k not in idx:
+                zb, zt = node[i, j]
+                idx[k] = len(b.verts)
+                b.verts.append((xs[i], side * ys[j], zt if top else zb))
+            return idx[k]
+        cells = {(i, j) for i in range(len(xs) - 1) for j in range(len(ys) - 1)
+                 if all((i + a, j + c) in node for a in (0, 1) for c in (0, 1))}
+        for (i, j) in cells:
+            b.faces.append((v(i, j, 1), v(i + 1, j, 1), v(i + 1, j + 1, 1), v(i, j + 1, 1)))
+            b.mats.append(0)
+            b.faces.append((v(i, j, 0), v(i, j + 1, 0), v(i + 1, j + 1, 0), v(i + 1, j, 0)))
+            b.mats.append(0)
+            for (p0, p1, nb) in (((0, 0), (1, 0), (0, -1)), ((1, 0), (1, 1), (1, 0)),
+                                 ((1, 1), (0, 1), (0, 1)), ((0, 1), (0, 0), (-1, 0))):
+                if (i + nb[0], j + nb[1]) in cells:
+                    continue
+                a0, a1 = (i + p0[0], j + p0[1]), (i + p1[0], j + p1[1])
+                b.faces.append((v(*a0, 1), v(*a0, 0), v(*a1, 0), v(*a1, 1)))
+                b.mats.append(0)
 
     def build(self):
         self.setup_collections()
@@ -1111,6 +1411,9 @@ class Hornet:
         import fa18_stores
         self.stores = fa18_stores.build_all(self, os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                                                 "textures"))
+        self.gear_kinematics()
+        self.build_bay_doors()
+        self.cut_bays()
         self.root["length_m"] = LENGTH
         self.root["span_m"] = 2 * SEMI_SPAN
         self.root["ground_z"] = GROUND_Z - Z_REF
