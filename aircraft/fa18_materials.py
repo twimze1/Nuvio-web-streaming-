@@ -34,6 +34,8 @@ GROUPS = {
              "ArrestingHook", "Nozzle_L", "Nozzle_R", "RefuelProbe_Extended"],
 }
 SIZES = {"fuselage": 8192, "wings": 4096, "tail": 4096, "gear": 2048}
+# largest image one bake call writes; bigger atlases bake in tiles (bake_exterior)
+BAKE_TILE = 4096
 SHARED = {"wings", "tail", "gear"}       # identical geometry in both variants
 
 
@@ -517,47 +519,86 @@ def bake_exterior(h, tex, refs, samples=12, groups=None):
         # bay doors are painted as they sit in flight: closed, with the gear stowed
         doors = [o for o in objs if "travel" in o.keys()]
         rest = [o for o in objs if o not in doors]
-        results = {}
-        for channel in ("basecolor", "roughness", "metallic", "normal", "ao"):
-            img = bpy.data.images.new("bake_%s_%s" % (group, channel), size, size, alpha=False,
-                                      float_buffer=(channel == "normal"))
-            img.colorspace_settings.name = "sRGB" if channel == "basecolor" else "Non-Color"
-            for m in used:
-                nodes = m.node_tree.nodes
-                tgt = nodes.get("BAKE_TARGET") or nodes.new("ShaderNodeTexImage")
-                tgt.name = "BAKE_TARGET"
-                tgt.image = img
-                nodes.active = tgt
-                _route(m, channel)
-            kind = {"normal": "NORMAL", "ao": "AO"}.get(channel, "EMIT")
-            if channel == "ao":
-                sc.cycles.samples = max(samples, 32)
-            passes = [(doors, True), (rest, False)] if doors else [(objs, False)]
-            for k, (sel, flight) in enumerate(passes):
-                if not sel:
-                    continue
-                saved_pose = _flight_pose(h) if flight else None
-                bpy.ops.object.select_all(action="DESELECT")
-                for o in sel:
-                    o.select_set(True)
-                bpy.context.view_layer.objects.active = sel[0]
-                sc.render.bake.use_clear = (k == 0)
-                bpy.ops.object.bake(type=kind, margin=16, normal_space="TANGENT")
-                if saved_pose is not None:
-                    _restore_pose(saved_pose)
-            sc.render.bake.use_clear = True
-            sc.cycles.samples = samples
-            for m in used:
-                _route(m, None)
-            # foreach_get into one float32 buffer: img.pixels[:] would build a
-            # Python float per channel value (about 8.6 GB for an 8K atlas)
-            buf = np.empty(size * size * 4, np.float32)
-            img.pixels.foreach_get(buf)
-            buf = buf.reshape(size, size, 4)
-            # keep only what the maps use, as 8-bit, top row first
-            results[channel] = _to8(buf[..., :3] if channel in ("basecolor", "normal") else buf[..., 0])
-            del buf
-            bpy.data.images.remove(img)
+        # Atlases above BAKE_TILE are baked as n x n tiles: every UV is mapped
+        # to uv * n - (i, j), so tile (i, j) holds exactly that part of the atlas
+        # (the bake clips triangles at the image edge and skips ones outside it).
+        # One bake call needs several full-size float buffers, about 9 GB at 8192 px.
+        # Every pass bakes without a margin; the image alpha records which pixels
+        # were baked, and the 16 px margin is grown once, after all passes and
+        # tiles (_dilate).  A margin per pass would paint the second pass's
+        # margin over the doors baked in the first.
+        n = max(1, -(-size // BAKE_TILE))
+        tile = size // n
+        uv_saved = {}
+        if n > 1:
+            for o in objs:
+                lay = o.data.uv_layers.active
+                arr = np.empty(len(lay.data) * 2, np.float32)
+                lay.data.foreach_get("uv", arr)
+                uv_saved[o.name] = (lay, arr)
+        results, cover = {}, None
+        try:
+            for channel in ("basecolor", "roughness", "metallic", "normal", "ao"):
+                kind = {"normal": "NORMAL", "ao": "AO"}.get(channel, "EMIT")
+                if channel == "ao":
+                    sc.cycles.samples = max(samples, 32)
+                rgb = channel in ("basecolor", "normal")
+                full = np.zeros((size, size, 3) if rgb else (size, size), np.uint8)   # rows bottom-up
+                cov = np.zeros((size, size), bool)
+                for ti in range(n):
+                    for tj in range(n):
+                        for lay, arr in uv_saved.values():
+                            uv = arr.reshape(-1, 2) * n - np.array([ti, tj], np.float32)
+                            lay.data.foreach_set("uv", uv.ravel())
+                        img = bpy.data.images.new("bake_%s_%s" % (group, channel), tile, tile, alpha=True,
+                                                  float_buffer=(channel == "normal"))
+                        img.generated_color = (0, 0, 0, 0)         # alpha marks the baked pixels
+                        img.colorspace_settings.name = "sRGB" if channel == "basecolor" else "Non-Color"
+                        for m in used:
+                            nodes = m.node_tree.nodes
+                            tgt = nodes.get("BAKE_TARGET") or nodes.new("ShaderNodeTexImage")
+                            tgt.name = "BAKE_TARGET"
+                            tgt.image = img
+                            nodes.active = tgt
+                            _route(m, channel)
+                        passes = [(doors, True), (rest, False)] if doors else [(objs, False)]
+                        for k, (sel, flight) in enumerate(passes):
+                            if not sel:
+                                continue
+                            saved_pose = _flight_pose(h) if flight else None
+                            bpy.ops.object.select_all(action="DESELECT")
+                            for o in sel:
+                                o.select_set(True)
+                            bpy.context.view_layer.objects.active = sel[0]
+                            sc.render.bake.use_clear = (k == 0)
+                            bpy.ops.object.bake(type=kind, margin=0, normal_space="TANGENT")
+                            if saved_pose is not None:
+                                _restore_pose(saved_pose)
+                        # foreach_get into one float32 buffer: img.pixels[:] would build
+                        # a Python float per channel value (about 8.6 GB for an 8K atlas)
+                        buf = np.empty(tile * tile * 4, np.float32)
+                        img.pixels.foreach_get(buf)
+                        buf = buf.reshape(tile, tile, 4)
+                        r0, c0 = tj * tile, ti * tile
+                        # keep only what the maps use, as 8-bit
+                        full[r0:r0 + tile, c0:c0 + tile] = _to8(buf[..., :3] if rgb else buf[..., 0], flip=False)
+                        cov[r0:r0 + tile, c0:c0 + tile] = buf[..., 3] > 0.5
+                        del buf
+                        bpy.data.images.remove(img)
+                sc.render.bake.use_clear = True
+                sc.cycles.samples = samples
+                for m in used:
+                    _route(m, None)
+                results[channel] = full
+                if cover is None:
+                    cover = cov
+        finally:
+            for lay, arr in uv_saved.values():
+                lay.data.foreach_set("uv", arr)
+        _dilate(list(results.values()), cover, 16)
+        del cover
+        for channel in results:
+            results[channel] = results[channel][::-1]                # top row first
         _write_maps(h, group, tex, results)
         for o in objs:
             for s, m in zip(o.material_slots, saved[o.name]):
@@ -626,16 +667,44 @@ def _route(mat, channel):
     links.new(em.outputs[0], out.inputs[0])
 
 
-def _to8(a):
-    """Float bake pixels -> uint8, top row first (Blender rows run bottom-up).
-    The EMIT bake of the sRGB base colour is already display-encoded."""
+def _to8(a, flip=True):
+    """Float bake pixels -> uint8; flip=True puts the top row first (Blender
+    rows run bottom-up).  The EMIT bake of the sRGB base colour is already
+    display-encoded."""
     import numpy as np
     out = np.empty(a.shape, np.uint8)
     rows = 1024                                   # in strips, so the temporaries stay small
     for r in range(0, a.shape[0], rows):
         s = np.clip(a[r:r + rows], 0, 1) * 255 + 0.5
         out[r:r + rows] = s.astype(np.uint8)
-    return out[::-1]
+    return out[::-1] if flip else out
+
+
+def _dilate(maps, cover, px):
+    """Grow the baked islands by px pixels in every map: each empty pixel within
+    px (8-neighbour steps) of the islands takes the nearest baked pixel's value,
+    like Blender's Extend margin.  `cover` marks the baked pixels; the maps
+    are changed in place."""
+    import numpy as np
+    H, W = cover.shape
+    src = np.full((H, W), -1, np.int32)                  # flat index of the pixel to copy
+    src[cover] = np.flatnonzero(cover).astype(np.int32)
+    steps = [(dy, dx) for dy in (-1, 0, 1) for dx in (-1, 0, 1) if dy or dx]
+    for _ in range(px):
+        prev = src.copy()
+        for dy, dx in steps:
+            # target (y, x) looks at its neighbour (y - dy, x - dx)
+            t = src[max(dy, 0):H + min(dy, 0), max(dx, 0):W + min(dx, 0)]
+            s = prev[max(-dy, 0):H + min(-dy, 0), max(-dx, 0):W + min(-dx, 0)]
+            take = (t < 0) & (s >= 0)
+            t[take] = s[take]
+        del prev
+    grow = ((src >= 0) & ~cover).ravel()
+    pick = src.ravel()[grow]
+    del src
+    for m in maps:
+        flat = m.reshape(H * W, -1)
+        flat[grow] = flat[pick]
 
 
 def _write_maps(h, group, tex, res):

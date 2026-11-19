@@ -186,7 +186,7 @@ map (R occlusion, G roughness, B metallic) and an OpenGL-style normal map.
 
 | Set | Maps | How it is made |
 | --- | --- | --- |
-| Exterior (`ext_fuselage_A/B`, `ext_wings`, `ext_tail`, `ext_gear`) | 8K / 8K / 4K / 4K / 2K | Procedural shader (`fa18_materials.exterior_shader`) baked in Cycles |
+| Exterior (`ext_fuselage_A/B`, `ext_wings`, `ext_tail`, `ext_gear`) | 8K / 8K / 4K / 4K / 2K | Procedural shader (`fa18_materials.exterior_shader`) baked in Cycles; the 8K atlases are baked as four 4K tiles |
 | Cockpit (`cockpit_*`) | 4K atlas plus display images | Painted by `tools/make_cockpit_textures.py` from the shared layout |
 | Stores (`stores_*`) | 4K atlas | Painted by `tools/make_store_textures.py` |
 
@@ -220,6 +220,15 @@ map (R occlusion, G roughness, B metallic) and an OpenGL-style normal map.
   about 1.8 mm per pixel on the 8K fuselage atlas, 1.9 mm on the tail and 2.6 mm on the
   wings, so a rivet head spans about 3 pixels. For lower settings, let the engine
   downscale (mipmaps) or resize the maps.
+- **How the bake works:**
+  - One Blender bake call needs several full-size float buffers, about 9 GB for an
+    8192 px image. So atlases larger than 4096 px are baked as tiles: each UV is
+    mapped to `uv × 2 − (i, j)`, and tile (i, j) holds exactly that quarter of the
+    atlas.
+  - Every pass bakes with no margin, and the image's alpha records which pixels it
+    covered. The 16 px margin (nearest baked pixel) is grown once, after all passes
+    and tiles. Before this, the second pass (the airframe after the closed doors)
+    grew its margin over door pixels near other islands.
 - **Markings:** only low-visibility national insignia, on the upper port and lower
   starboard wing. There are no unit markings, so the geometry has to read on its own.
 - **Nozzles:** heat-tinted. **Gear:** dirty white.
