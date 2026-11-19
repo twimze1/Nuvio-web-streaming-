@@ -473,7 +473,10 @@ the strut, the stowed tyres under the foot-well plate) and the one listed below.
 - a switch between the F/A-18A and F/A-18B;
 - one row per moving system, showing its state;
 - play-all, reset and speed controls (¼× to 2×);
-- views from outside and from each seat's eye point.
+- views from outside and from each seat's eye point;
+- a zoom control with +, −, Fit and a readout. Outside it shows metres from the target;
+  in a seat it shows the field of view. The scroll wheel, a pinch, and the `+`, `−` and
+  `0` keys also zoom. Outside, zoom goes toward the cursor, down to 1.2 m.
 
 Clips in different systems can run together, for example gear up with the wings folded.
 To rebuild it after changing the models, run `python3 tools/make_web_viewer.py`. That

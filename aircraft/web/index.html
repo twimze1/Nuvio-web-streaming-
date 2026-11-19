@@ -87,6 +87,15 @@ button small { font: 400 11px/1 var(--mono); opacity: 0.75; }
 .speed { display: grid; grid-template-columns: repeat(4, 1fr); }
 .hint { margin: 0; color: var(--muted); font-size: 12px; }
 .toggle { padding: 6px 9px; font-size: 12px; flex: none; }
+.zoom {
+  position: fixed; z-index: 2; left: max(16px, env(safe-area-inset-left, 0px)); top: calc(16px + env(safe-area-inset-top, 0px));
+  display: flex; flex-direction: column; gap: 6px; padding: 6px;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+}
+.zoom button { width: 46px; height: 42px; padding: 0; font: 500 22px/1 var(--body); align-items: center; }
+.zoom .fit { height: 32px; font: 600 12px/1 var(--display); letter-spacing: 0.1em; text-transform: uppercase; }
+.zread { font: 500 11px/1.2 var(--mono); text-align: center; color: var(--muted); font-variant-numeric: tabular-nums; }
 .overlay {
   position: fixed; inset: 0; display: grid; place-items: center; pointer-events: none;
   padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
@@ -146,8 +155,14 @@ button small { font: 400 11px/1 var(--mono); opacity: 0.75; }
       <div class="now" id="now" aria-live="polite"></div>
     </div>
     <div class="groups collapsible" id="groups"></div>
-    <p class="hint collapsible">Drag to orbit, scroll or pinch to zoom, right-drag or two-finger drag to pan. Clips run at 24 fps; f = frames.</p>
+    <p class="hint collapsible">Drag to orbit. Zoom with the + and − buttons, the scroll wheel, a pinch, or the + and − keys (0 resets). Right-drag or two-finger drag to pan. In a seat, zoom narrows the field of view. Clips run at 24 fps; f = frames.</p>
   </aside>
+</div>
+<div class="zoom" id="zoom" role="group" aria-label="Zoom">
+  <button id="zin" aria-label="Zoom in" title="Zoom in (+)">+</button>
+  <span class="zread" id="zread" aria-live="off"></span>
+  <button id="zout" aria-label="Zoom out" title="Zoom out (−)">−</button>
+  <button id="zfit" class="fit" aria-label="Reset zoom and framing" title="Reset zoom (0)">Fit</button>
 </div>
 <div class="overlay" id="overlay">
   <div class="loading" role="status">
@@ -229,7 +244,8 @@ function exteriorView() {
   const k = Math.max(1, 0.95 / aspect);
   camera.position.copy(EXT.target).addScaledVector(EXT.pos.clone().sub(EXT.target), k);
   controls.target.copy(EXT.target);
-  Object.assign(controls, { minDistance: 3, maxDistance: 90, enablePan: true, enableZoom: true, maxPolarAngle: Math.PI - 0.05 });
+  Object.assign(controls, { minDistance: 1.2, maxDistance: 90, enablePan: true, enableZoom: true, zoomToCursor: true,
+                            zoomSpeed: 1.2, maxPolarAngle: Math.PI - 0.05 });
   controls.update();
 }
 exteriorView();
@@ -413,9 +429,12 @@ async function playAll() {
 }
 
 // -- views ----------------------------------------------------------------------
-function setView(view) {
+let view = "ext";
+function setView(v) {
+  view = v === "ext" || !current || !current.cams[v] ? "ext" : v;
+  zoomAnim = null;
   document.querySelectorAll("#views button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.view === view)));
-  if (view === "ext" || !current.cams[view]) { exteriorView(); return; }
+  if (view === "ext") { exteriorView(); return; }
   const node = current.cams[view];
   node.updateWorldMatrix(true, false);
   const pos = new THREE.Vector3(), q = new THREE.Quaternion();
@@ -424,7 +443,8 @@ function setView(view) {
   camera.fov = 70; camera.near = 0.01; camera.updateProjectionMatrix();
   camera.position.copy(pos);
   controls.target.copy(pos).addScaledVector(fwd, 0.05);
-  Object.assign(controls, { minDistance: 0.05, maxDistance: 0.05, enablePan: false, enableZoom: false, maxPolarAngle: Math.PI - 0.05 });
+  Object.assign(controls, { minDistance: 0.05, maxDistance: 0.05, enablePan: false, enableZoom: false, zoomToCursor: false,
+                            maxPolarAngle: Math.PI - 0.05 });
   controls.update();
 }
 
@@ -447,11 +467,79 @@ $("toggle").addEventListener("click", () => {
   $("toggle").setAttribute("aria-expanded", String(!collapsed));
 });
 
+// -- zoom ---------------------------------------------------------------------
+// outside: dolly toward the target (metres from it); in a seat: field of view
+const FOV_SEAT = 70, FOV_MIN = 15, FOV_MAX = 100;
+let zoomAnim = null;
+const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+function tween(step) {
+  const t0 = performance.now(), dur = reduceMotion.matches ? 0 : 220;
+  zoomAnim = now => {
+    const t = dur ? Math.min(1, (now - t0) / dur) : 1;
+    step(1 - (1 - t) * (1 - t));
+    if (t >= 1) zoomAnim = null;
+  };
+}
+function setFov(f) { camera.fov = THREE.MathUtils.clamp(f, FOV_MIN, FOV_MAX); camera.updateProjectionMatrix(); }
+function zoomBy(f) {                       // f < 1 zooms in
+  if (view === "ext") {
+    const d0 = camera.position.distanceTo(controls.target);
+    const d1 = THREE.MathUtils.clamp(d0 * f, controls.minDistance, controls.maxDistance);
+    tween(t => {
+      const dir = camera.position.clone().sub(controls.target).normalize();
+      camera.position.copy(controls.target).addScaledVector(dir, d0 + (d1 - d0) * t);
+    });
+  } else {
+    const f0 = camera.fov, f1 = THREE.MathUtils.clamp(f0 * f, FOV_MIN, FOV_MAX);
+    tween(t => setFov(f0 + (f1 - f0) * t));
+  }
+}
+function fit() {
+  zoomAnim = null;
+  if (view === "ext") exteriorView(); else setFov(FOV_SEAT);
+}
+let lastRead = "";
+function readout() {
+  const txt = view === "ext" ? camera.position.distanceTo(controls.target).toFixed(1) + " m"
+                             : Math.round(camera.fov) + "° FOV";
+  if (txt !== lastRead) { $("zread").textContent = txt; lastRead = txt; }
+  $("zin").disabled = view === "ext" ? camera.position.distanceTo(controls.target) <= controls.minDistance + 0.01 : camera.fov <= FOV_MIN + 0.1;
+  $("zout").disabled = view === "ext" ? camera.position.distanceTo(controls.target) >= controls.maxDistance - 0.01 : camera.fov >= FOV_MAX - 0.1;
+}
+$("zin").addEventListener("click", () => zoomBy(0.75));
+$("zout").addEventListener("click", () => zoomBy(1 / 0.75));
+$("zfit").addEventListener("click", fit);
+window.addEventListener("keydown", e => {
+  if (e.altKey || e.ctrlKey || e.metaKey) return;
+  if (e.key === "+" || e.key === "=") { zoomBy(0.75); e.preventDefault(); }
+  else if (e.key === "-" || e.key === "_") { zoomBy(1 / 0.75); e.preventDefault(); }
+  else if (e.key === "0") { fit(); e.preventDefault(); }
+});
+// in a seat the orbit controls cannot dolly, so the wheel and a pinch change the field of view
+const el = renderer.domElement;
+el.addEventListener("wheel", e => {
+  if (view === "ext") return;
+  e.preventDefault();
+  zoomAnim = null;
+  setFov(camera.fov * Math.exp(e.deltaY * 0.0015));
+}, { passive: false });
+let pinch = null;
+const spread = t => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
+el.addEventListener("touchstart", e => {
+  if (view !== "ext" && e.touches.length === 2) pinch = { d: spread(e.touches), fov: camera.fov };
+}, { passive: true });
+el.addEventListener("touchmove", e => {
+  if (pinch && e.touches.length === 2) setFov(pinch.fov * pinch.d / Math.max(1, spread(e.touches)));
+}, { passive: true });
+el.addEventListener("touchend", () => { pinch = null; }, { passive: true });
+
 const clock = new THREE.Clock();
 renderer.setAnimationLoop(() => {
   const dt = Math.min(clock.getDelta(), 0.1);
   if (current) current.mixer.update(dt);
+  if (zoomAnim) zoomAnim(performance.now());
   controls.update();
+  readout();
   renderer.render(scene, camera);
 });
 
