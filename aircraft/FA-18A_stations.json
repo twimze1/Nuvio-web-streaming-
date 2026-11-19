@@ -1,0 +1,1165 @@
+{
+ "aircraft": "F/A-18A",
+ "coordinates": "Blender/glTF: metres, +Y aft (nose toward -Y), +Z up, +X port. Design: x aft from nose tip, y starboard, z up from the nose-tip waterline.",
+ "attach_rule": "Put a store's origin on the socket; racks/launchers hang their store H metres lower (see equipment).",
+ "stations": {
+  "1": {
+   "socket": "F18A_STA_1",
+   "kind": "LAU-7 wingtip rail",
+   "position_blender": [
+    5.94,
+    1.0108,
+    -0.0239
+   ],
+   "position_design": [
+    10.988,
+    -5.94,
+    0.2261
+   ],
+   "equipment": [
+    "LAU-7"
+   ],
+   "stores": [
+    "AIM-9L",
+    "ACMI"
+   ]
+  },
+  "2": {
+   "socket": "F18A_STA_2",
+   "kind": "BRU-32 hooks (SUU-63)",
+   "position_blender": [
+    3.41,
+    0.4329,
+    -0.2826
+   ],
+   "position_design": [
+    10.4101,
+    -3.41,
+    -0.0326
+   ],
+   "equipment": [
+    "LAU-115+LAU-7",
+    "LAU-115",
+    "LAU-117",
+    "LAU-118",
+    "BRU-32",
+    "BRU-33"
+   ],
+   "stores": [
+    "AIM-9L",
+    "AIM-7M",
+    "AIM-120A",
+    "AIM-120C",
+    "AGM-65E",
+    "AGM-88",
+    "AGM-62",
+    "MK-82",
+    "MK-83",
+    "MK-84",
+    "MK-20",
+    "LAU-68",
+    "LAU-10",
+    "AWW-13"
+   ]
+  },
+  "3": {
+   "socket": "F18A_STA_3",
+   "kind": "BRU-32 hooks (SUU-63)",
+   "position_blender": [
+    2.23,
+    -0.1582,
+    -0.2378
+   ],
+   "position_design": [
+    9.8191,
+    -2.23,
+    0.0122
+   ],
+   "equipment": [
+    "LAU-117",
+    "LAU-118",
+    "BRU-32",
+    "BRU-33"
+   ],
+   "stores": [
+    "AGM-65E",
+    "AGM-88",
+    "MK-82",
+    "MK-83",
+    "MK-84",
+    "MK-20",
+    "TANK-330",
+    "AWW-13"
+   ]
+  },
+  "4": {
+   "socket": "F18A_STA_4",
+   "kind": "LAU-116 (semi-recessed)",
+   "position_blender": [
+    1.13,
+    0.9796,
+    -0.6085
+   ],
+   "position_design": [
+    10.9568,
+    -1.13,
+    -0.3585
+   ],
+   "equipment": [
+    "LAU-116",
+    "POD-4"
+   ],
+   "stores": [
+    "AIM-7M",
+    "AIM-120A",
+    "AIM-120C",
+    "AAS-38",
+    "LITENING"
+   ]
+  },
+  "5": {
+   "socket": "F18A_STA_5",
+   "kind": "BRU-32 hooks (SUU-62)",
+   "position_blender": [
+    -0.0,
+    0.5848,
+    -0.9717
+   ],
+   "position_design": [
+    10.562,
+    0.0,
+    -0.7217
+   ],
+   "equipment": [
+    "BRU-32",
+    "BRU-33"
+   ],
+   "stores": [
+    "MK-82",
+    "MK-83",
+    "MK-20",
+    "MK-77",
+    "TANK-330",
+    "LITENING",
+    "AWW-13"
+   ]
+  },
+  "6": {
+   "socket": "F18A_STA_6",
+   "kind": "LAU-116 (semi-recessed)",
+   "position_blender": [
+    -1.13,
+    0.9796,
+    -0.6085
+   ],
+   "position_design": [
+    10.9568,
+    1.13,
+    -0.3585
+   ],
+   "equipment": [
+    "LAU-116",
+    "POD-6"
+   ],
+   "stores": [
+    "AIM-7M",
+    "AIM-120A",
+    "AIM-120C",
+    "ASQ-173"
+   ]
+  },
+  "7": {
+   "socket": "F18A_STA_7",
+   "kind": "BRU-32 hooks (SUU-63)",
+   "position_blender": [
+    -2.23,
+    -0.1582,
+    -0.2378
+   ],
+   "position_design": [
+    9.8191,
+    2.23,
+    0.0122
+   ],
+   "equipment": [
+    "LAU-117",
+    "LAU-118",
+    "BRU-32",
+    "BRU-33"
+   ],
+   "stores": [
+    "AGM-65E",
+    "AGM-88",
+    "MK-82",
+    "MK-83",
+    "MK-84",
+    "MK-20",
+    "TANK-330",
+    "AWW-13"
+   ]
+  },
+  "8": {
+   "socket": "F18A_STA_8",
+   "kind": "BRU-32 hooks (SUU-63)",
+   "position_blender": [
+    -3.41,
+    0.4329,
+    -0.2826
+   ],
+   "position_design": [
+    10.4101,
+    3.41,
+    -0.0326
+   ],
+   "equipment": [
+    "LAU-115+LAU-7",
+    "LAU-115",
+    "LAU-117",
+    "LAU-118",
+    "BRU-32",
+    "BRU-33"
+   ],
+   "stores": [
+    "AIM-9L",
+    "AIM-7M",
+    "AIM-120A",
+    "AIM-120C",
+    "AGM-65E",
+    "AGM-88",
+    "AGM-62",
+    "MK-82",
+    "MK-83",
+    "MK-84",
+    "MK-20",
+    "LAU-68",
+    "LAU-10",
+    "AWW-13"
+   ]
+  },
+  "9": {
+   "socket": "F18A_STA_9",
+   "kind": "LAU-7 wingtip rail",
+   "position_blender": [
+    -5.94,
+    1.0108,
+    -0.0239
+   ],
+   "position_design": [
+    10.988,
+    5.94,
+    0.2261
+   ],
+   "equipment": [
+    "LAU-7"
+   ],
+   "stores": [
+    "AIM-9L",
+    "ACMI"
+   ]
+  }
+ },
+ "stores": [
+  {
+   "id": "AIM-9L",
+   "name": "AIM-9L/M Sidewinder",
+   "cat": "aa_missile",
+   "era": "baseline",
+   "conf": "medium",
+   "L": 2.85,
+   "D": 0.127,
+   "mass": 86.6,
+   "mount": "LAU-7",
+   "stations": [
+    1,
+    2,
+    8,
+    9
+   ],
+   "features": [
+    "rollerons"
+   ],
+   "note": "Rear wing span 0.63 m published; canard span (0.56 m) and planforms scaled from photos. 2/8 via LAU-115 with two LAU-7 side rails."
+  },
+  {
+   "id": "AIM-9X",
+   "name": "AIM-9X Sidewinder",
+   "cat": "aa_missile",
+   "era": "A+",
+   "conf": "medium",
+   "L": 3.02,
+   "D": 0.127,
+   "mass": 85.3,
+   "mount": "LAU-7",
+   "stations": [],
+   "note": "Sources disagree on spans (0.28 vs 0.35/0.44 m); USAF WF values used. A/B stations not documented."
+  },
+  {
+   "id": "AIM-7M",
+   "name": "AIM-7F/M Sparrow",
+   "cat": "aa_missile",
+   "era": "baseline",
+   "conf": "high",
+   "L": 3.66,
+   "D": 0.203,
+   "mass": 231.3,
+   "mount": "LAU-116",
+   "stations": [
+    2,
+    4,
+    6,
+    8
+   ],
+   "note": "LAU-116 semi-recessed on 4/6, LAU-115 on 2/8. Fins carried in + on the fuselage stations."
+  },
+  {
+   "id": "AIM-120A",
+   "name": "AIM-120A/B AMRAAM",
+   "cat": "aa_missile",
+   "era": "A+",
+   "conf": "high",
+   "L": 3.66,
+   "D": 0.178,
+   "mass": 156.5,
+   "mount": "LAU-116",
+   "stations": [
+    2,
+    4,
+    6,
+    8
+   ],
+   "note": "A+ (APG-73) aircraft. Same stations as AIM-7 (LAU-116 on 4/6, LAU-115 + LAU-127 on 2/8)."
+  },
+  {
+   "id": "AIM-120C",
+   "name": "AIM-120C AMRAAM",
+   "cat": "aa_missile",
+   "era": "A+",
+   "conf": "high",
+   "L": 3.66,
+   "D": 0.178,
+   "mass": 156.5,
+   "mount": "LAU-116",
+   "stations": [
+    2,
+    4,
+    6,
+    8
+   ],
+   "note": "Clipped wings and fins (0.447 m)."
+  },
+  {
+   "id": "AGM-65E",
+   "name": "AGM-65E/F Maverick",
+   "cat": "ag_missile",
+   "era": "baseline",
+   "conf": "high",
+   "L": 2.49,
+   "D": 0.305,
+   "mass": 285.8,
+   "mount": "LAU-117",
+   "stations": [
+    2,
+    3,
+    7,
+    8
+   ],
+   "note": "Laser (E) seeker shown as a dome; IR (F, A+) uses a glass dome of the same size."
+  },
+  {
+   "id": "AGM-88",
+   "name": "AGM-88 HARM",
+   "cat": "ag_missile",
+   "era": "baseline",
+   "conf": "high",
+   "L": 4.17,
+   "D": 0.254,
+   "mass": 362.9,
+   "mount": "LAU-118",
+   "stations": [
+    2,
+    3,
+    7,
+    8
+   ],
+   "features": [
+    "harm_bulge"
+   ],
+   "note": "Wing span 1.118 m (designation-systems; FAS figure inconsistent)."
+  },
+  {
+   "id": "AGM-84D",
+   "name": "AGM-84D Harpoon",
+   "cat": "ag_missile",
+   "era": "baseline",
+   "conf": "medium",
+   "L": 3.85,
+   "D": 0.343,
+   "mass": 544,
+   "mount": "BRU-32",
+   "lugs": 0.762,
+   "stations": [],
+   "features": [
+    "intake"
+   ],
+   "note": "Air-launched, no booster; carried directly on BRU-32 (30 in lugs). A/B stations not documented."
+  },
+  {
+   "id": "AGM-84E",
+   "name": "AGM-84E SLAM",
+   "cat": "ag_missile",
+   "era": "A+",
+   "conf": "medium",
+   "L": 4.5,
+   "D": 0.343,
+   "mass": 628,
+   "mount": "BRU-32",
+   "lugs": 0.762,
+   "stations": [],
+   "features": [
+    "intake"
+   ],
+   "note": "Harpoon airframe with IIR seeker and data link."
+  },
+  {
+   "id": "AGM-62",
+   "name": "AGM-62 Walleye I ER/DL",
+   "cat": "guided_bomb",
+   "era": "baseline",
+   "conf": "medium",
+   "L": 3.45,
+   "D": 0.318,
+   "mass": 510,
+   "mount": "BRU-32",
+   "lugs": 0.35559999999999997,
+   "stations": [
+    2,
+    8
+   ],
+   "features": [
+    "rat"
+   ],
+   "note": "Stations 2/8 per Desert Storm F/A-18A loads (VFA-195); ER/DL wings slightly larger than Mk 1 span used."
+  },
+  {
+   "id": "AGM-62II",
+   "name": "AGM-62 Walleye II ER/DL",
+   "cat": "guided_bomb",
+   "era": "baseline",
+   "conf": "medium",
+   "L": 4.04,
+   "D": 0.457,
+   "mass": 1061,
+   "mount": "BRU-32",
+   "lugs": 0.762,
+   "stations": [],
+   "features": [
+    "rat"
+   ],
+   "note": "Used by an F/A-18A in 1991; station not documented."
+  },
+  {
+   "id": "AGM-154A",
+   "name": "AGM-154A JSOW",
+   "cat": "guided_bomb",
+   "era": "A+",
+   "conf": "medium",
+   "L": 4.06,
+   "D": 0.34,
+   "mass": 483,
+   "box": [
+    0.34,
+    0.41
+   ],
+   "mount": "BRU-32",
+   "lugs": 0.35559999999999997,
+   "stations": [],
+   "features": [
+    "jsow_wings"
+   ],
+   "note": "Faceted box body (designation-systems width 0.338 m; height estimated); wings folded on top."
+  },
+  {
+   "id": "ADM-141",
+   "name": "ADM-141 TALD",
+   "cat": "ag_missile",
+   "era": "baseline",
+   "conf": "est",
+   "L": 2.34,
+   "D": 0.28,
+   "mass": 181,
+   "box": [
+    0.28,
+    0.28
+   ],
+   "mount": "TER",
+   "lugs": 0.35559999999999997,
+   "stations": [],
+   "features": [
+    "tald_wings"
+   ],
+   "note": "Length 2.34 m and deployed span 1.55 m published; body section estimated. Carried on TERs."
+  },
+  {
+   "id": "GBU-12",
+   "name": "GBU-12 Paveway II (500 lb)",
+   "cat": "guided_bomb",
+   "era": "baseline",
+   "conf": "high",
+   "L": 3.33,
+   "D": 0.273,
+   "mass": 275,
+   "mount": "BRU-32",
+   "lugs": 0.35559999999999997,
+   "stations": [],
+   "kit": "paveway",
+   "kit_span": 0.3,
+   "finish": "thermal",
+   "note": "Mk 82 / BLU-111 body. A/B relied on off-board lasing; stations not documented."
+  },
+  {
+   "id": "GBU-16",
+   "name": "GBU-16 Paveway II (1,000 lb)",
+   "cat": "guided_bomb",
+   "era": "baseline",
+   "conf": "high",
+   "L": 3.68,
+   "D": 0.356,
+   "mass": 495,
+   "mount": "BRU-32",
+   "lugs": 0.35559999999999997,
+   "stations": [],
+   "kit": "paveway",
+   "kit_span": 0.38,
+   "finish": "thermal",
+   "note": "Mk 83 / BLU-110 body."
+  },
+  {
+   "id": "GBU-10",
+   "name": "GBU-10 Paveway II (2,000 lb)",
+   "cat": "guided_bomb",
+   "era": "baseline",
+   "conf": "high",
+   "L": 4.32,
+   "D": 0.457,
+   "mass": 957,
+   "mount": "BRU-32",
+   "lugs": 0.762,
+   "stations": [],
+   "kit": "paveway",
+   "kit_span": 0.48,
+   "finish": "thermal",
+   "note": "Mk 84 / BLU-117 body."
+  },
+  {
+   "id": "GBU-24",
+   "name": "GBU-24 Paveway III",
+   "cat": "guided_bomb",
+   "era": "A+",
+   "conf": "medium",
+   "L": 4.39,
+   "D": 0.457,
+   "mass": 1050,
+   "mount": "BRU-32",
+   "lugs": 0.762,
+   "stations": [],
+   "kit": "paveway3",
+   "kit_span": 0.914,
+   "finish": "thermal",
+   "note": "Canard span 0.997 m; wings stowed 0.914 m."
+  },
+  {
+   "id": "GBU-38",
+   "name": "GBU-38 JDAM (500 lb)",
+   "cat": "guided_bomb",
+   "era": "A+",
+   "conf": "high",
+   "L": 2.35,
+   "D": 0.273,
+   "mass": 253,
+   "mount": "BRU-32",
+   "lugs": 0.35559999999999997,
+   "stations": [],
+   "kit": "jdam",
+   "kit_span": 0.432,
+   "strakes": "nose",
+   "finish": "thermal",
+   "note": "Strakes at the nose on the 500 lb size."
+  },
+  {
+   "id": "GBU-32",
+   "name": "GBU-32 JDAM (1,000 lb)",
+   "cat": "guided_bomb",
+   "era": "A+",
+   "conf": "high",
+   "L": 3.04,
+   "D": 0.356,
+   "mass": 468,
+   "mount": "BRU-32",
+   "lugs": 0.35559999999999997,
+   "stations": [],
+   "kit": "jdam",
+   "kit_span": 0.498,
+   "strakes": "mid",
+   "finish": "thermal",
+   "note": ""
+  },
+  {
+   "id": "GBU-31",
+   "name": "GBU-31 JDAM (2,000 lb)",
+   "cat": "guided_bomb",
+   "era": "A+",
+   "conf": "high",
+   "L": 3.88,
+   "D": 0.457,
+   "mass": 946,
+   "mount": "BRU-32",
+   "lugs": 0.762,
+   "stations": [],
+   "kit": "jdam",
+   "kit_span": 0.643,
+   "strakes": "mid",
+   "finish": "thermal",
+   "note": ""
+  },
+  {
+   "id": "MK-82",
+   "name": "Mk 82 LDGP / BLU-111 (500 lb)",
+   "cat": "bomb",
+   "era": "baseline",
+   "conf": "medium",
+   "L": 2.21,
+   "D": 0.273,
+   "mass": 241,
+   "mount": "BRU-33",
+   "lugs": 0.35559999999999997,
+   "stations": [
+    2,
+    3,
+    5,
+    7,
+    8
+   ],
+   "kit": "conical",
+   "kit_span": 0.38,
+   "finish": "thermal",
+   "note": "Conical fin span estimated (1.4 D). Two on each BRU-33 VER. Thermal coating = Navy BLU-111."
+  },
+  {
+   "id": "MK-82SE",
+   "name": "Mk 82 Snakeye (Mk 15 fin)",
+   "cat": "bomb",
+   "era": "baseline",
+   "conf": "medium",
+   "L": 2.17,
+   "D": 0.274,
+   "mass": 250,
+   "mount": "BRU-33",
+   "lugs": 0.35559999999999997,
+   "stations": [],
+   "kit": "snakeye",
+   "kit_span": 0.4,
+   "finish": "thermal",
+   "note": "Drag plates shown closed (carriage)."
+  },
+  {
+   "id": "MK-83",
+   "name": "Mk 83 LDGP / BLU-110 (1,000 lb)",
+   "cat": "bomb",
+   "era": "baseline",
+   "conf": "medium",
+   "L": 3.01,
+   "D": 0.356,
+   "mass": 447,
+   "mount": "BRU-33",
+   "lugs": 0.35559999999999997,
+   "stations": [
+    2,
+    3,
+    5,
+    7,
+    8
+   ],
+   "kit": "conical",
+   "kit_span": 0.5,
+   "finish": "thermal",
+   "note": "Conical fin span estimated."
+  },
+  {
+   "id": "MK-84",
+   "name": "Mk 84 LDGP / BLU-117 (2,000 lb)",
+   "cat": "bomb",
+   "era": "baseline",
+   "conf": "medium",
+   "L": 3.85,
+   "D": 0.457,
+   "mass": 894,
+   "mount": "BRU-32",
+   "lugs": 0.762,
+   "stations": [
+    2,
+    3,
+    7,
+    8
+   ],
+   "kit": "conical",
+   "kit_span": 0.64,
+   "finish": "thermal",
+   "note": "Too heavy for the BRU-33 (1,000 lb per unit); single carriage only."
+  },
+  {
+   "id": "MK-20",
+   "name": "Mk 20 Rockeye II / CBU-59 / CBU-78",
+   "cat": "cluster",
+   "era": "baseline",
+   "conf": "high",
+   "L": 2.34,
+   "D": 0.337,
+   "mass": 222,
+   "mount": "BRU-33",
+   "lugs": 0.35559999999999997,
+   "stations": [
+    2,
+    3,
+    5,
+    7,
+    8
+   ],
+   "note": "Mk 7 dispenser; fins closed (0.437 m) in carriage, 0.876 m open. CBU-59/78 share the shape."
+  },
+  {
+   "id": "MK-77",
+   "name": "Mk 77 fire bomb",
+   "cat": "bomb",
+   "era": "baseline",
+   "conf": "est",
+   "L": 3.3,
+   "D": 0.53,
+   "mass": 230,
+   "mount": "BRU-32",
+   "lugs": 0.35559999999999997,
+   "stations": [
+    5
+   ],
+   "note": "Unfinned aluminium case; length and diameter estimated (no published figure found). Centreline per Desert Storm loads."
+  },
+  {
+   "id": "LAU-61",
+   "name": "LAU-61 (19 x 2.75 in)",
+   "cat": "rocket_pod",
+   "era": "baseline",
+   "conf": "medium",
+   "L": 1.52,
+   "D": 0.406,
+   "mass": 70,
+   "mount": "BRU-33",
+   "lugs": 0.35559999999999997,
+   "stations": [],
+   "features": [
+    "tubes19"
+   ],
+   "finish": "thermal",
+   "note": "Thermally coated Navy pod; stations not documented for the A/B."
+  },
+  {
+   "id": "LAU-68",
+   "name": "LAU-68 (7 x 2.75 in)",
+   "cat": "rocket_pod",
+   "era": "baseline",
+   "conf": "medium",
+   "L": 1.56,
+   "D": 0.249,
+   "mass": 39,
+   "mount": "BRU-33",
+   "lugs": 0.35559999999999997,
+   "stations": [
+    2,
+    8
+   ],
+   "features": [
+    "tubes7"
+   ],
+   "finish": "thermal",
+   "note": ""
+  },
+  {
+   "id": "LAU-10",
+   "name": "LAU-10 (4 x 5 in Zuni)",
+   "cat": "rocket_pod",
+   "era": "baseline",
+   "conf": "est",
+   "L": 2.5,
+   "D": 0.4,
+   "mass": null,
+   "mount": "BRU-33",
+   "lugs": 0.35559999999999997,
+   "stations": [
+    2,
+    8
+   ],
+   "features": [
+    "tubes4"
+   ],
+   "finish": "thermal",
+   "note": "Dimensions estimated (none published in the sources found)."
+  },
+  {
+   "id": "B61",
+   "name": "B61",
+   "cat": "nuclear",
+   "era": "baseline",
+   "conf": "medium",
+   "L": 3.6,
+   "D": 0.338,
+   "mass": 341,
+   "mount": "BRU-32",
+   "lugs": 0.35559999999999997,
+   "stations": [],
+   "note": "Fin span estimated. A/B carriage station not documented."
+  },
+  {
+   "id": "B57",
+   "name": "B57",
+   "cat": "nuclear",
+   "era": "baseline",
+   "conf": "medium",
+   "L": 3.0,
+   "D": 0.375,
+   "mass": 227,
+   "mount": "BRU-32",
+   "lugs": 0.35559999999999997,
+   "stations": [],
+   "note": "Fin span estimated. Retired 1993."
+  },
+  {
+   "id": "MK-76",
+   "name": "Mk 76 practice bomb",
+   "cat": "bomb",
+   "era": "baseline",
+   "conf": "medium",
+   "L": 0.58,
+   "D": 0.102,
+   "mass": 11.3,
+   "mount": "PRACTICE",
+   "lugs": null,
+   "stations": [],
+   "note": "Practice racks not documented for the A/B."
+  },
+  {
+   "id": "TANK-330",
+   "name": "330 US gal fuel tank (FPU-8/A)",
+   "cat": "fuel_tank",
+   "era": "baseline",
+   "conf": "est",
+   "L": 3.9,
+   "D": 0.76,
+   "mass": 195,
+   "mount": "BRU-32",
+   "lugs": 0.762,
+   "stations": [
+    3,
+    5,
+    7
+   ],
+   "note": "No published drawing: diameter from the front-view drawing (~0.76 m), length sized for 330 gal. Empty mass 195 kg (NATOPS chart reading)."
+  },
+  {
+   "id": "AAS-38",
+   "name": "AN/AAS-38 NITE Hawk FLIR pod",
+   "cat": "pod",
+   "era": "baseline",
+   "conf": "medium",
+   "L": 1.83,
+   "D": 0.33,
+   "mass": 154,
+   "mount": "POD-4",
+   "lugs": null,
+   "stations": [
+    4
+   ],
+   "features": [
+    "sensor_head"
+   ],
+   "note": "Port fuselage station only."
+  },
+  {
+   "id": "LITENING",
+   "name": "AN/AAQ-28 LITENING (USMC)",
+   "cat": "pod",
+   "era": "A+",
+   "conf": "medium",
+   "L": 2.2,
+   "D": 0.406,
+   "mass": 208,
+   "mount": "POD-4",
+   "lugs": null,
+   "stations": [
+    4,
+    5
+   ],
+   "features": [
+    "sensor_head"
+   ],
+   "note": "USMC legacy Hornets from 2005-06."
+  },
+  {
+   "id": "ASQ-173",
+   "name": "AN/ASQ-173 LST/SCAM pod",
+   "cat": "pod",
+   "era": "baseline",
+   "conf": "est",
+   "L": 2.2,
+   "D": 0.22,
+   "mass": null,
+   "mount": "POD-6",
+   "lugs": null,
+   "stations": [
+    6
+   ],
+   "features": [
+    "window"
+   ],
+   "note": "Starboard fuselage station; dimensions estimated (none published in the sources found)."
+  },
+  {
+   "id": "AWW-13",
+   "name": "AN/AWW-13 data-link pod",
+   "cat": "pod",
+   "era": "baseline",
+   "conf": "est",
+   "L": 3.4,
+   "D": 0.38,
+   "mass": null,
+   "mount": "BRU-32",
+   "lugs": 0.35559999999999997,
+   "stations": [
+    2,
+    3,
+    5,
+    7,
+    8
+   ],
+   "features": [
+    "datalink"
+   ],
+   "note": "Walleye/SLAM data link (AWW-9 similar); dimensions estimated."
+  },
+  {
+   "id": "ACMI",
+   "name": "ACMI / TACTS pod",
+   "cat": "pod",
+   "era": "baseline",
+   "conf": "est",
+   "L": 2.85,
+   "D": 0.127,
+   "mass": null,
+   "mount": "LAU-7",
+   "stations": [
+    1,
+    9
+   ],
+   "note": "Sidewinder-shaped training pod; dims estimated."
+  }
+ ],
+ "equipment": [
+  {
+   "id": "SUU-63",
+   "name": "SUU-63 wing pylon (with BRU-32)",
+   "cat": "pylon",
+   "conf": "est",
+   "L": 2.4,
+   "H": 0.36,
+   "W": 0.11,
+   "stations": [
+    2,
+    3,
+    7,
+    8
+   ],
+   "note": "No published dimensions; length and depth from the drawings (nose about 0.35 m ahead of the wing leading edge in the F/A-18B top view)."
+  },
+  {
+   "id": "SUU-62",
+   "name": "SUU-62 centreline pylon (with BRU-32)",
+   "cat": "pylon",
+   "conf": "est",
+   "L": 1.9,
+   "H": 0.22,
+   "W": 0.11,
+   "stations": [
+    5
+   ],
+   "note": "Dimensions estimated."
+  },
+  {
+   "id": "BRU-33",
+   "name": "BRU-33 VER / CVER (twin)",
+   "cat": "rack",
+   "conf": "est",
+   "L": 1.1,
+   "H": 0.16,
+   "W": 0.5,
+   "stations": [
+    2,
+    3,
+    5,
+    7,
+    8
+   ],
+   "note": "Two ejector units, canted 5 deg outboard on the CVER; 1,000 lb per unit. Dimensions estimated."
+  },
+  {
+   "id": "LAU-115",
+   "name": "LAU-115 wing missile launcher",
+   "cat": "launcher",
+   "conf": "medium",
+   "L": 2.083,
+   "H": 0.17,
+   "W": 0.12,
+   "stations": [
+    2,
+    8
+   ],
+   "note": "Length published (2.083 m); section estimated."
+  },
+  {
+   "id": "LAU-7",
+   "name": "LAU-7 Sidewinder rail (pylon side mount)",
+   "cat": "launcher",
+   "conf": "est",
+   "L": 1.9,
+   "H": 0.09,
+   "W": 0.09,
+   "stations": [
+    2,
+    8
+   ],
+   "note": "Side rails on the LAU-115 for twin AIM-9."
+  },
+  {
+   "id": "LAU-117",
+   "name": "LAU-117 Maverick launcher",
+   "cat": "launcher",
+   "conf": "medium",
+   "L": 2.388,
+   "H": 0.279,
+   "W": 0.279,
+   "stations": [
+    2,
+    3,
+    7,
+    8
+   ],
+   "note": "11 x 11 in section (USAF (V)3/A)."
+  },
+  {
+   "id": "LAU-118",
+   "name": "LAU-118 HARM launcher",
+   "cat": "launcher",
+   "conf": "medium",
+   "L": 2.007,
+   "H": 0.203,
+   "W": 0.296,
+   "stations": [
+    2,
+    3,
+    7,
+    8
+   ],
+   "note": "11.65 x 8 in section (USAF (V)4/A)."
+  }
+ ],
+ "loadouts": {
+  "CAP": {
+   "1": "AIM-9L",
+   "9": "AIM-9L",
+   "4": "AIM-7M",
+   "6": "AIM-7M",
+   "3": "TANK-330",
+   "5": "TANK-330",
+   "7": "TANK-330"
+  },
+  "Fleet_air_defence": {
+   "1": "AIM-9L",
+   "9": "AIM-9L",
+   "2": "AIM-7M",
+   "8": "AIM-7M",
+   "4": "AIM-7M",
+   "6": "AIM-7M",
+   "3": "TANK-330",
+   "5": "TANK-330",
+   "7": "TANK-330"
+  },
+  "Strike_Mk83": {
+   "1": "AIM-9L",
+   "9": "AIM-9L",
+   "4": "AAS-38",
+   "6": "ASQ-173",
+   "3": "TANK-330",
+   "7": "TANK-330",
+   "2": [
+    "MK-83",
+    2
+   ],
+   "8": [
+    "MK-83",
+    2
+   ],
+   "5": "MK-83"
+  },
+  "Heavy_strike_Mk84": {
+   "1": "AIM-9L",
+   "9": "AIM-9L",
+   "4": "AIM-7M",
+   "6": "AIM-7M",
+   "2": "MK-84",
+   "3": "MK-84",
+   "7": "MK-84",
+   "8": "MK-84",
+   "5": "TANK-330"
+  },
+  "SEAD_HARM": {
+   "1": "AIM-9L",
+   "9": "AIM-9L",
+   "2": "AGM-88",
+   "8": "AGM-88",
+   "4": "AIM-7M",
+   "6": "AIM-7M",
+   "3": "TANK-330",
+   "5": "TANK-330",
+   "7": "TANK-330"
+  },
+  "Walleye_1991": {
+   "1": "AIM-9L",
+   "9": "AIM-9L",
+   "2": "AGM-62",
+   "8": "AGM-62",
+   "3": "TANK-330",
+   "7": "TANK-330",
+   "4": "AAS-38",
+   "5": "AWW-13"
+  },
+  "Rockeye_CAS": {
+   "1": "AIM-9L",
+   "9": "AIM-9L",
+   "2": [
+    "MK-20",
+    2
+   ],
+   "8": [
+    "MK-20",
+    2
+   ],
+   "3": [
+    "MK-20",
+    2
+   ],
+   "7": [
+    "MK-20",
+    2
+   ],
+   "4": "AIM-7M",
+   "6": "AIM-7M",
+   "5": "TANK-330"
+  }
+ }
+}
