@@ -32,7 +32,7 @@ GROUPS = {
              "NoseGearDoorAft_R", "NoseGearDoorBrace_L", "NoseGearDoorBrace_R", "MainGear_L", "MainGear_R", "MainGearDoor_L", "MainGearDoor_R", "MainGearDoorSide_L", "MainGearDoorSide_R",
              "ArrestingHook", "Nozzle_L", "Nozzle_R", "RefuelProbe_Extended"],
 }
-SIZES = {"fuselage": 4096, "wings": 4096, "tail": 2048, "gear": 2048}
+SIZES = {"fuselage": 8192, "wings": 4096, "tail": 4096, "gear": 2048}
 SHARED = {"wings", "tail", "gear"}       # identical geometry in both variants
 
 
@@ -294,8 +294,19 @@ def exterior_shader(mat, kind, ref):
     chipn = noise(28.0, 4.0, 0.7)
     chips = nt.math("MULTIPLY", fwd, nt.ramp(chipn, 0.55, 0.62), clamp=True)
     c = nt.mix(chips, c, (0.30, 0.31, 0.31))
-    # panel lines projected from the drawings (top view on upper faces, side view on sides)
+    # panel lines projected from the drawings (top view on upper faces, side view on sides),
+    # with rows of flush rivets on both sides of every line: heads 5.6 mm across on a
+    # 25 mm pitch (typical for AN426 1/8 in rivets in fighter skins)
+    def rivet_heads(a, b, pitch=0.025, radius=0.0028):
+        fa = nt.math("SUBTRACT", nt.math("FRACT", nt.math("DIVIDE", a, pitch)), 0.5)
+        fb = nt.math("SUBTRACT", nt.math("FRACT", nt.math("DIVIDE", b, pitch)), 0.5)
+        d = nt.math("MULTIPLY", nt.math("SQRT", nt.math("ADD", nt.math("MULTIPLY", fa, fa),
+                                                         nt.math("MULTIPLY", fb, fb))), pitch)
+        return nt.math("SUBTRACT", 1.0, nt.ramp(d, radius * 0.7, radius))
+
     lines = None
+    rivets = None
+    hd = False
     # top view only on upward faces (the underside has no drawing), side view on both sides
     for key, wsock, a, b in (("top", NZ, xd, yd), ("side", nt.math("ABSOLUTE", NX), xd, zd)):
         info = ref.get(key)
@@ -310,16 +321,36 @@ def exterior_shader(mat, kind, ref):
         nt.link(v, comb.inputs[1])
         tex = nt.node("ShaderNodeTexImage", image=img, extension="CLIP", interpolation="Linear")
         nt.link(comb.outputs[0], tex.inputs[0])
-        ink = nt.math("SUBTRACT", 1.0, tex.outputs[0])
-        ink = nt.math("MULTIPLY", ink, nt.ramp(wsock, 0.35, 0.7))
+        weight = nt.ramp(wsock, 0.35, 0.7)
+        if info.get("hd"):
+            # vectorised maps (tools/vectorize_reference_lines.py): red = 3 mm seams, green = rivet heads
+            sepc = nt.node("ShaderNodeSeparateColor")
+            nt.link(tex.outputs[0], sepc.inputs[0])
+            ink = nt.math("MULTIPLY", sepc.outputs[0], weight)
+            heads = nt.math("MULTIPLY", sepc.outputs[1], weight)
+        else:
+            ink = nt.math("SUBTRACT", 1.0, tex.outputs[0])
+            ink = nt.math("MULTIPLY", ink, weight)
+            heads = None
         if key == "top" and ref.get("mask_spine"):
             box = nt.math("MULTIPLY", nt.ramp(xd, 6.9, 7.0), nt.math("SUBTRACT", 1.0, nt.ramp(xd, 8.8, 8.9)))
             box = nt.math("MULTIPLY", box, nt.math("SUBTRACT", 1.0, nt.ramp(nt.math("ABSOLUTE", yd), 0.5, 0.6)))
             ink = nt.math("MULTIPLY", ink, nt.math("SUBTRACT", 1.0, box))
+            if heads is not None:
+                heads = nt.math("MULTIPLY", heads, nt.math("SUBTRACT", 1.0, box))
         lines = ink if lines is None else nt.math("MAXIMUM", lines, ink)
+        if heads is None:
+            # low-resolution line art: rows in the fringe beside each line on a 25 mm grid
+            band = nt.math("MULTIPLY", nt.ramp(ink, 0.05, 0.2), nt.math("SUBTRACT", 1.0, nt.ramp(ink, 0.45, 0.7)))
+            heads = nt.math("MULTIPLY", band, rivet_heads(a, b), clamp=True)
+        rivets = heads if rivets is None else nt.math("MAXIMUM", rivets, heads)
+        hd = info.get("hd", False)
+    if rivets is not None:
+        # paint over flush heads: a faint grime ring makes them read as slightly darker dots
+        c = nt.mix(nt.math("MULTIPLY", rivets, 0.22), c, (0.05, 0.05, 0.05))
     if lines is not None:
-        lines = nt.ramp(lines, 0.25, 0.75)
-        c = nt.mix(nt.math("MULTIPLY", lines, 0.55), c, (0.03, 0.03, 0.03))
+        lines = nt.ramp(lines, 0.08, 0.6) if hd else nt.ramp(lines, 0.25, 0.75)
+        c = nt.mix(nt.math("MULTIPLY", lines, 0.7 if hd else 0.55), c, (0.03, 0.03, 0.03))
     # national insignia, low-visibility, upper port and lower starboard wing
     ins = ref.get("insignia")
     if ins:
@@ -349,6 +380,8 @@ def exterior_shader(mat, kind, ref):
     r = nt.math("ADD", r, nt.math("MULTIPLY", soot, 0.25))
     r = nt.math("SUBTRACT", r, nt.math("MULTIPLY", patch, 0.08))
     r = nt.math("SUBTRACT", r, nt.math("MULTIPLY", chips, 0.2), clamp=True)
+    if rivets is not None:
+        r = nt.math("SUBTRACT", r, nt.math("MULTIPLY", rivets, 0.07), clamp=True)
     nt.link(r, bsdf.inputs["Roughness"])
     nt.link(nt.math("MULTIPLY", chips, 0.6), bsdf.inputs["Metallic"])
     # normal: engraved panel lines, chips and fine orange-peel
@@ -356,6 +389,8 @@ def exterior_shader(mat, kind, ref):
         hgt = nt.math("MULTIPLY", noise(180.0, 2.0), 0.15)
         if lines is not None:
             hgt = nt.math("SUBTRACT", hgt, nt.math("MULTIPLY", lines, 0.8))
+        if rivets is not None:
+            hgt = nt.math("SUBTRACT", hgt, nt.math("MULTIPLY", rivets, 0.35))    # shallow dimple per head
         hgt = nt.math("SUBTRACT", hgt, nt.math("MULTIPLY", chips, 0.4))
         bump = nt.node("ShaderNodeBump")
         bump.inputs["Strength"].default_value = 0.9

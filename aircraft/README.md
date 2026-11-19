@@ -50,11 +50,13 @@ cd aircraft
 # 1. paint the cockpit and stores textures (Python 3 with Pillow and numpy)
 python tools/make_cockpit_textures.py
 python tools/make_store_textures.py
-# 2. optional, slow (about an hour on 4 CPU cores): re-bake the exterior textures.
-#    Panel lines come from the F/A-18B drawing, which is not stored in this repo:
+# 2. optional, slow (about 2.5 hours on 4 CPU cores): re-bake the exterior textures.
+#    Panel lines come from the F/A-18B drawing, which is not stored in this repo.
+#    The vectorising step needs scikit-image.
 python tools/prepare_reference_lines.py PATH/TO/fa18b_sheet.gif /tmp/refs
-blender -b -P fa18_hornet.py -- --variant A --bake --refs /tmp/refs/refs.json
-blender -b -P fa18_hornet.py -- --variant B --bake fuselage --refs /tmp/refs/refs.json
+python tools/vectorize_reference_lines.py /tmp/refs/refs.json /tmp/refs
+blender -b -P fa18_hornet.py -- --variant A --bake --refs /tmp/refs/refs_hd.json --samples 4
+blender -b -P fa18_hornet.py -- --variant B --bake fuselage --refs /tmp/refs/refs_hd.json --samples 4
 # 3. build both variants, with GLB files and the stores library
 blender -b -P fa18_hornet.py -- --variant both --glb
 ```
@@ -184,7 +186,7 @@ map (R occlusion, G roughness, B metallic) and an OpenGL-style normal map.
 
 | Set | Maps | How it is made |
 | --- | --- | --- |
-| Exterior (`ext_fuselage_A/B`, `ext_wings`, `ext_tail`, `ext_gear`) | 4K / 4K / 4K / 2K / 2K | Procedural shader (`fa18_materials.exterior_shader`) baked in Cycles |
+| Exterior (`ext_fuselage_A/B`, `ext_wings`, `ext_tail`, `ext_gear`) | 8K / 8K / 4K / 4K / 2K | Procedural shader (`fa18_materials.exterior_shader`) baked in Cycles |
 | Cockpit (`cockpit_*`) | 4K atlas plus display images | Painted by `tools/make_cockpit_textures.py` from the shared layout |
 | Stores (`stores_*`) | 4K atlas | Painted by `tools/make_store_textures.py` |
 
@@ -202,6 +204,22 @@ map (R occlusion, G roughness, B metallic) and an OpenGL-style normal map.
 - **Panel lines:** projected from the F/A-18B drawing's top view onto upper surfaces and
   its side view onto the sides, so they follow the real airframe. The drawing has no
   underside view, so the underside only has the structural breaks.
+  - The sheet resolves only about 17 mm per pixel. `tools/vectorize_reference_lines.py`
+    therefore thins its lines to centre lines and traces them into polylines. It then
+    redraws them as 3 mm seams at 2 mm per pixel, so up close they are crisp grooves
+    rather than wide stepped bands.
+  - The seams are engraved in the normal map and darkened in the colour.
+- **Rivets:** flush rivet heads, 5.6 mm across (AN426, 1/8 in), in a row 12 mm either side
+  of every seam at 25 mm pitch: about 34,000 traced from the drawing. Each head is a
+  shallow dimple in the normal map, slightly smoother paint, and a faint grime ring.
+  - They are texture, not geometry. Modelled rivets would add hundreds of thousands of
+    triangles and shimmer at normal viewing distance, so games put them in the normal
+    map.
+  - The model itself stays at about 46,000 triangles.
+- **Resolution:** the UV islands are packed tight (rotated, concave nesting). That gives
+  about 1.8 mm per pixel on the 8K fuselage atlas, 1.9 mm on the tail and 2.6 mm on the
+  wings, so a rivet head spans about 3 pixels. For lower settings, let the engine
+  downscale (mipmaps) or resize the maps.
 - **Markings:** only low-visibility national insignia, on the upper port and lower
   starboard wing. There are no unit markings, so the geometry has to read on its own.
 - **Nozzles:** heat-tinted. **Gear:** dirty white.

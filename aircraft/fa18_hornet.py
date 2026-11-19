@@ -1458,6 +1458,13 @@ def unwrap(h):
         bpy.ops.object.mode_set(mode="EDIT")
         bpy.ops.mesh.select_all(action="SELECT")
         bpy.ops.uv.smart_project(angle_limit=math.radians(60), island_margin=0.004)
+        # repack tighter (islands rotated freely, concave shapes nested): about
+        # 1.5-2x the texture resolution of smart_project's own packing
+        try:
+            bpy.ops.uv.pack_islands(rotate=True, rotate_method="ANY", scale=True, margin_method="ADD",
+                                    margin=0.0015, shape_method="CONCAVE")
+        except TypeError:
+            bpy.ops.uv.pack_islands(rotate=True, margin=0.0015)
         bpy.ops.object.mode_set(mode="OBJECT")
         for o in objs:
             o.select_set(False)
