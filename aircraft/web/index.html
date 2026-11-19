@@ -274,20 +274,78 @@ const state = {};            // group id -> { text, live }
 let speed = 1;
 let run = 0;                 // bumps to cancel "play all"
 
+// The models are glTF JSON with their geometry and animation buffer embedded
+// as base64.  Hosts with a strict content security policy (claude.ai
+// included) refuse fetch() of data: URLs, so the page fetches the JSON itself,
+// decodes the buffer and hands three.js an in-memory GLB; textures load from
+// tex/ beside the page as ordinary same-origin files.
+async function fetchGlb(v, onBytes) {
+  const res = await fetch("FA-18" + v + ".json");
+  if (!res.ok) throw new Error("the server answered " + res.status + " for FA-18" + v + ".json");
+  const total = +res.headers.get("Content-Length") || 0;
+  let text;
+  if (res.body && res.body.getReader && total) {
+    const reader = res.body.getReader(), parts = [];
+    let got = 0;
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      parts.push(value); got += value.length; onBytes(got, total);
+    }
+    const all = new Uint8Array(got);
+    let o = 0;
+    for (const p of parts) { all.set(p, o); o += p.length; }
+    text = new TextDecoder().decode(all);
+  } else {
+    text = await res.text();
+  }
+  const doc = JSON.parse(text);
+  let bin = new Uint8Array(0);
+  const buf = doc.buffers && doc.buffers[0];
+  const m = buf && buf.uri && /^data:[^,]*;base64,(.*)$/.exec(buf.uri);
+  if (m) {
+    const s = atob(m[1]);
+    bin = new Uint8Array(s.length);
+    for (let i = 0; i < s.length; i++) bin[i] = s.charCodeAt(i);
+    delete buf.uri;
+  }
+  const js = new TextEncoder().encode(JSON.stringify(doc));
+  const jsPad = (4 - js.length % 4) % 4, binPad = (4 - bin.length % 4) % 4;
+  const size = 12 + 8 + js.length + jsPad + 8 + bin.length + binPad;
+  const out = new ArrayBuffer(size), dv = new DataView(out), u8 = new Uint8Array(out);
+  dv.setUint32(0, 0x46546C67, true); dv.setUint32(4, 2, true); dv.setUint32(8, size, true);
+  dv.setUint32(12, js.length + jsPad, true); dv.setUint32(16, 0x4E4F534A, true);
+  u8.set(js, 20); u8.fill(0x20, 20 + js.length, 20 + js.length + jsPad);
+  const o = 20 + js.length + jsPad;
+  dv.setUint32(o, bin.length + binPad, true); dv.setUint32(o + 4, 0x004E4942, true);
+  u8.set(bin, o + 8);
+  return out;
+}
+
 function load(v) {
   if (cache[v]) return Promise.resolve(cache[v]);
-  const overlay = $("overlay");
-  overlay.hidden = false;
+  $("overlay").hidden = false;
   $("loadTitle").textContent = "Loading F/A-18" + v;
   $("loadBar").style.width = "0%";
+  $("loadText").textContent = "Model";
+  let failed = false;
+  const fail = err => {
+    failed = true;
+    $("loadTitle").textContent = "Could not load F/A-18" + v;
+    $("loadText").textContent = (err && err.message ? err.message : String(err)) + ". Reload the page to try again.";
+  };
   const manager = new THREE.LoadingManager();
   manager.onProgress = (url, done, total) => {
-    $("loadBar").style.width = Math.round(100 * done / Math.max(total, 1)) + "%";
-    $("loadText").textContent = done + " of " + total + " files";
+    if (failed) return;
+    $("loadBar").style.width = Math.round(30 + 70 * done / Math.max(total, 1)) + "%";
+    $("loadText").textContent = "Textures: " + done + " of " + total;
   };
   const loader = new GLTFLoader(manager);
-  return new Promise((resolve, reject) => {
-    loader.load("FA-18" + v + ".json", gltf => {
+  return fetchGlb(v, (got, total) => {
+    $("loadBar").style.width = Math.round(30 * got / total) + "%";
+    $("loadText").textContent = "Model: " + (got / 1e6).toFixed(1) + " of " + (total / 1e6).toFixed(1) + " MB";
+  }).then(glb => new Promise((resolve, reject) => {
+    loader.parse(glb, "./", gltf => {
       const root = gltf.scene;
       root.traverse(o => {
         if (o.isMesh) {
@@ -307,15 +365,10 @@ function load(v) {
       const cams = {};
       root.traverse(o => { const m = /_Cam_(Front|Rear)$/.exec(o.name); if (m) cams[m[1]] = o; });
       const box = new THREE.Box3().setFromObject(root);
-      const done = () => { cache[v] = { v, root, mixer, actions, clips, cams, floor: box.min.y }; resolve(cache[v]); };
-      // textures stream in after the model; wait for them before hiding the overlay
-      if (manager.itemsLoaded >= manager.itemsTotal) done(); else manager.onLoad = done;
-    }, undefined, err => {
-      $("loadTitle").textContent = "Could not load F/A-18" + v;
-      $("loadText").textContent = "The model file did not load (" + (err && err.message ? err.message : "network error") + "). Reload the page to try again.";
-      reject(err);
-    });
-  });
+      cache[v] = { v, root, mixer, actions, clips, cams, floor: box.min.y };
+      resolve(cache[v]);
+    }, reject);
+  })).catch(err => { fail(err); throw err; });
 }
 
 async function show(v) {
