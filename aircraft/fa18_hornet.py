@@ -61,6 +61,8 @@ import sys
 
 import bpy
 import bmesh
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import numpy as np
 from mathutils import Matrix, Vector
 
@@ -81,6 +83,7 @@ WING_APEX_X = 7.90                   # wing leading edge projected to the centre
 WING_Z_AT_ROOT = 0.50                # wing mid-plane at y = 1.42 (LEX junction), from the front views
 WING_ANHEDRAL = math.radians(3.0)
 FOLD_Y = 4.19                        # half the 8.38 m folded width
+TIP_RAIL_Y = 5.94                    # wingtip LAU-7 launcher axis = station 1/9 (NATOPS)
 FIN_CANT = math.radians(20.0)
 FIN_TIP_Y = 1.80
 FIN_TOP_Z = 2.96
@@ -181,12 +184,39 @@ def to_blender(p):
 # Mesh assembly
 # ----------------------------------------------------------------------------
 class Builder:
-    """Collects closed shells (in design coordinates) for one object."""
+    """Collects closed shells (in design coordinates) for one object.
+
+    Faces may carry UVs: `uvs[i]` is None (auto-unwrapped later), a single
+    (u, v) pair (whole face samples one texel, e.g. a colour swatch), or one
+    (u, v) per corner.  `paint(uv)` applies a pair to every face added since
+    `mark()`.
+    """
 
     def __init__(self):
         self.verts = []
         self.faces = []
         self.mats = []
+        self.uvs = []
+
+    def mark(self):
+        return len(self.faces)
+
+    def paint(self, since, uv):
+        """uv: a (u, v) pair, or a callable(face points) -> per-corner UVs."""
+        self.uvs.extend([None] * (len(self.faces) - len(self.uvs)))
+        for i in range(since, len(self.faces)):
+            self.uvs[i] = uv([self.verts[j] for j in self.faces[i]]) if callable(uv) else uv
+
+    def face(self, idx, mat=0, uv=None):
+        """Add one face from vertex indices, with optional per-corner UVs."""
+        self.uvs.extend([None] * (len(self.faces) - len(self.uvs)))
+        self.faces.append(tuple(idx))
+        self.mats.append(mat)
+        self.uvs.append(uv([self.verts[j] for j in idx]) if callable(uv) else uv)
+
+    def poly(self, pts, mat=0, uv=None):
+        """Add one face from points."""
+        self.face(self.ring(pts), mat, uv)
 
     def ring(self, pts):
         i0 = len(self.verts)
@@ -230,7 +260,7 @@ class Builder:
         self.cap(r0, mat)
         self.cap(r1, mat)
 
-    def revolve(self, p0, p1, profile, n=12, mat=0, cap_mats=None):
+    def revolve(self, p0, p1, profile, n=12, mat=0, cap_mats=None, caps=(True, True)):
         """Body of revolution about the axis p0->p1.
 
         profile: list of (t, radius) with t the fraction along the axis.
@@ -251,8 +281,10 @@ class Builder:
         for a, b in zip(rings, rings[1:]):
             self.bridge(a, b, mat)
         cm = cap_mats or (mat, mat)
-        self.cap(rings[0], cm[0])
-        self.cap(rings[-1], cm[1])
+        if caps[0]:
+            self.cap(rings[0], cm[0])
+        if caps[1]:
+            self.cap(rings[-1], cm[1])
 
 
 class Foil:
@@ -319,6 +351,10 @@ MATERIALS = {
     "Gear":          ((0.75, 0.75, 0.74), 0.10, 0.45, 1.0),
     "Tire":          ((0.02, 0.02, 0.02), 0.00, 0.90, 1.0),
     "Seat":          ((0.05, 0.055, 0.05), 0.00, 0.80, 1.0),
+    "Frame":         ((0.035, 0.036, 0.04), 0.20, 0.55, 1.0),
+    "Cockpit":       ((0.05, 0.05, 0.055), 0.00, 0.70, 1.0),
+    "CockpitWall":   ((0.04, 0.04, 0.045), 0.00, 0.75, 1.0),
+    "Mirror":        ((0.80, 0.80, 0.80), 1.00, 0.04, 1.0),
 }
 
 
@@ -327,7 +363,10 @@ def material(name):
     mat = bpy.data.materials.get(full)
     if mat:
         return mat
-    color, metal, rough, alpha = MATERIALS[name]
+    if name.startswith("Display_"):                 # placeholder until textured
+        color, metal, rough, alpha = (0.0, 0.05, 0.0), 0.0, 0.2, 1.0
+    else:
+        color, metal, rough, alpha = MATERIALS[name]
     mat = bpy.data.materials.new(full)
     mat.diffuse_color = (*color, alpha)
     mat.metallic = metal
@@ -422,15 +461,19 @@ class Hornet:
                 (8.70, 0.10, 1.345),
             ])
             self.bows = [4.36, 6.00, 7.99]
-            self.seats = [5.20, 7.05]
+            # crew stations: design eye point (x, z) and instrument-panel face x
+            self.crew = [dict(name="Front", eye=(5.30, 1.34), panel_x=4.50, hud=True),
+                         dict(name="Rear", eye=(7.00, 1.41), panel_x=6.20, hud=False)]
+            self.cockpit_x = (4.42, 7.72)      # extent of the cockpit opening
         else:
             self.canopy = Table([
-                (3.22, 0.03, 0.94), (3.50, 0.24, 1.08), (3.90, 0.35, 1.26),
-                (4.45, 0.41, 1.47), (5.07, 0.42, 1.61), (5.70, 0.41, 1.57),
+                (3.22, 0.03, 0.94), (3.50, 0.24, 1.08), (3.90, 0.355, 1.26),
+                (4.45, 0.425, 1.47), (5.07, 0.42, 1.61), (5.70, 0.41, 1.57),
                 (6.30, 0.36, 1.47), (6.84, 0.27, 1.36), (7.15, 0.12, 1.305),
             ])
             self.bows = [4.45, 6.84]
-            self.seats = [5.30]
+            self.crew = [dict(name="Front", eye=(5.30, 1.34), panel_x=4.50, hud=True)]
+            self.cockpit_x = (4.42, 6.05)
 
         # ---- lifting surfaces
         z_wing = lambda y: WING_Z_AT_ROOT - (y - 1.42) * math.tan(WING_ANHEDRAL)
@@ -470,14 +513,14 @@ class Hornet:
         self.col.children.link(self.col_gear)
         self.col_opt = bpy.data.collections.new(name + " Optional")
         self.col.children.link(self.col_opt)
-        self.col_stores = bpy.data.collections.new(name + " Stores (AIM-9 / AIM-7)")
-        self.col.children.link(self.col_stores)
+        self.col_cockpit = bpy.data.collections.new(name + " Cockpit")
+        self.col.children.link(self.col_cockpit)
         self.root = bpy.data.objects.new("FA-18%s_Hornet" % self.v, None)
         self.root.empty_display_type = "PLAIN_AXES"
         self.root.empty_display_size = 1.0
         self.col.objects.link(self.root)
         self.root["variant"] = "F/A-18%s" % self.v
-        self.root["seats"] = len(self.seats)
+        self.root["seats"] = len(self.crew)
         self.world[self.root.name] = Matrix.Identity(4)
 
     def add(self, name, b, mats=("Airframe",), origin=None, axis=None, up=(0, 0, 1),
@@ -507,6 +550,19 @@ class Hornet:
         inv = frame.inverted()
         mesh = bpy.data.meshes.new(name)
         mesh.from_pydata([tuple(inv @ to_blender(p)) for p in b.verts], [], b.faces)
+        uvs = b.uvs + [None] * (len(b.faces) - len(b.uvs))
+        explicit = any(u is not None for u in uvs)
+        if explicit:
+            # set before the normal recalculation so flipped faces keep
+            # their UVs attached to the right corners
+            layer = mesh.uv_layers.new(name="UVMap")
+            data = np.zeros((len(mesh.loops), 2))
+            for poly, uv in zip(mesh.polygons, uvs):
+                if uv is None:
+                    continue
+                s0, n = poly.loop_start, poly.loop_total
+                data[s0:s0 + n] = uv if isinstance(uv[0], (int, float)) else uv[:n]
+            layer.data.foreach_set("uv", data.ravel())
         for m in mats:
             mesh.materials.append(material(m))
         mesh.polygons.foreach_set("material_index", b.mats)
@@ -541,6 +597,8 @@ class Hornet:
         obj.matrix_parent_inverse = Matrix.Identity(4)
         obj.matrix_basis = self.world[parent.name].inverted() @ frame
         self.world[obj.name] = frame
+        if explicit:
+            obj["uv_explicit"] = True
         if hinge:
             obj["hinge"] = "rotate about local X from rest (0); positive = " + hinge
         self.objects[name] = obj
@@ -550,6 +608,27 @@ class Hornet:
     def core_ring(self, x, n=40):
         a, zt, zb, zc, nt, nb = self.core(x)
         return superellipse(x, 0.0, a, zt, zb, zc, nt, nb, n)
+
+    def floor_z(self, x):
+        """Cockpit floor height (the rear cockpit of the B sits higher)."""
+        return 0.22 if (len(self.crew) > 1 and x > 5.95) else 0.15
+
+    def arch_halfwidth(self, x, z, grow=-0.05):
+        """Half-width of the canopy arch (offset by grow) at height z, or 0 above it."""
+        pts = self.canopy_arch(x, grow)
+        half = pts[: len(pts) // 2 + 1]                # right sill .. top
+        for (y0, z0), (y1, z1) in zip([(p[1], p[2]) for p in half], [(p[1], p[2]) for p in half[1:]]):
+            if min(z0, z1) <= z <= max(z0, z1) and z1 != z0:
+                return y0 + (y1 - y0) * (z - z0) / (z1 - z0)
+        return 0.0 if z > half[-1][2] else half[0][1]
+
+    def cockpit_halfwidth(self, x):
+        w, _ = self.canopy(min(max(x, self.canopy.x[0]), self.canopy.x[-1]))
+        return min(w - 0.016, 0.40)
+
+    def sill_z(self, x):
+        w, _ = self.canopy(min(max(x, self.canopy.x[0]), self.canopy.x[-1]))
+        return self.core_top_z(x, w) - 0.03
 
     def core_top_z(self, x, y=0.0):
         a, zt, zb, zc, nt, nb = self.core(x)
@@ -614,33 +693,46 @@ class Hornet:
         b.loft(rings)
         self.add("Fuselage", b, mats=("Airframe", "Dark"))
 
+    def canopy_arch(self, x, grow=0.0, n=24, sink=0.03):
+        """Canopy cross-section at station x, sill to sill.
+
+        The arch ends sit on the fuselage surface at the canopy's half-width;
+        grow offsets it outward (+) or inward (-).
+        """
+        w, zt = self.canopy(x)
+        zb = self.core_top_z(x, w + max(grow, 0.0)) - sink
+        pts = []
+        for i in range(n + 1):
+            th = math.pi * i / n
+            c, s = math.cos(th), math.sin(th)
+            pts.append((x, (w + grow) * spow(c, 2 / 2.3),
+                        zb + (zt + grow - zb) * spow(s, 2 / 2.3)))
+        return pts
+
     def build_canopy(self):
-        def arch(x, grow=0.0, n=18, sink=0.03):
-            # glass runs from sill to sill: the arch ends sit on the fuselage
-            # surface at the canopy's half-width, not at the centreline height
-            w, zt = self.canopy(x)
-            zb = self.core_top_z(x, w + max(grow, 0.0)) - sink
-            pts = []
-            for i in range(n + 1):
-                th = math.pi * i / n
-                c, s = math.cos(th), math.sin(th)
-                pts.append((x, (w + grow) * spow(c, 2 / 2.3),
-                            zb + (zt + grow - zb) * spow(s, 2 / 2.3)))
-            return pts
+        """Windscreen (fixed) and canopy (hinged at its aft end), both thin
+        glass shells so the cockpit can be seen and sat in, plus frames."""
+        T = 0.014                                   # transparency thickness
+        x_split = self.bows[0]                      # windscreen / canopy joint
+        xs = self.canopy.stations(0.1)
 
-        b = Builder()
-        xs = self.canopy.stations(0.2)
-        b.loft([arch(x) for x in xs])
-        self.add("Canopy", b, mats=("Glass",), smooth=60.0)
+        def shell(x0, x1):
+            b = Builder()
+            sx = [x0] + [x for x in xs if x0 + 0.02 < x < x1 - 0.02] + [x1]
+            rings = []
+            for x in sx:
+                out = self.canopy_arch(x)
+                inn = self.canopy_arch(x, -T)
+                rings.append(out + inn[::-1])
+            b.loft(rings)
+            return b
 
-        # windscreen bow and canopy frames
-        b = Builder()
-        for xb in self.bows:
+        def frame(b, x0, x1, grow_out=0.012, grow_in=-0.025):
+            """Arch-shaped frame band between stations x0 and x1."""
             band = []
-            for x in (xb - 0.03, xb + 0.03):
-                outer = arch(x, 0.012)
-                inner = arch(x, -0.03)
-                band.append((b.ring(outer), b.ring(inner)))
+            for x in (x0, x1):
+                band.append((b.ring(self.canopy_arch(x, grow_out)),
+                             b.ring(self.canopy_arch(x, grow_in))))
             (o0, i0), (o1, i1) = band
             n = len(o0)
             for i in range(n - 1):
@@ -653,31 +745,39 @@ class Hornet:
             for e in (0, n - 1):
                 b.faces.append((o0[e], o1[e], i1[e], i0[e]))
                 b.mats.append(0)
-        self.add("CanopyFrames", b)
 
-        # cockpit interior: a dark skin over the fuselage top inside the
-        # canopy footprint, so the glazing reads as an open cockpit
-        b = Builder()
-        rings = []
-        for x in self.canopy.stations(0.2):
-            w, _ = self.canopy(x)
-            ys = np.linspace(-0.97 * w, 0.97 * w, 13)
-            up = [(x, y, self.core_top_z(x, y) + 0.012) for y in ys]
-            lo = [(x, y, self.core_top_z(x, y) - 0.010) for y in ys[::-1]]
-            rings.append(up + lo)
-        b.loft(rings)
-        self.add("CockpitInterior", b, mats=("Dark",), smooth=None)
+        def sill(b, x0, x1, step=0.1):
+            """Frame rails along both lower edges of a transparency."""
+            sx = list(np.arange(x0, x1, step)) + [x1]
+            for side in (+1, -1):
+                rings = []
+                for x in sx:
+                    w, _ = self.canopy(x)
+                    y0 = side * (w - 0.010)        # outboard of the cockpit tub wall (w - 0.016)
+                    y1 = side * (w + 0.014)
+                    zb = self.core_top_z(x, w) - 0.03
+                    rings.append([(x, y0, zb), (x, y1, zb), (x, y1, zb + 0.06), (x, y0, zb + 0.07)])
+                b.loft(rings)
 
-        # ejection seats (one per crew station)
+        x_end = self.canopy.x[-1]
+        self.add("Windscreen", shell(self.canopy.x[0], x_split - 0.03), mats=("Glass",), smooth=60.0)
         b = Builder()
-        for xs_ in self.seats:
-            w, zt = self.canopy(xs_)
-            z0 = self.core_top_z(xs_) - 0.12
-            z1 = zt - 0.20
-            b.box([(xs_, -0.20, z0), (xs_, 0.20, z0), (xs_, 0.16, z1), (xs_, -0.16, z1),
-                   (xs_ + 0.22, -0.20, z0), (xs_ + 0.22, 0.20, z0),
-                   (xs_ + 0.20, 0.16, z1), (xs_ + 0.20, -0.16, z1)])
-        self.add("Seats", b, mats=("Seat",), smooth=None)
+        frame(b, x_split - 0.06, x_split - 0.005)
+        sill(b, self.canopy.x[0] + 0.25, x_split - 0.03)
+        self.add("WindscreenFrame", b, mats=("Frame",), smooth=50.0)
+
+        # canopy: hinged near its aft end on the sill line
+        xh = x_end - 0.30
+        hinge = (xh, 0.0, self.core_top_z(xh, 0.0) - 0.06)
+        canopy = self.add("Canopy", shell(x_split + 0.005, x_end), mats=("Glass",), smooth=60.0,
+                          origin=hinge, axis=(0, 1, 0), hinge="canopy opens (front edge up)")
+        b = Builder()
+        frame(b, x_split + 0.005, x_split + 0.07)          # canopy front bow
+        for xb in self.bows[1:]:
+            frame(b, xb - 0.03, xb + 0.03)
+        frame(b, x_end - 0.45, x_end - 0.02, grow_in=-0.02)  # aft canopy fairing frame
+        sill(b, x_split + 0.005, x_end - 0.05)
+        self.add("CanopyFrames", b, mats=("Frame",), parent=canopy, smooth=50.0)
 
     def build_nozzles(self):
         for side, tag in ((+1, "R"), (-1, "L")):
@@ -729,10 +829,22 @@ class Hornet:
             # outer panel, hinged at the wing fold
             b = Builder()
             w.shell(b, s(FOLD_Y + GAP / 2), s(y_tip), f_le, f_te)
-            zt = self.wing_z(y_tip + 0.05)
+            # wingtip LAU-7 launcher: station 1/9 lies 5.94 m from the centreline
+            # (NATOPS), outboard of the structural tip, so the launcher sits on
+            # a tip adapter and the missile hangs beneath it
+            zt = self.wing_z(y_tip)
             xt = WING_APEX_X + WING_LE_TAN * y_tip
-            b.revolve((xt - 0.42, side * (y_tip + 0.05), zt), (xt + 2.00, side * (y_tip + 0.05), zt),
-                      [(0.0, 0.012), (0.05, 0.04), (0.12, 0.05), (0.93, 0.05), (1.0, 0.03)], n=10)
+            yr = TIP_RAIL_Y
+            b.revolve((xt - 0.42, side * yr, zt), (xt + 2.00, side * yr, zt),
+                      [(0.0, 0.012), (0.05, 0.042), (0.12, 0.052), (0.93, 0.052), (1.0, 0.03)], n=12)
+            # adapter between tip and launcher, kept between the AIM-9's canards
+            # and tail fins (which straddle the launcher in their X pattern)
+            ya, yb = y_tip + 0.001, yr - 0.03
+            xa, xb = xt + 0.05, 11.95
+            b.box([(xa, side * ya, zt - 0.02), (xb, side * ya, zt - 0.02),
+                   (xb, side * yb, zt - 0.02), (xa, side * yb, zt - 0.02),
+                   (xa + 0.10, side * ya, zt + 0.02), (xb - 0.05, side * ya, zt + 0.02),
+                   (xb - 0.05, side * yb, zt + 0.02), (xa + 0.10, side * yb, zt + 0.02)])
             fold_o = (w.point(s(FOLD_Y), 0.45).x, side * FOLD_Y, self.wing_z(FOLD_Y))
             outer = self.add("Wing_Outer_" + tag, b, origin=fold_o, axis=(side, 0, 0),
                              hinge="wing folds up (90 deg = folded)")
@@ -840,63 +952,6 @@ class Hornet:
         probe.hide_viewport = True
         probe.hide_render = True
 
-    # -- optional stores ------------------------------------------------------
-    def missile(self, b, nose, length, dia, fin_sets, roll=45.0):
-        """Body of revolution along +x plus cruciform fin sets (roll 45 = x, 0 = +).
-
-        fin_sets: (root LE from nose, root chord, tip LE from nose, tip chord, span)
-        """
-        x, y, z = nose
-        r = dia / 2
-        b.revolve((x, y, z), (x + length, y, z),
-                  [(0.0, 0.004), (0.03, r * 0.55), (0.09, r * 0.92), (0.14, r),
-                   (0.985, r), (1.0, r * 0.8)], n=14, mat=0, cap_mats=(0, 2))
-        for le0, c0, le1, c1, span in fin_sets:
-            for k in range(4):
-                a = math.radians(roll + 90 * k)
-                d = Vector((0, math.cos(a), math.sin(a)))
-                n = Vector((0, -math.sin(a), math.cos(a))) * 0.004
-                c = Vector(nose)
-                r0, r1 = c + d * (r * 0.9), c + d * (span / 2)
-                p = [r0 + Vector((le0, 0, 0)), r0 + Vector((le0 + c0, 0, 0)),
-                     r1 + Vector((le1 + c1, 0, 0)), r1 + Vector((le1, 0, 0))]
-                b.box([tuple(q - n) for q in p] + [tuple(q + n) for q in p], mat=1)
-
-    def build_stores(self):
-        """Air-to-air loadout drawn on the reference sheets: AIM-9 on each
-        wingtip launcher, AIM-7 on each nacelle-corner fuselage station.
-        Hidden by default; the clean airframe is the default configuration.
-        Positions are scaled off the side and front views (the front view
-        shows the AIM-7s at about y = +/-1.04 m, z = -0.52 m).
-        AIM-9L: 2.87 m long, 127 mm diameter.  AIM-7F: 3.66 m long, 203 mm.
-        """
-        for side, tag in ((+1, "R"), (-1, "L")):
-            b = Builder()
-            # The front views put the missile axis just outboard of and below
-            # the tip rail (span over missiles is published as 12.31 m); the
-            # x-pattern fins then clear the aileron.  A launcher body joins
-            # missile and rail.
-            yt = SEMI_SPAN + 0.165
-            zt = self.wing_z(SEMI_SPAN) - 0.06
-            self.missile(b, (9.62, side * yt, zt), 2.87, 0.127,
-                         [(0.38, 0.20, 0.50, 0.08, 0.56), (2.40, 0.42, 2.66, 0.18, 0.64)])
-            yr = SEMI_SPAN + 0.05
-            zr = self.wing_z(SEMI_SPAN - 0.05) - 0.005
-            b.revolve((10.30, side * yr, zr), (11.95, side * yr, zr),
-                      [(0.0, 0.02), (0.06, 0.06), (0.94, 0.06), (1.0, 0.03)], n=10)
-            outer = self.objects[self.prefix + "Wing_Outer_" + tag]
-            self.add("AIM9_" + tag, b, mats=("Gear", "Dark", "Dark"), origin=(9.62, side * yt, zt),
-                     parent=outer, collection=self.col_stores, smooth=45.0)
-            b = Builder()
-            # semi-recessed in the nacelle corner, fins in + so the lower fin
-            # clears the main-gear leg and brace
-            self.missile(b, (9.20, side * 1.06, -0.50), 3.66, 0.203,
-                         [(1.45, 0.62, 1.82, 0.22, 1.02), (3.18, 0.44, 3.40, 0.22, 0.81)], roll=0.0)
-            self.add("AIM7_" + tag, b, mats=("Gear", "Dark", "Dark"), origin=(9.20, side * 1.06, -0.50),
-                     collection=self.col_stores, smooth=45.0)
-        self.col_stores.hide_render = True
-        self.col_stores.hide_viewport = True
-
     # -- landing gear ---------------------------------------------------------
     def wheel(self, b, centre, radius, width):
         x, y, z = centre
@@ -950,12 +1005,17 @@ class Hornet:
         self.setup_collections()
         self.build_fuselage()
         self.build_canopy()
+        import fa18_cockpit
+        fa18_cockpit.Cockpit(self).build(self.objects[self.prefix + "Fuselage"],
+                                          self.objects[self.prefix + "Canopy"])
         self.build_nozzles()
         self.build_wings()
         self.build_tail()
         self.build_details()
         self.build_gear()
-        self.build_stores()
+        import fa18_stores
+        self.stores = fa18_stores.build_all(self, os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                                                "textures"))
         self.root["length_m"] = LENGTH
         self.root["span_m"] = 2 * SEMI_SPAN
         self.root["ground_z"] = GROUND_Z - Z_REF
@@ -966,41 +1026,59 @@ class Hornet:
 # Entry points
 # ----------------------------------------------------------------------------
 def build(variant, uv=True):
-    root = Hornet(variant).build()
+    h = Hornet(variant)
+    h.build()
     if uv:
-        unwrap(root)
-    return root
+        unwrap(h)
+    return h
 
 
-def unwrap(root):
-    """Automatic UVs (Smart UV Project) so the meshes can take textures."""
-    meshes = [o for o in root.children_recursive if o.type == "MESH"]
-    if not meshes:
-        return
+def unwrap(h):
+    """Smart-UV each texture group (fa18_materials.GROUPS) into its own 0..1
+    space; anything else that has no explicit UVs shares one more space."""
+    import fa18_materials as M
+    root = h.root
+    meshes = [o for o in root.children_recursive if o.type == "MESH" and not o.get("uv_explicit")
+              and not o.data.get("uv_explicit")]
+    sets = []
+    taken = set()
+    for g in M.GROUPS:
+        objs = [o for o in M.group_objects(h, g) if o in meshes]
+        taken.update(objs)
+        sets.append(objs)
+    sets.append([o for o in meshes if o not in taken])
     view_layer = bpy.context.view_layer
-    hidden = []
-    for o in meshes:                       # stores / probe are hidden: show them briefly
-        if not o.visible_get():
-            hidden.append((o, o.hide_viewport))
-            o.hide_viewport = False
-    cols = [c for c in bpy.data.collections if c.hide_viewport]
-    for c in cols:
-        c.hide_viewport = False
-    for o in view_layer.objects:
-        o.select_set(False)
-    for o in meshes:
-        o.select_set(True)
-    view_layer.objects.active = meshes[0]
-    bpy.ops.object.mode_set(mode="EDIT")
-    bpy.ops.mesh.select_all(action="SELECT")
-    bpy.ops.uv.smart_project(angle_limit=math.radians(60), island_margin=0.003)
-    bpy.ops.object.mode_set(mode="OBJECT")
-    for o in meshes:
-        o.select_set(False)
-    for c in cols:
-        c.hide_viewport = True
-    for o, h in hidden:
-        o.hide_viewport = h
+    state = M._show_all(meshes)
+    for objs in sets:
+        if not objs:
+            continue
+        for o in view_layer.objects:
+            o.select_set(False)
+        for o in objs:
+            o.select_set(True)
+        view_layer.objects.active = objs[0]
+        bpy.ops.object.mode_set(mode="EDIT")
+        bpy.ops.mesh.select_all(action="SELECT")
+        bpy.ops.uv.smart_project(angle_limit=math.radians(60), island_margin=0.004)
+        bpy.ops.object.mode_set(mode="OBJECT")
+        for o in objs:
+            o.select_set(False)
+    M._restore(state)
+
+
+def texture(h, args=None):
+    """Apply cockpit and exterior textures from ./textures (baking first if asked)."""
+    import json
+    import fa18_materials as M
+    tex = os.path.join(os.path.dirname(os.path.abspath(__file__)), "textures")
+    if os.path.exists(os.path.join(tex, "cockpit_basecolor.png")):
+        M.apply_cockpit(tex)
+    if args is not None and args.bake is not None:
+        refs = json.load(open(args.refs)) if args.refs else None
+        M.bake_exterior(h, tex, refs, samples=args.samples, groups=args.bake or None)
+    missing = M.apply_exterior(h, tex)
+    if missing:
+        print("no baked textures for:", ", ".join(missing))
 
 
 def _reset_scene():
@@ -1015,23 +1093,34 @@ def main(argv):
     ap.add_argument("--out", default=here)
     ap.add_argument("--glb", action="store_true")
     ap.add_argument("--no-uv", action="store_true", help="skip the automatic UV unwrap")
+    ap.add_argument("--bake", nargs="*", default=None, metavar="GROUP",
+                    help="bake exterior textures (all groups, or the ones named)")
+    ap.add_argument("--refs", default=None, help="refs.json from tools/prepare_reference_lines.py")
+    ap.add_argument("--samples", type=int, default=12)
     args = ap.parse_args(argv)
     os.makedirs(args.out, exist_ok=True)
     for v in (("A", "B") if args.variant == "both" else (args.variant,)):
         _reset_scene()
-        build(v, uv=not args.no_uv)
+        h = build(v, uv=not args.no_uv)
+        texture(h, args)
         path = os.path.join(args.out, "FA-18%s_Hornet.blend" % v)
         if os.path.exists(path):
             os.remove(path)          # regenerate cleanly, no .blend1 backup
         bpy.ops.wm.save_as_mainfile(filepath=path, compress=True)
         print("saved", path)
+        import fa18_stores
+        fa18_stores.manifest(h, h.stores[2], os.path.join(args.out, "FA-18%s_stations.json" % v))
         if args.glb:
             glb = os.path.join(args.out, "FA-18%s_Hornet.glb" % v)
             # visible objects only: clean airframe, gear down, probe stowed.
             # Unhide the Stores / Optional collections first to include them.
             bpy.ops.export_scene.gltf(filepath=glb, export_format="GLB", export_apply=True,
-                                      use_visible=True, export_extras=True)
+                                      use_visible=True, export_extras=True, export_cameras=True)
             print("saved", glb)
+            if v == "A":
+                lib_glb = os.path.join(args.out, "FA-18_Stores.glb")
+                fa18_stores.export_library_glb(lib_glb)
+                print("saved", lib_glb)
 
 
 if __name__ == "__main__":
@@ -1040,4 +1129,4 @@ if __name__ == "__main__":
     elif bpy.app.background:
         main([])
     else:
-        build(VARIANT)
+        texture(build(VARIANT))

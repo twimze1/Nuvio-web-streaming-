@@ -1,0 +1,1771 @@
+[
+  {
+    "id": "gun_m61a1",
+    "designation": "M61A1 Vulcan 20 mm rotary cannon (internal)",
+    "category": "gun",
+    "era": "baseline",
+    "length_m": 1.829,
+    "diameter_m": null,
+    "span_m": null,
+    "span_notes": "n/a",
+    "weight_kg": 128.4,
+    "shape_notes": "Six-barrel, hydraulically driven, linkless-fed gun in the upper nose ahead of the cockpit. Barrel length 60 in (1.52 m). Whole system (gun, ammunition drum, feed/return chutes, hydraulic drive) is a single palletised unit bolted in with four bolts. Projectiles exit through the GUN BLAST DIFFUSER on the upper nose 'just forward of the cockpit windscreen' (single muzzle port on the top centreline of the nose). Exact fuselage station of the muzzle: unverified.",
+    "colour_notes": "Internal; only the muzzle/blast-diffuser port is visible.",
+    "carried_on": "internal nose gun bay",
+    "stations": [],
+    "per_station": "internal (not a store station)",
+    "sources": [
+      "https://www.bulletpicker.com/pdf/NAVEDTRA-12308.pdf",
+      "https://man.fas.org/dod-101/sys/ac/equip/m61.htm",
+      "https://www.vmfa251.org/pdffiles/F18-ABCD-000.pdf",
+      "https://man.fas.org/dod-101/sys/ac/f-18.htm",
+      "https://en.wikipedia.org/wiki/McDonnell_Douglas_F/A-18_Hornet",
+      "https://bulletpicker.com/pdf/Weapons-File-2003.pdf"
+    ],
+    "confidence": "high",
+    "notes": "Rounds: 578 max (AO 3&2 NAVEDTRA 12308 1990 review answers: 'the system holds a maximum of 578 rounds'; FAS M61 page: 'F/A-18 has a capacity of 578 rounds'; Wikipedia 578). NATOPS A1-F18AC-NFM-000 (2008) weight/CG table lists 400-round and 570-round loads. FAS F/A-18 page says 520 rounds - DISAGREES. Rate of fire selectable 4,000 or 6,000 spm (FAS); AO Table 8-1: 4,000-7,200 spm. Gun weight 283 lb (AO Table 8-1) vs 255 lb (USAF Weapons File 2003 M61A1) - sources disagree; length approx 72 in. F/A-18D(RC) replaces gun with ATARS (not A/B)."
+  },
+  {
+    "id": "aim9l",
+    "designation": "AIM-9L Sidewinder",
+    "category": "aa_missile",
+    "era": "baseline",
+    "length_m": 2.85,
+    "diameter_m": 0.127,
+    "span_m": 0.63,
+    "span_notes": "0.63 m (24.8 in) = rear wing span (wings carry rollerons). Forward double-delta canard span: unverified.",
+    "weight_kg": 86.6,
+    "shape_notes": "Cylindrical 5 in body, hemispherical IR seeker dome, 4 movable long-span POINTED double-delta canards just aft of the seeker, 4 fixed rear wings with rolleron wheels in the wing-tip trailing corners; cruciform, canards and wings in line (X or + depending on rail orientation - check photos). Argon-cooled InSb seeker.",
+    "colour_notes": "Navy colour coding (AO 3&2 1990, Table 1-1): yellow band = high explosive (warhead), brown band = rocket motor, light blue = training/inert. Body colour (white vs light grey) varied by era and is not verified per variant here; check period photos.",
+    "carried_on": "lau7",
+    "stations": [
+      1,
+      2,
+      8,
+      9
+    ],
+    "per_station": "1 on LAU-7/A at stations 1/9; up to 2 at stations 2/8 on a LAU-115/A with two side-mounted LAU-7/A rails",
+    "sources": [
+      "https://www.designation-systems.net/dusrm/m-9.html",
+      "https://www.bulletpicker.com/pdf/NAVEDTRA-12308.pdf",
+      "https://www.dstorm.eu/pages/loadout/f-18.html",
+      "https://bulletpicker.com/pdf/Weapons-File-2003.pdf"
+    ],
+    "confidence": "high",
+    "notes": "112.2 in, 5 in dia, 24.8 in span, 191 lb (designation-systems). Station chart: AO 3&2 (1990) Fig 14-21."
+  },
+  {
+    "id": "aim9m",
+    "designation": "AIM-9M Sidewinder",
+    "category": "aa_missile",
+    "era": "baseline",
+    "length_m": 2.85,
+    "diameter_m": 0.127,
+    "span_m": 0.63,
+    "span_notes": "Rear wing (rolleron) span 24.8 in; canard span unverified. Externally essentially the AIM-9L airframe.",
+    "weight_kg": 86.6,
+    "shape_notes": "As AIM-9L (pointed double-delta canards, rolleron rear wings); WGU-4/B guidance section with improved IRCCM.",
+    "colour_notes": "Navy colour coding (AO 3&2 1990, Table 1-1): yellow band = high explosive (warhead), brown band = rocket motor, light blue = training/inert. Body colour (white vs light grey) varied by era and is not verified per variant here; check period photos.",
+    "carried_on": "lau7",
+    "stations": [
+      1,
+      2,
+      8,
+      9
+    ],
+    "per_station": "1 on LAU-7/A at 1/9; up to 2 at 2/8 via LAU-115/A + 2x LAU-7/A",
+    "sources": [
+      "https://www.designation-systems.net/dusrm/m-9.html",
+      "https://bulletpicker.com/pdf/Weapons-File-2003.pdf",
+      "https://www.bulletpicker.com/pdf/NAVEDTRA-12308.pdf",
+      "https://www.dstorm.eu/pages/loadout/f-18.html"
+    ],
+    "confidence": "high",
+    "notes": "designation-systems: 2.85 m (112.2 in), 86 kg (191 lb). USAF Weapons File 2003: 113 in, 191.7 lb - minor disagreement. Desert Storm Hornet loads show 'AIM-9L/M' on 1/9 and twin AIM-9 on LAU-115A+2xLAU-7/A-6 at 2/8 (dstorm.eu)."
+  },
+  {
+    "id": "aim9x",
+    "designation": "AIM-9X Sidewinder",
+    "category": "aa_missile",
+    "era": "A+ upgrade",
+    "length_m": 3.018,
+    "diameter_m": 0.127,
+    "span_m": 0.445,
+    "span_notes": "SOURCES DISAGREE: USAF Weapons File 2003: fixed forward wing span 13.9 in, tail (control) fin span 17.5 in; designation-systems: 'finspan 0.28 m (11 in)'. Value given = 17.5 in tail fins.",
+    "weight_kg": 85.3,
+    "shape_notes": "New airframe: small fixed forward wings/strakes, small tail control fins plus jet-vane thrust-vector control in the tail; imaging IR focal-plane seeker. No canards.",
+    "colour_notes": "Navy colour coding (AO 3&2 1990, Table 1-1): yellow band = high explosive (warhead), brown band = rocket motor, light blue = training/inert. Body colour (white vs light grey) varied by era and is not verified per variant here; check period photos.",
+    "carried_on": "lau7 / lau127",
+    "stations": [],
+    "per_station": "unverified for A+/A++",
+    "sources": [
+      "https://www.designation-systems.net/dusrm/m-9.html",
+      "https://bulletpicker.com/pdf/Weapons-File-2003.pdf",
+      "https://www.marines.mil/Portals/1/Publications/U.S.%20Marine%20Corps%20Concepts%20and%20Programs%202010_3.pdf",
+      "https://www.globalsecurity.org/military/library/congress/1999_hr/99-03-03mccorkle.htm"
+    ],
+    "confidence": "low",
+    "notes": "Physically compatible with LAU-7 and LAU-127 (designation-systems). Carriage by USMC F/A-18A+/A++ is NOT verified - only inferred from ECP-583 'Lot XVII F/A-18C equivalent' statements (USMC Concepts & Programs 2010; 1999 congressional testimony - both seen only as search snippets, sites blocked). Treat as unverified."
+  },
+  {
+    "id": "aim7f",
+    "designation": "AIM-7F Sparrow",
+    "category": "aa_missile",
+    "era": "baseline",
+    "length_m": 3.658,
+    "diameter_m": 0.203,
+    "span_m": 1.016,
+    "span_notes": "1.02 m (40 in) = movable mid-body wings; fixed tail fin span 0.81 m (32 in).",
+    "weight_kg": 231.3,
+    "shape_notes": "8 in body, ogive radome; 4 large delta MOVABLE wings at mid-body (wing control, hydraulic) and 4 fixed clipped-delta tail fins at the extreme aft end, in line (cruciform). Rocket motor aft (Mk 58 dual-thrust).",
+    "colour_notes": "Navy colour coding (AO 3&2 1990, Table 1-1): yellow band = high explosive (warhead), brown band = rocket motor, light blue = training/inert. Body colour (white vs light grey) varied by era and is not verified per variant here; check period photos.",
+    "carried_on": "lau116 (stations 4/6) / lau115 (stations 2/8)",
+    "stations": [
+      2,
+      4,
+      6,
+      8
+    ],
+    "per_station": "1 per station: semi-recessed on LAU-116/A at 4/6; on LAU-115/A under outboard pylons 2/8",
+    "sources": [
+      "https://www.designation-systems.net/dusrm/m-7.html",
+      "https://bulletpicker.com/pdf/Weapons-File-2003.pdf",
+      "https://www.bulletpicker.com/pdf/NAVEDTRA-12308.pdf",
+      "https://man.fas.org/dod-101/sys/ac/equip/lau-115.htm",
+      "https://man.fas.org/dod-101/sys/ac/equip/lau-116.htm",
+      "https://man.fas.org/dod-101/sys/ac/f-18.htm",
+      "https://www.dstorm.eu/pages/loadout/f-18.html"
+    ],
+    "confidence": "high",
+    "notes": "designation-systems AIM-7F/M/P: 3.66 m (144 in), 0.203 m (8 in), wing 40 in, fin 32 in, 231 kg (510 lb). USAF Weapons File 2003 gives AIM-7M length 147 in - DISAGREES. AO 3&2 (1990) Fig 14-21: LAU-115/A only on 2/8 (not 3/7); forum citation of 1985/1990 AO manuals also says AIM-7 only on 2/4/6/8. AIM-7F was the Sparrow listed for the F/A-18 on the FAS page."
+  },
+  {
+    "id": "aim7m",
+    "designation": "AIM-7M Sparrow",
+    "category": "aa_missile",
+    "era": "baseline",
+    "length_m": 3.658,
+    "diameter_m": 0.203,
+    "span_m": 1.016,
+    "span_notes": "1.02 m (40 in) = movable mid-body wings; fixed tail fin span 0.81 m (32 in).",
+    "weight_kg": 231.3,
+    "shape_notes": "8 in body, ogive radome; 4 large delta MOVABLE wings at mid-body (wing control, hydraulic) and 4 fixed clipped-delta tail fins at the extreme aft end, in line (cruciform). Rocket motor aft (Mk 58 dual-thrust).",
+    "colour_notes": "Navy colour coding (AO 3&2 1990, Table 1-1): yellow band = high explosive (warhead), brown band = rocket motor, light blue = training/inert. Body colour (white vs light grey) varied by era and is not verified per variant here; check period photos.",
+    "carried_on": "lau116 (stations 4/6) / lau115 (stations 2/8)",
+    "stations": [
+      2,
+      4,
+      6,
+      8
+    ],
+    "per_station": "1 per station: semi-recessed on LAU-116/A at 4/6; on LAU-115/A under outboard pylons 2/8",
+    "sources": [
+      "https://www.designation-systems.net/dusrm/m-7.html",
+      "https://bulletpicker.com/pdf/Weapons-File-2003.pdf",
+      "https://www.bulletpicker.com/pdf/NAVEDTRA-12308.pdf",
+      "https://man.fas.org/dod-101/sys/ac/equip/lau-115.htm",
+      "https://man.fas.org/dod-101/sys/ac/equip/lau-116.htm",
+      "https://man.fas.org/dod-101/sys/ac/f-18.htm",
+      "https://www.dstorm.eu/pages/loadout/f-18.html"
+    ],
+    "confidence": "high",
+    "notes": "designation-systems AIM-7F/M/P: 3.66 m (144 in), 0.203 m (8 in), wing 40 in, fin 32 in, 231 kg (510 lb). USAF Weapons File 2003 gives AIM-7M length 147 in - DISAGREES. AO 3&2 (1990) Fig 14-21: LAU-115/A only on 2/8 (not 3/7); forum citation of 1985/1990 AO manuals also says AIM-7 only on 2/4/6/8. Desert Storm Hornet loads list AIM-7M at 2/8 and 4/6 (dstorm.eu)."
+  },
+  {
+    "id": "aim7p",
+    "designation": "AIM-7P Sparrow",
+    "category": "aa_missile",
+    "era": "baseline",
+    "length_m": 3.658,
+    "diameter_m": 0.203,
+    "span_m": 1.016,
+    "span_notes": "1.02 m (40 in) = movable mid-body wings; fixed tail fin span 0.81 m (32 in).",
+    "weight_kg": 231.3,
+    "shape_notes": "8 in body, ogive radome; 4 large delta MOVABLE wings at mid-body (wing control, hydraulic) and 4 fixed clipped-delta tail fins at the extreme aft end, in line (cruciform). Rocket motor aft (Mk 58 dual-thrust).",
+    "colour_notes": "Navy colour coding (AO 3&2 1990, Table 1-1): yellow band = high explosive (warhead), brown band = rocket motor, light blue = training/inert. Body colour (white vs light grey) varied by era and is not verified per variant here; check period photos.",
+    "carried_on": "lau116 (stations 4/6) / lau115 (stations 2/8)",
+    "stations": [
+      2,
+      4,
+      6,
+      8
+    ],
+    "per_station": "1 per station: semi-recessed on LAU-116/A at 4/6; on LAU-115/A under outboard pylons 2/8",
+    "sources": [
+      "https://www.designation-systems.net/dusrm/m-7.html",
+      "https://bulletpicker.com/pdf/Weapons-File-2003.pdf",
+      "https://www.bulletpicker.com/pdf/NAVEDTRA-12308.pdf",
+      "https://man.fas.org/dod-101/sys/ac/equip/lau-115.htm",
+      "https://man.fas.org/dod-101/sys/ac/equip/lau-116.htm",
+      "https://man.fas.org/dod-101/sys/ac/f-18.htm",
+      "https://www.dstorm.eu/pages/loadout/f-18.html"
+    ],
+    "confidence": "medium",
+    "notes": "designation-systems AIM-7F/M/P: 3.66 m (144 in), 0.203 m (8 in), wing 40 in, fin 32 in, 231 kg (510 lb). USAF Weapons File 2003 gives AIM-7M length 147 in - DISAGREES. AO 3&2 (1990) Fig 14-21: LAU-115/A only on 2/8 (not 3/7); forum citation of 1985/1990 AO manuals also says AIM-7 only on 2/4/6/8. Later (late-1980s/1990s) Navy variant, same airframe as AIM-7M; specific A/B clearance not seen - treat stations as inferred from AIM-7M."
+  },
+  {
+    "id": "aim120a_b",
+    "designation": "AIM-120A/B AMRAAM",
+    "category": "aa_missile",
+    "era": "A+ upgrade",
+    "length_m": 3.658,
+    "diameter_m": 0.178,
+    "span_m": 0.635,
+    "span_notes": "Tail control fin span 25 in (0.635 m); mid-body wing span 21 in (0.533 m).",
+    "weight_kg": 156.5,
+    "shape_notes": "7 in body, ogive radome; 4 small fixed mid-body wings (larger, un-clipped on A/B) and 4 tail control fins; cruciform, in line. Note AIM-120A/B surfaces are larger than AIM-120C (clipped).",
+    "colour_notes": "Navy colour coding (AO 3&2 1990, Table 1-1): yellow band = high explosive (warhead), brown band = rocket motor, light blue = training/inert. Body colour (white vs light grey) varied by era and is not verified per variant here; check period photos.",
+    "carried_on": "lau116 (LAU-116A/A at 4/6) / lau115+lau127 (2/8)",
+    "stations": [
+      2,
+      4,
+      6,
+      8
+    ],
+    "per_station": "1 at 4/6 (LAU-116A/A); 1 or 2 at 2/8 (LAU-115 with one or two side-mounted LAU-127). Wingtip 1/9 and twin carriage at 3/7 (VX-4 10-AMRAAM test photo) unverified for A+.",
+    "sources": [
+      "https://www.designation-systems.net/dusrm/m-120.html",
+      "https://bulletpicker.com/pdf/Weapons-File-2003.pdf",
+      "https://man.fas.org/dod-101/sys/ac/equip/lau-115.htm",
+      "https://man.fas.org/dod-101/sys/ac/equip/lau-116.htm",
+      "https://man.fas.org/dod-101/sys/ac/equip/lau-127.htm",
+      "https://en.wikipedia.org/wiki/McDonnell_Douglas_F/A-18_Hornet"
+    ],
+    "confidence": "medium",
+    "notes": "Dims: designation-systems + USAF Weapons File 2003 agree (144 in, 7 in, 345 lb). Wikipedia: 'A-model Hornets that have been upgraded to the AN/APG-73 and are capable of carrying the AIM-120 AMRAAM are designated F/A-18A+'. LAU-115 requires ECP-422 jettison adapter for LAU-115/LAU-127/AMRAAM package (FAS)."
+  },
+  {
+    "id": "aim120c",
+    "designation": "AIM-120C AMRAAM",
+    "category": "aa_missile",
+    "era": "A+ upgrade",
+    "length_m": 3.658,
+    "diameter_m": 0.178,
+    "span_m": 0.445,
+    "span_notes": "Clipped wings and fins, both 17.5 in (0.447 m).",
+    "weight_kg": 156.5,
+    "shape_notes": "As AIM-120A/B but with clipped (smaller) mid-body wings and tail fins; C-5+ has 5 in longer motor and shorter control section (same overall length).",
+    "colour_notes": "Navy colour coding (AO 3&2 1990, Table 1-1): yellow band = high explosive (warhead), brown band = rocket motor, light blue = training/inert. Body colour (white vs light grey) varied by era and is not verified per variant here; check period photos.",
+    "carried_on": "lau116 / lau115+lau127",
+    "stations": [
+      2,
+      4,
+      6,
+      8
+    ],
+    "per_station": "as AIM-120A/B",
+    "sources": [
+      "https://www.designation-systems.net/dusrm/m-120.html",
+      "https://bulletpicker.com/pdf/Weapons-File-2003.pdf",
+      "https://man.fas.org/dod-101/sys/ac/equip/lau-127.htm"
+    ],
+    "confidence": "medium",
+    "notes": "AIM-120C deliveries began 1996. A+ carriage inferred from A+ AMRAAM capability; specific C-variant clearance on A+ not seen."
+  },
+  {
+    "id": "agm65e",
+    "designation": "AGM-65E Laser Maverick",
+    "category": "ag_missile",
+    "era": "baseline",
+    "length_m": 2.489,
+    "diameter_m": 0.305,
+    "span_m": 0.719,
+    "span_notes": "Wingspan 0.719 m (28.3 in) across the 4 long-chord delta wings.",
+    "weight_kg": 285.8,
+    "shape_notes": "12 in body; semi-active LASER seeker nose (faceted/segmented window - verify from photos); 4 long-chord, low-aspect delta wings along the rear half of the body with 4 small tail control surfaces at the aft end (tail control). 300 lb penetrator/blast-frag warhead (E/F/G).",
+    "colour_notes": "Navy colour coding (AO 3&2 1990, Table 1-1): yellow band = high explosive (warhead), brown band = rocket motor, light blue = training/inert. Body colour (white vs light grey) varied by era and is not verified per variant here; check period photos.",
+    "carried_on": "lau117",
+    "stations": [
+      2,
+      3,
+      7,
+      8
+    ],
+    "per_station": "1 (single-rail LAU-117/A on BRU-32/A)",
+    "sources": [
+      "https://www.designation-systems.net/dusrm/m-65.html",
+      "https://bulletpicker.com/pdf/Weapons-File-2003.pdf",
+      "https://man.fas.org/dod-101/sys/smart/agm-65.htm",
+      "https://www.bulletpicker.com/pdf/NAVEDTRA-12308.pdf",
+      "https://man.fas.org/dod-101/sys/ac/equip/lau-117.htm",
+      "https://en.wikipedia.org/wiki/McDonnell_Douglas_F/A-18_Hornet",
+      "https://www.dstorm.eu/pages/loadout/f-18.html"
+    ],
+    "confidence": "high",
+    "notes": "98 in (WF 97.7 in), 12 in, 28.3 in span, 630 lb (FAS: 630 lb/286 kg; designation-systems 285 kg). Wikipedia: F/A-18A can employ AGM-65E. LAU-117 stations 2/3/7/8 per AO 3&2 1990 Fig 14-21; Desert Storm loads show AGM-65E at 2/8."
+  },
+  {
+    "id": "agm65f",
+    "designation": "AGM-65F IR Maverick",
+    "category": "ag_missile",
+    "era": "A+ upgrade",
+    "length_m": 2.489,
+    "diameter_m": 0.305,
+    "span_m": 0.719,
+    "span_notes": "0.719 m (28.3 in)",
+    "weight_kg": 303.9,
+    "shape_notes": "As AGM-65E airframe but imaging-IR seeker under a hemispherical glass dome nose; heavy 300 lb warhead.",
+    "colour_notes": "Navy colour coding (AO 3&2 1990, Table 1-1): yellow band = high explosive (warhead), brown band = rocket motor, light blue = training/inert. Body colour (white vs light grey) varied by era and is not verified per variant here; check period photos.",
+    "carried_on": "lau117",
+    "stations": [],
+    "per_station": "unverified for A/B/A+ (LAU-117 stations are 2/3/7/8)",
+    "sources": [
+      "https://www.designation-systems.net/dusrm/m-65.html",
+      "https://man.fas.org/dod-101/sys/smart/agm-65.htm",
+      "https://en.wikipedia.org/wiki/McDonnell_Douglas_F/A-18_Hornet",
+      "https://bulletpicker.com/pdf/Weapons-File-2003.pdf"
+    ],
+    "confidence": "low",
+    "notes": "Wikipedia: AGM-65F came with the F/A-18C/D. A+ use only inferred (Lot XVII C equivalence) - unverified. 670 lb."
+  },
+  {
+    "id": "agm88",
+    "designation": "AGM-88A/B/C HARM",
+    "category": "ag_missile",
+    "era": "baseline",
+    "length_m": 4.166,
+    "diameter_m": 0.254,
+    "span_m": 1.118,
+    "span_notes": "1.12 m (44 in) mid-body control wings (designation-systems); tail fin span 0.61 m (24 in). FAS gives wingspan '3 ft 8 in (101.60 cm)' - internally inconsistent (3 ft 8 in = 111.8 cm); prefer 44 in.",
+    "weight_kg": 362.9,
+    "shape_notes": "Long slender 10 in body; radome nose with a slightly enlarged diameter about 1 ft aft of the nose (FAS); 4 double-delta MOVABLE wings at mid-body (wing control) and 4 small fixed tail fins at the aft end.",
+    "colour_notes": "Navy colour coding (AO 3&2 1990, Table 1-1): yellow band = high explosive (warhead), brown band = rocket motor, light blue = training/inert. Body colour (white vs light grey) varied by era and is not verified per variant here; check period photos.",
+    "carried_on": "lau118",
+    "stations": [
+      2,
+      3,
+      7,
+      8
+    ],
+    "per_station": "1 (LAU-118(V)1/A on BRU-32/A)",
+    "sources": [
+      "https://www.designation-systems.net/dusrm/m-88.html",
+      "https://bulletpicker.com/pdf/Weapons-File-2003.pdf",
+      "https://man.fas.org/dod-101/sys/smart/agm-88.htm",
+      "https://www.bulletpicker.com/pdf/NAVEDTRA-12308.pdf",
+      "https://man.fas.org/dod-101/sys/ac/equip/lau-118.htm",
+      "https://www.dstorm.eu/pages/loadout/f-18.html"
+    ],
+    "confidence": "high",
+    "notes": "4.17 m / 164 in (WF 164 in), 10 in, 800 lb (WF 780-810 lb). Desert Storm Hornet SEAD loads show HARM on 2/8 and also on 3/7 (up to 4)."
+  },
+  {
+    "id": "agm84d",
+    "designation": "AGM-84A/C/D Harpoon (air-launched, no booster)",
+    "category": "ag_missile",
+    "era": "baseline",
+    "length_m": 3.848,
+    "diameter_m": 0.343,
+    "span_m": 0.914,
+    "span_notes": "0.914 m (36 in) across the 4 fixed cruciform mid-body wings; tail fin span unverified.",
+    "weight_kg": 544.3,
+    "shape_notes": "13.5 in body, radome nose (J-band active radar seeker), 4 fixed cruciform wings at mid-body, 4 movable tail fins; turbojet sustainer (air-launched version has no booster). Air intake location: verify from photos.",
+    "colour_notes": "Navy colour coding (AO 3&2 1990, Table 1-1): yellow band = high explosive (warhead), brown band = rocket motor, light blue = training/inert. Body colour (white vs light grey) varied by era and is not verified per variant here; check period photos.",
+    "carried_on": "bru32 (direct, 30 in lugs, no launcher)",
+    "stations": [],
+    "per_station": "unverified for A/B (C/D SLAM-ER clearance used 2/8 or 3/7, 1 per station)",
+    "sources": [
+      "https://www.designation-systems.net/dusrm/m-84.html",
+      "https://bulletpicker.com/pdf/Weapons-File-2003.pdf",
+      "https://man.fas.org/dod-101/sys/smart/agm-84.htm",
+      "https://en.wikipedia.org/wiki/McDonnell_Douglas_F/A-18_Hornet"
+    ],
+    "confidence": "medium",
+    "notes": "SOURCES DISAGREE on air-launch length/weight: designation-systems AGM-84D 3.85 m (12 ft 7.5 in), 540 kg (1,200 lb); USAF Weapons File AGM-84C 151 in, 1,160 lb; FAS 3.79 m, 1,145 lb. Wikipedia: F/A-18A can employ AGM-84. Station list for Harpoon on A/B not found - unverified."
+  },
+  {
+    "id": "agm84e_slam",
+    "designation": "AGM-84E SLAM",
+    "category": "ag_missile",
+    "era": "A+ upgrade",
+    "length_m": 4.496,
+    "diameter_m": 0.343,
+    "span_m": 0.914,
+    "span_notes": "0.914 m wing span (Harpoon wings)",
+    "weight_kg": 628.2,
+    "shape_notes": "Harpoon airframe/engine/warhead with AGM-65D-type IIR seeker (glass dome nose) and Walleye-type data link; longer than Harpoon.",
+    "colour_notes": "Navy colour coding (AO 3&2 1990, Table 1-1): yellow band = high explosive (warhead), brown band = rocket motor, light blue = training/inert. Body colour (white vs light grey) varied by era and is not verified per variant here; check period photos.",
+    "carried_on": "bru32",
+    "stations": [],
+    "per_station": "unverified for A+ (C/D SLAM-ER: 2/8 or 3/7)",
+    "sources": [
+      "https://www.designation-systems.net/dusrm/m-84.html",
+      "https://man.fas.org/dod-101/sys/smart/agm-84.htm",
+      "https://en.wikipedia.org/wiki/AGM-84E_Standoff_Land_Attack_Missile",
+      "https://en.wikipedia.org/wiki/McDonnell_Douglas_F/A-18_Hornet"
+    ],
+    "confidence": "low",
+    "notes": "designation-systems: 4.50 m (14 ft 9 in), 627 kg (1,385 lb); FAS 4.49 m. Wikipedia: SLAM added with F/A-18C/D. Requires AN/AWW-13 pod for terminal control. A+ capability not verified."
+  },
+  {
+    "id": "agm62_walleye1",
+    "designation": "AGM-62 Walleye I ER/DL (e.g. Mk 21/22)",
+    "category": "guided_bomb",
+    "era": "baseline",
+    "length_m": 3.454,
+    "diameter_m": 0.318,
+    "span_m": 1.156,
+    "span_notes": "1.15 m (45.5 in) is the original Mk 1; ER/ERDL versions have 'slightly larger wings' (exact span unverified).",
+    "weight_kg": 510.3,
+    "shape_notes": "Unpowered TV-guided glide bomb: glass TV-camera nose, 4 large cruciform delta wings at the rear with trailing-edge control surfaces, small ram-air-turbine propeller in the tail for electrical power.",
+    "colour_notes": "Unverified (Navy weapons typically light grey/white with yellow HE band - check photos).",
+    "carried_on": "bru32",
+    "stations": [
+      2,
+      8
+    ],
+    "per_station": "1",
+    "sources": [
+      "https://www.designation-systems.net/dusrm/m-62.html",
+      "https://man.fas.org/dod-101/sys/smart/agm-62.htm",
+      "https://en.wikipedia.org/wiki/AGM-62_Walleye",
+      "https://www.dstorm.eu/pages/loadout/f-18.html",
+      "https://en.wikipedia.org/wiki/McDonnell_Douglas_F/A-18_Hornet"
+    ],
+    "confidence": "medium",
+    "notes": "Dims are Walleye I Mk 1 (3.45 m/136 in, 12.5 in, 1,125 lb). Desert Storm Hornet load: Walleye I ER on 2/8 with AN/AWW-9A data-link pod on 5 and AN/AAS-38 on 4 (dstorm.eu). Wikipedia: F/A-18A (VFA-195, CVW-5) destroyed a Super Frelon with a Walleye I on 13 Feb 1991. Other stations unverified."
+  },
+  {
+    "id": "agm62_walleye2",
+    "designation": "AGM-62 Walleye II ER/DL (e.g. Mk 23)",
+    "category": "guided_bomb",
+    "era": "baseline",
+    "length_m": 4.039,
+    "diameter_m": 0.457,
+    "span_m": 1.295,
+    "span_notes": "1.30 m (51 in) for Walleye II Mk 5; ERDL has slightly larger wings (unverified).",
+    "weight_kg": 1061.4,
+    "shape_notes": "Fatter 18 in body with Mk 87 linear shaped-charge warhead; same layout as Walleye I (TV nose, 4 rear cruciform wings, tail RAT).",
+    "colour_notes": "Unverified - check Desert Storm photos (e.g. VFA-81 F/A-18C 'AA407').",
+    "carried_on": "bru32",
+    "stations": [],
+    "per_station": "unverified",
+    "sources": [
+      "https://www.designation-systems.net/dusrm/m-62.html",
+      "https://en.wikipedia.org/wiki/AGM-62_Walleye",
+      "https://man.fas.org/dod-101/sys/smart/agm-62.htm"
+    ],
+    "confidence": "medium",
+    "notes": "4.04 m (159 in), 18 in, 2,340 lb. Wikipedia: VFA-195 F/A-18A used a Walleye II at Umm Qasr (Jan 1991). Station not documented; note NATOPS warning about asymmetric release of stores >2,320 lb from stations 2/8."
+  },
+  {
+    "id": "agm154a_jsow",
+    "designation": "AGM-154A JSOW (also C)",
+    "category": "guided_bomb",
+    "era": "A+ upgrade",
+    "length_m": 4.064,
+    "diameter_m": 0.338,
+    "span_m": 2.692,
+    "span_notes": "2.69 m (106 in) flip-out wings deployed. Cross-section: designation-systems width 33.8 cm (13.3 in); USAF Weapons File '16 x 22 in'.",
+    "weight_kg": 483.1,
+    "shape_notes": "Box/faceted body, flip-out wings on top, four cruciform tail fins plus two small horizontal tail fins (designation-systems).",
+    "colour_notes": "Unverified.",
+    "carried_on": "bru32 (BRU-55 twin rack on C/D)",
+    "stations": [],
+    "per_station": "unverified for A+ (WF 2003: F/A-18C/D carry 4)",
+    "sources": [
+      "https://www.designation-systems.net/dusrm/m-154.html",
+      "https://bulletpicker.com/pdf/Weapons-File-2003.pdf",
+      "https://man.fas.org/dod-101/sys/smart/agm-154.htm"
+    ],
+    "confidence": "low",
+    "notes": "FAS: JSOW introduced on Navy/USMC F/A-18 mid-1998 and 'will be employed on F/A-18A/B, C/D and E/F' (planned). CVW-11 F/A-18 squadrons in 1998 lacked the mission-computer upgrade needed. A+/A++ carriage unverified."
+  },
+  {
+    "id": "adm141a_tald",
+    "designation": "ADM-141A/B TALD (ADM-141C ITALD later)",
+    "category": "ag_missile",
+    "era": "baseline",
+    "length_m": 2.337,
+    "diameter_m": null,
+    "span_m": 1.549,
+    "span_notes": "1.55 m (5 ft 1 in) flip-out wings deployed; stowed span and body cross-section unverified.",
+    "weight_kg": 181.4,
+    "shape_notes": "Unpowered glide decoy: square-section fuselage, flip-out wings, three tail surfaces; ITALD adds ventral turbojet intake.",
+    "colour_notes": "Unverified.",
+    "carried_on": "TER (triple ejector rack)",
+    "stations": [],
+    "per_station": "unverified (Wikipedia: up to 6 per aircraft on a pair of TERs)",
+    "sources": [
+      "https://www.designation-systems.net/dusrm/m-141.html",
+      "https://en.wikipedia.org/wiki/ADM-141_TALD"
+    ],
+    "confidence": "low",
+    "notes": "2.34 m (7 ft 8 in), 400 lb (180 kg). Wikipedia: fit-checked on the F/A-18 in March 1986; 'major user is the F/A-18'. Stations not documented."
+  },
+  {
+    "id": "gbu10",
+    "designation": "GBU-10 Paveway II (Mk 84 / BLU-117 body)",
+    "category": "guided_bomb",
+    "era": "baseline",
+    "length_m": 4.318,
+    "diameter_m": 0.457,
+    "span_m": 1.676,
+    "span_notes": "1.68 m (5 ft 6 in) wings deployed; folded envelope unverified (FAS gives 28 in 'airfoil group').",
+    "weight_kg": 957.1,
+    "shape_notes": "Paveway II: MK 80-series bomb body; nose MAU-169/209 computer-control group (CCG) with free-floating ring-tailed seeker 'birdie' and 4 fixed-span canards; tail MXU-series airfoil group with 4 spring-out wings that unfold after release (folded in carriage). Airfoil group MXU-651/B.",
+    "colour_notes": "Bomb body as Mk 80/BLU-11x (olive drab, yellow bands, thermal coating on Navy bodies); kit colour (OD or grey) varies - unverified.",
+    "carried_on": "bru32",
+    "stations": [],
+    "per_station": "unverified",
+    "sources": [
+      "https://www.designation-systems.net/dusrm/app5/paveway-2.html",
+      "https://bulletpicker.com/pdf/Weapons-File-2003.pdf",
+      "https://man.fas.org/dod-101/sys/smart/gbu-10.htm",
+      "https://man.fas.org/dod-101/sys/smart/lgb.htm"
+    ],
+    "confidence": "medium",
+    "notes": "designation-systems GBU-10E/B: 4.32 m (14 ft 2 in), 18 in, 2,110 lb; WF 2003: 169.9 in, 2,110 lb; FAS: 2,562 lb, 172 in - FAS weight looks high, disagreement noted. Navy used BLU-117/B and BLU-109A/B bodies. FAS lists F/A-18C/D as platform; A/B employment would need off-board laser designation (AAS-38 on A/B had no laser) - A/B clearance/stations unverified."
+  },
+  {
+    "id": "gbu12",
+    "designation": "GBU-12 Paveway II (Mk 82 / BLU-111A body)",
+    "category": "guided_bomb",
+    "era": "baseline",
+    "length_m": 3.331,
+    "diameter_m": 0.273,
+    "span_m": 1.34,
+    "span_notes": "1.34 m (4 ft 4.75 in) wings deployed (designation-systems); WF lists 18 in for the airfoil group (folded).",
+    "weight_kg": 275.2,
+    "shape_notes": "Paveway II: MK 80-series bomb body; nose MAU-169/209 computer-control group (CCG) with free-floating ring-tailed seeker 'birdie' and 4 fixed-span canards; tail MXU-series airfoil group with 4 spring-out wings that unfold after release (folded in carriage). Airfoil group MXU-650/B.",
+    "colour_notes": "Bomb body as Mk 80/BLU-11x (olive drab, yellow bands, thermal coating on Navy bodies); kit colour (OD or grey) varies - unverified.",
+    "carried_on": "bru32 (BRU-33 twin unverified)",
+    "stations": [],
+    "per_station": "unverified",
+    "sources": [
+      "https://www.designation-systems.net/dusrm/app5/paveway-2.html",
+      "https://bulletpicker.com/pdf/Weapons-File-2003.pdf",
+      "https://man.fas.org/dod-101/sys/smart/gbu-12.htm"
+    ],
+    "confidence": "medium",
+    "notes": "3.33 m (131.15 in WF; 10 ft 11 in DS), 10.75 in, 606.67 lb (WF) / 606 lb (DS). FAS platform list: F/A-18C/D. A/B stations unverified."
+  },
+  {
+    "id": "gbu16",
+    "designation": "GBU-16 Paveway II (Mk 83 / BLU-110 body)",
+    "category": "guided_bomb",
+    "era": "baseline",
+    "length_m": 3.683,
+    "diameter_m": 0.356,
+    "span_m": 1.6,
+    "span_notes": "1.60 m (5 ft 3 in) wings deployed.",
+    "weight_kg": 495.3,
+    "shape_notes": "Paveway II: MK 80-series bomb body; nose MAU-169/209 computer-control group (CCG) with free-floating ring-tailed seeker 'birdie' and 4 fixed-span canards; tail MXU-series airfoil group with 4 spring-out wings that unfold after release (folded in carriage). Airfoil group MXU-667/B.",
+    "colour_notes": "Bomb body as Mk 80/BLU-11x (olive drab, yellow bands, thermal coating on Navy bodies); kit colour (OD or grey) varies - unverified.",
+    "carried_on": "bru32",
+    "stations": [],
+    "per_station": "unverified",
+    "sources": [
+      "https://www.designation-systems.net/dusrm/app5/paveway-2.html",
+      "https://man.fas.org/dod-101/sys/smart/gbu-16.htm"
+    ],
+    "confidence": "medium",
+    "notes": "designation-systems: 3.68 m (12 ft 1 in), 14 in, 1,092 lb. FAS: Hornets from USS Enterprise dropped GBU-16 in Desert Fox (Dec 1998; model not stated)."
+  },
+  {
+    "id": "gbu24",
+    "designation": "GBU-24/B (Mk 84) and GBU-24B/B (BLU-109A/B, Navy) Paveway III",
+    "category": "guided_bomb",
+    "era": "A+ upgrade",
+    "length_m": 4.388,
+    "diameter_m": 0.457,
+    "span_m": 2.073,
+    "span_notes": "Wings deployed 81.6 in (2.07 m) per WF 2003 (designation-systems 2.00 m / 6 ft 6.75 in - disagree); wings stowed 36.0 in (0.914 m); canard span 39.25 in (0.997 m).",
+    "weight_kg": 1050.1,
+    "shape_notes": "Paveway III: larger WGU-12/39 guidance unit with big canards, BSU-84 airfoil group with long pop-out wings.",
+    "colour_notes": "Bomb body as Mk 80/BLU-11x (olive drab, yellow bands, thermal coating on Navy bodies); kit colour (OD or grey) varies - unverified.",
+    "carried_on": "bru32",
+    "stations": [],
+    "per_station": "unverified",
+    "sources": [
+      "https://www.designation-systems.net/dusrm/app5/paveway-3.html",
+      "https://bulletpicker.com/pdf/Weapons-File-2003.pdf",
+      "https://man.fas.org/dod-101/sys/smart/gbu-24.htm"
+    ],
+    "confidence": "low",
+    "notes": "Mk 84 version 4.39 m (14 ft 5 in), 2,315 lb (DS) / 172.76 in, 2,256.75 lb (WF). Navy BLU-109A/B version (GBU-24B/B) 169.69 in, 2,372.75 lb (WF). Hornet clearance documented generally (F/A-18) but not for A/B; era tag = not baseline A/B, A+ unverified."
+  },
+  {
+    "id": "gbu31",
+    "designation": "GBU-31(V)2/B JDAM (Mk 84/BLU-117); (V)4/B BLU-109",
+    "category": "guided_bomb",
+    "era": "A+ upgrade",
+    "length_m": 3.879,
+    "diameter_m": 0.457,
+    "span_m": 0.643,
+    "span_notes": "Tail fin span 0.643 m (25.32 in).",
+    "weight_kg": 945.7,
+    "shape_notes": "JDAM tail kit (INS/GPS) replaces the fin: tail cone with 4 cruciform tail fins (designation-systems: three moving, one fixed) plus bolt-on strakes - mid-body strakes on Mk 83/Mk 84 sizes, NOSE strakes on the 500 lb (Mk 82/BLU-111) size. ",
+    "colour_notes": "Bomb body as Mk 84/BLU-117; tail kit colour unverified.",
+    "carried_on": "bru32",
+    "stations": [],
+    "per_station": "unverified for A+",
+    "sources": [
+      "https://www.designation-systems.net/dusrm/app5/jdam.html",
+      "https://bulletpicker.com/pdf/Weapons-File-2003.pdf",
+      "https://man.fas.org/dod-101/sys/smart/jdam.htm"
+    ],
+    "confidence": "low",
+    "notes": "(V)2/B: 3.879 m (152.72 in), 18 in, 2,085 lb; WF 2003 Navy Mk 84 version 2,059 lb; (V)4/B BLU-109: 3.774 m, 14.5 in, 2,162 lb. A+ JDAM capability only inferred from ECP-583 'Lot XVII C equivalent' statements - unverified."
+  },
+  {
+    "id": "gbu32",
+    "designation": "GBU-32(V)2/B JDAM (Mk 83/BLU-110)",
+    "category": "guided_bomb",
+    "era": "A+ upgrade",
+    "length_m": 3.035,
+    "diameter_m": 0.356,
+    "span_m": 0.498,
+    "span_notes": "Tail fin span 0.498 m (19.62 in).",
+    "weight_kg": 467.7,
+    "shape_notes": "JDAM tail kit (INS/GPS) replaces the fin: tail cone with 4 cruciform tail fins (designation-systems: three moving, one fixed) plus bolt-on strakes - mid-body strakes on Mk 83/Mk 84 sizes, NOSE strakes on the 500 lb (Mk 82/BLU-111) size. ",
+    "colour_notes": "Body as Mk 83/BLU-110; kit colour unverified.",
+    "carried_on": "bru32 (BRU-55 twin on C/D)",
+    "stations": [],
+    "per_station": "unverified for A+",
+    "sources": [
+      "https://www.designation-systems.net/dusrm/app5/jdam.html",
+      "https://bulletpicker.com/pdf/Weapons-File-2003.pdf"
+    ],
+    "confidence": "low",
+    "notes": "3.035 m, 14 in, 1,031 lb (DS); WF Navy 1,029 lb."
+  },
+  {
+    "id": "gbu38",
+    "designation": "GBU-38(V)1/B JDAM (Mk 82/BLU-111)",
+    "category": "guided_bomb",
+    "era": "A+ upgrade",
+    "length_m": 2.353,
+    "diameter_m": 0.273,
+    "span_m": 0.432,
+    "span_notes": "Tail fin span 0.432 m (17.0 in).",
+    "weight_kg": 253.1,
+    "shape_notes": "JDAM tail kit (INS/GPS) replaces the fin: tail cone with 4 cruciform tail fins (designation-systems: three moving, one fixed) plus bolt-on strakes - mid-body strakes on Mk 83/Mk 84 sizes, NOSE strakes on the 500 lb (Mk 82/BLU-111) size. 500 lb size has the strakes at the nose.",
+    "colour_notes": "Body as Mk 82/BLU-111; kit colour unverified.",
+    "carried_on": "bru32 / BRU-55 (twin)",
+    "stations": [],
+    "per_station": "unverified for A+ (WF 2003: F-18 loadout 8 on BRU-55; IOC F/A-18C/D 3QFY04)",
+    "sources": [
+      "https://www.designation-systems.net/dusrm/app5/jdam.html",
+      "https://bulletpicker.com/pdf/Weapons-File-2003.pdf",
+      "https://www.designation-systems.net/usmilav/asetds/u-b.html"
+    ],
+    "confidence": "low",
+    "notes": "2.353 m (92.64 in), 10.75 in, 558 lb (DS; WF Navy 558 lb)."
+  },
+  {
+    "id": "mk82_ldgp",
+    "designation": "Mk 82 LDGP 500 lb (conical fin)",
+    "category": "bomb",
+    "era": "baseline",
+    "length_m": 2.207,
+    "diameter_m": 0.273,
+    "span_m": null,
+    "span_notes": "Conical fin span: unverified (conical steel fin with 4 fins; size scales with bomb).",
+    "weight_kg": 240.9,
+    "shape_notes": "Streamlined low-drag body with nose and tail fuze wells; two suspension lugs 14 in apart; steel conical tail with 4 fins and side access covers.",
+    "colour_notes": "Mk 80 series: olive drab body, yellow stencilled nomenclature and yellow nose band(s) for HE fill; shipboard bombs must be THERMALLY PROTECTED: bumpy/textured ablative coating, the words 'THERMALLY PROTECTED' and TWO yellow nose bands (AO 3&2 1990, p.2-3). Inert full-scale practice bombs are painted blue. Fin colour typically matches body (unverified per fin type).",
+    "carried_on": "bru32 / bru33",
+    "stations": [
+      2,
+      3,
+      5,
+      7,
+      8
+    ],
+    "per_station": "1 on BRU-32/A or 2 on BRU-33/A VER",
+    "sources": [
+      "https://www.bulletpicker.com/pdf/NAVEDTRA-12308.pdf",
+      "https://bulletpicker.com/pdf/Weapons-File-2003.pdf",
+      "https://en.wikipedia.org/wiki/Mark_82_bomb",
+      "https://www.dstorm.eu/pages/loadout/f-18.html"
+    ],
+    "confidence": "high",
+    "notes": "AO 3&2 1990 Table 2-1: assembled 531 lb, 86.9 in, 10.75 in, 14 in lugs. USAF WF: Mk 82 LDGP 502 lb, 89.44 in - disagree. Wikipedia 2.21 m, 241 kg. Desert Storm Hornet loads: singles on 2/3/7/8, twins on VERs at 2/3/7/8, single on 5."
+  },
+  {
+    "id": "mk82_snakeye",
+    "designation": "Mk 82 Snakeye (Mk 15 retarding fin)",
+    "category": "bomb",
+    "era": "baseline",
+    "length_m": 2.172,
+    "diameter_m": 0.274,
+    "span_m": null,
+    "span_notes": "Fin span closed/open: unverified. 4 spring-loaded drag plates that open into a cruciform 'umbrella' when retarded.",
+    "weight_kg": 249.5,
+    "shape_notes": "Mk 82 body with Mk 15 Snakeye tail: fin support tube, 4 folding drag plates held closed by a release band (cotter pin/arming wire); closed = low drag, open = high drag retarded; mods 1/2 vs 3/4 differ in attachment/shock absorber.",
+    "colour_notes": "Mk 80 series: olive drab body, yellow stencilled nomenclature and yellow nose band(s) for HE fill; shipboard bombs must be THERMALLY PROTECTED: bumpy/textured ablative coating, the words 'THERMALLY PROTECTED' and TWO yellow nose bands (AO 3&2 1990, p.2-3). Inert full-scale practice bombs are painted blue. Fin colour typically matches body (unverified per fin type).",
+    "carried_on": "bru32 / bru33",
+    "stations": [],
+    "per_station": "unverified (presumably as Mk 82 LDGP)",
+    "sources": [
+      "https://www.bulletpicker.com/pdf/NAVEDTRA-12308.pdf",
+      "https://bulletpicker.com/pdf/Weapons-File-2003.pdf",
+      "https://en.wikipedia.org/wiki/Mark_82_bomb"
+    ],
+    "confidence": "medium",
+    "notes": "WF 2003 'Mk-82 Snakeye I': 550 lb, 85.50 in, 10.80 in. Hornet-specific Snakeye loads not found."
+  },
+  {
+    "id": "mk83_ldgp",
+    "designation": "Mk 83 LDGP 1,000 lb (conical fin)",
+    "category": "bomb",
+    "era": "baseline",
+    "length_m": 3.007,
+    "diameter_m": 0.356,
+    "span_m": null,
+    "span_notes": "Conical fin span unverified.",
+    "weight_kg": 446.8,
+    "shape_notes": "As Mk 82 but larger; 14 in lug spacing; conical fin (or MAU-91 Snakeye via ADU-320/B adapter, or BSU-85/B AIR).",
+    "colour_notes": "Mk 80 series: olive drab body, yellow stencilled nomenclature and yellow nose band(s) for HE fill; shipboard bombs must be THERMALLY PROTECTED: bumpy/textured ablative coating, the words 'THERMALLY PROTECTED' and TWO yellow nose bands (AO 3&2 1990, p.2-3). Inert full-scale practice bombs are painted blue. Fin colour typically matches body (unverified per fin type).",
+    "carried_on": "bru32 / bru33",
+    "stations": [
+      2,
+      3,
+      5,
+      7,
+      8
+    ],
+    "per_station": "1 on BRU-32 or 2 on BRU-33 VER (VER rated 2 x 1,000 lb)",
+    "sources": [
+      "https://www.bulletpicker.com/pdf/NAVEDTRA-12308.pdf",
+      "https://bulletpicker.com/pdf/Weapons-File-2003.pdf",
+      "https://en.wikipedia.org/wiki/Mark_83_bomb",
+      "https://www.dstorm.eu/pages/loadout/f-18.html",
+      "https://man.fas.org/dod-101/sys/ac/equip/bru-32.htm"
+    ],
+    "confidence": "high",
+    "notes": "AO Table 2-1: 985 lb, 118.4 in, 14 in, 14 in lugs. WF: 1,000 lb, 115 in. Desert Storm Hornet loads: single and VER twin on 2/3/7/8; single on 5."
+  },
+  {
+    "id": "mk83_snakeye",
+    "designation": "Mk 83 with MAU-91A/B or B/B Snakeye retarding fin",
+    "category": "bomb",
+    "era": "baseline",
+    "length_m": null,
+    "diameter_m": 0.356,
+    "span_m": null,
+    "span_notes": "Unverified.",
+    "weight_kg": null,
+    "shape_notes": "MAU-91 fin: 4 folding drag plates with links on a support tube with aluminium-honeycomb energy absorber; attached by ADU-320/B adapter.",
+    "colour_notes": "Mk 80 series: olive drab body, yellow stencilled nomenclature and yellow nose band(s) for HE fill; shipboard bombs must be THERMALLY PROTECTED: bumpy/textured ablative coating, the words 'THERMALLY PROTECTED' and TWO yellow nose bands (AO 3&2 1990, p.2-3). Inert full-scale practice bombs are painted blue. Fin colour typically matches body (unverified per fin type).",
+    "carried_on": "bru32 / bru33",
+    "stations": [],
+    "per_station": "unverified",
+    "sources": [
+      "https://www.bulletpicker.com/pdf/NAVEDTRA-12308.pdf"
+    ],
+    "confidence": "low",
+    "notes": "Described in AO 3&2 (1990) pp.2-8/2-9; no dimensions; Hornet use not documented."
+  },
+  {
+    "id": "mk83_air",
+    "designation": "Mk 83 AIR (BSU-85/B air-inflatable retarder)",
+    "category": "bomb",
+    "era": "baseline",
+    "length_m": null,
+    "diameter_m": 0.356,
+    "span_m": null,
+    "span_notes": "Ballute retarder; dimensions unverified.",
+    "weight_kg": null,
+    "shape_notes": "Mk 83 body with BSU-85/B ballute tail (air inflatable retarder).",
+    "colour_notes": "Mk 80 series: olive drab body, yellow stencilled nomenclature and yellow nose band(s) for HE fill; shipboard bombs must be THERMALLY PROTECTED: bumpy/textured ablative coating, the words 'THERMALLY PROTECTED' and TWO yellow nose bands (AO 3&2 1990, p.2-3). Inert full-scale practice bombs are painted blue. Fin colour typically matches body (unverified per fin type).",
+    "carried_on": "bru32 / bru33",
+    "stations": [
+      2,
+      5,
+      8
+    ],
+    "per_station": "1-2 (VER twins on 2/8; single on 5)",
+    "sources": [
+      "https://www.dstorm.eu/pages/loadout/f-18.html",
+      "https://bulletpicker.com/pdf/Weapons-File-2003.pdf"
+    ],
+    "confidence": "medium",
+    "notes": "USAF WF lists BSU-85/B AIR as the Mk 83 stabilizer. Desert Storm Hornet (USMC) loads list 'Mk.83 AIR' on VERs at 2/8 and on 5."
+  },
+  {
+    "id": "mk84_ldgp",
+    "designation": "Mk 84 LDGP 2,000 lb",
+    "category": "bomb",
+    "era": "baseline",
+    "length_m": 3.848,
+    "diameter_m": 0.457,
+    "span_m": null,
+    "span_notes": "Conical fin span unverified.",
+    "weight_kg": 893.6,
+    "shape_notes": "Largest Mk 80; lugs 30 in apart; conical fin.",
+    "colour_notes": "Mk 80 series: olive drab body, yellow stencilled nomenclature and yellow nose band(s) for HE fill; shipboard bombs must be THERMALLY PROTECTED: bumpy/textured ablative coating, the words 'THERMALLY PROTECTED' and TWO yellow nose bands (AO 3&2 1990, p.2-3). Inert full-scale practice bombs are painted blue. Fin colour typically matches body (unverified per fin type).",
+    "carried_on": "bru32",
+    "stations": [
+      2,
+      3,
+      7,
+      8
+    ],
+    "per_station": "1 (too heavy for BRU-33 VER, rated 1,000 lb per store)",
+    "sources": [
+      "https://www.bulletpicker.com/pdf/NAVEDTRA-12308.pdf",
+      "https://bulletpicker.com/pdf/Weapons-File-2003.pdf",
+      "https://en.wikipedia.org/wiki/Mark_84_bomb",
+      "https://en.wikipedia.org/wiki/McDonnell_Douglas_F/A-18_Hornet",
+      "https://www.dstorm.eu/pages/loadout/f-18.html"
+    ],
+    "confidence": "medium",
+    "notes": "AO Table 2-1: 1,970 lb, 151.5 in, 18 in, 30 in lugs; WF LDGP 1,997 lb, 145.4 in w/o fuze. Wikipedia: Saratoga Hornets on day 1 of Desert Storm each carried four 2,000 lb bombs (those were F/A-18Cs) -> 2/3/7/8; dstorm shows Mk 84 on 3/7. Centreline carriage unverified."
+  },
+  {
+    "id": "blu111",
+    "designation": "BLU-111A/B (thermally protected Mk 82 body, PBXN-109)",
+    "category": "bomb",
+    "era": "baseline",
+    "length_m": null,
+    "diameter_m": 0.273,
+    "span_m": null,
+    "span_notes": "As Mk 82 (externally identical)",
+    "weight_kg": 217.7,
+    "shape_notes": "Externally identical to the Mk 82 body but with external thermal-protective (ablative) coating.",
+    "colour_notes": "Mk 80 series: olive drab body, yellow stencilled nomenclature and yellow nose band(s) for HE fill; shipboard bombs must be THERMALLY PROTECTED: bumpy/textured ablative coating, the words 'THERMALLY PROTECTED' and TWO yellow nose bands (AO 3&2 1990, p.2-3). Inert full-scale practice bombs are painted blue. Fin colour typically matches body (unverified per fin type).",
+    "carried_on": "bru32 / bru33",
+    "stations": [],
+    "per_station": "as Mk 82 (inferred, not separately documented)",
+    "sources": [
+      "https://www.designation-systems.net/dusrm/app5/paveway-2.html",
+      "https://en.wikipedia.org/wiki/Mark_82_bomb",
+      "https://www.bulletpicker.com/pdf/NAVEDTRA-12308.pdf"
+    ],
+    "confidence": "medium",
+    "notes": "designation-systems: externally identical to Mk 82, PBXN-109 fill, Navy version has protective coating. Introduced in the 1990s (exact date unverified) - no aircraft modification implied. Wikipedia: BLU-111/B weighs 218 kg (480 lb) bare."
+  },
+  {
+    "id": "blu110",
+    "designation": "BLU-110A/B or B/B (thermally protected Mk 83 body, PBXN-109)",
+    "category": "bomb",
+    "era": "baseline",
+    "length_m": null,
+    "diameter_m": 0.356,
+    "span_m": null,
+    "span_notes": "As Mk 83 (externally identical)",
+    "weight_kg": null,
+    "shape_notes": "Externally identical to the Mk 83 body but with external thermal-protective (ablative) coating.",
+    "colour_notes": "Mk 80 series: olive drab body, yellow stencilled nomenclature and yellow nose band(s) for HE fill; shipboard bombs must be THERMALLY PROTECTED: bumpy/textured ablative coating, the words 'THERMALLY PROTECTED' and TWO yellow nose bands (AO 3&2 1990, p.2-3). Inert full-scale practice bombs are painted blue. Fin colour typically matches body (unverified per fin type).",
+    "carried_on": "bru32 / bru33",
+    "stations": [],
+    "per_station": "as Mk 83 (inferred, not separately documented)",
+    "sources": [
+      "https://www.designation-systems.net/dusrm/app5/paveway-2.html",
+      "https://en.wikipedia.org/wiki/Mark_82_bomb",
+      "https://www.bulletpicker.com/pdf/NAVEDTRA-12308.pdf"
+    ],
+    "confidence": "medium",
+    "notes": "designation-systems: externally identical to Mk 83, PBXN-109 fill, Navy version has protective coating. Introduced in the 1990s (exact date unverified) - no aircraft modification implied. Weight unverified (Mk 83 class)."
+  },
+  {
+    "id": "blu117",
+    "designation": "BLU-117/B (thermally protected Mk 84 body, PBXN-109)",
+    "category": "bomb",
+    "era": "baseline",
+    "length_m": null,
+    "diameter_m": 0.457,
+    "span_m": null,
+    "span_notes": "As Mk 84 (externally identical)",
+    "weight_kg": null,
+    "shape_notes": "Externally identical to the Mk 84 body but with external thermal-protective (ablative) coating.",
+    "colour_notes": "Mk 80 series: olive drab body, yellow stencilled nomenclature and yellow nose band(s) for HE fill; shipboard bombs must be THERMALLY PROTECTED: bumpy/textured ablative coating, the words 'THERMALLY PROTECTED' and TWO yellow nose bands (AO 3&2 1990, p.2-3). Inert full-scale practice bombs are painted blue. Fin colour typically matches body (unverified per fin type).",
+    "carried_on": "bru32",
+    "stations": [],
+    "per_station": "as Mk 84 (inferred, not separately documented)",
+    "sources": [
+      "https://www.designation-systems.net/dusrm/app5/paveway-2.html",
+      "https://en.wikipedia.org/wiki/Mark_82_bomb",
+      "https://www.bulletpicker.com/pdf/NAVEDTRA-12308.pdf"
+    ],
+    "confidence": "medium",
+    "notes": "designation-systems: externally identical to Mk 84, PBXN-109 fill, Navy version has protective coating. Introduced in the 1990s (exact date unverified) - no aircraft modification implied. Weight unverified (Mk 84 class)."
+  },
+  {
+    "id": "mk20_rockeye",
+    "designation": "Mk 20 Rockeye II (Mk 7 dispenser, 247 Mk 118 bomblets)",
+    "category": "cluster",
+    "era": "baseline",
+    "length_m": 2.337,
+    "diameter_m": 0.337,
+    "span_m": 0.876,
+    "span_notes": "Fins: 17.2 in (0.437 m) closed in carriage; 34.5 in (0.876 m) open after release.",
+    "weight_kg": 222.3,
+    "shape_notes": "Cylindrical cargo section, rounded nose fairing with Mk 339 fuze and observation window (fuze cover in handling), tapered tail cone with 4 spring-actuated folding fins held by a release band; two internal linear shaped charges split the case.",
+    "colour_notes": "Yellow band around forward end of the cargo section (explosive); Mk 7 Mod 6 has thermal coating and an additional yellow band; inert Mk 7 trainer has a single blue band. Body colour (OD) unverified.",
+    "carried_on": "bru32 / bru33",
+    "stations": [
+      2,
+      3,
+      5,
+      7,
+      8
+    ],
+    "per_station": "1 on BRU-32 or 2 on BRU-33 VER",
+    "sources": [
+      "https://www.bulletpicker.com/pdf/NAVEDTRA-12308.pdf",
+      "https://bulletpicker.com/pdf/NWC-TP-7033.pdf",
+      "https://en.wikipedia.org/wiki/CBU-100_Cluster_Bomb",
+      "https://www.dstorm.eu/pages/loadout/f-18.html"
+    ],
+    "confidence": "high",
+    "notes": "Weight 490 lb (AO 3&2). Mk 7-dispenser family dims from NWC TP 7033 (1989) for CBU-78/B (SUU-58/B = modified Mk 7 Mod 6): 92.0 in long without fuze cover (94.5 in with), 13.25 in dia, fin span 17.2 in closed / 34.5 in open, 14 in lugs. Desert Storm Hornet loads: twins on VERs at 2/3/7/8, singles on 2/3/7/8 and 5."
+  },
+  {
+    "id": "cbu59",
+    "designation": "CBU-59/B APAM (Mk 7 Mod 4 dispenser, 717 BLU-77/B)",
+    "category": "cluster",
+    "era": "baseline",
+    "length_m": 2.337,
+    "diameter_m": 0.337,
+    "span_m": 0.876,
+    "span_notes": "As Mk 20 (same Mk 7 dispenser): 17.2 in closed / 34.5 in open.",
+    "weight_kg": 340.2,
+    "shape_notes": "Same external shape as Mk 20 Rockeye.",
+    "colour_notes": "As Mk 20 (yellow forward band).",
+    "carried_on": "bru32 / bru33",
+    "stations": [],
+    "per_station": "unverified (Desert Storm tables show generic 'Mk.7' dispensers on VERs at 2/8)",
+    "sources": [
+      "https://www.bulletpicker.com/pdf/NAVEDTRA-12308.pdf",
+      "https://bulletpicker.com/pdf/NWC-TP-7033.pdf",
+      "https://www.dstorm.eu/pages/loadout/f-18.html"
+    ],
+    "confidence": "medium",
+    "notes": "750 lb (AO 3&2 1990). Dims assumed equal to Mk 7 family (NWC TP 7033) - inferred."
+  },
+  {
+    "id": "cbu78",
+    "designation": "CBU-78/B Gator (SUU-58/B ex-Mk 7 Mod 6; 45 BLU-91 + 15 BLU-92 mines)",
+    "category": "cluster",
+    "era": "baseline",
+    "length_m": 2.337,
+    "diameter_m": 0.337,
+    "span_m": 0.876,
+    "span_notes": "17.2 in closed / 34.5 in open (NWC TP 7033).",
+    "weight_kg": 222.3,
+    "shape_notes": "Mk 7-type dispenser shape; subsonic store.",
+    "colour_notes": "NWC TP 7033 figure shows yellow colour bands; body colour unverified.",
+    "carried_on": "bru32 / bru33",
+    "stations": [],
+    "per_station": "unverified",
+    "sources": [
+      "https://bulletpicker.com/pdf/NWC-TP-7033.pdf",
+      "https://en.wikipedia.org/wiki/GATOR_mine_system",
+      "https://en.wikipedia.org/wiki/McDonnell_Douglas_F/A-18_Hornet"
+    ],
+    "confidence": "medium",
+    "notes": "Primary source NWC TP 7033 (Sept 1989). Wikipedia lists CBU-78 Gator in Hornet armament; stations not documented."
+  },
+  {
+    "id": "mk77",
+    "designation": "Mk 77 Mod 4/Mod 5 fire bomb",
+    "category": "bomb",
+    "era": "baseline",
+    "length_m": null,
+    "diameter_m": null,
+    "span_m": null,
+    "span_notes": "No fins (unstabilised).",
+    "weight_kg": 230.0,
+    "shape_notes": "Cigar-shaped thin aluminium container, NO fins (tumbles after release), 14 in lug spacing, two filler holes 31 deg down from the top (Mod 4), igniters/fuzes in filler holes and nose/tail.",
+    "colour_notes": "Unverified (AO colour code: light red = incendiary).",
+    "carried_on": "bru32",
+    "stations": [
+      5
+    ],
+    "per_station": "1 (centreline documented; wing stations unverified)",
+    "sources": [
+      "https://www.bulletpicker.com/pdf/NAVEDTRA-12308.pdf",
+      "https://en.wikipedia.org/wiki/Mark_77_bomb",
+      "https://www.dstorm.eu/pages/loadout/f-18.html"
+    ],
+    "confidence": "medium",
+    "notes": "AO 3&2 1990: Mk 77 Mod 4 ~75 gal fuel gel, ~500 lb filled. Wikipedia: Mods 4/5 approx 507 lb with 75 gal. Length/diameter unverified. Desert Storm Hornet loads show Mk 77 on the centreline."
+  },
+  {
+    "id": "lau10",
+    "designation": "LAU-10D/A 5 in Zuni rocket pod (4 tubes)",
+    "category": "rocket_pod",
+    "era": "baseline",
+    "length_m": null,
+    "diameter_m": null,
+    "span_m": null,
+    "span_notes": "n/a",
+    "weight_kg": null,
+    "shape_notes": "Cylinder of 4 aluminium tubes in an aluminium skin; frangible nose fairing and two-piece tail fairing (base stays as a debris funnel).",
+    "colour_notes": "LAU-10D/A has external thermal coating (shipboard version); colour unverified.",
+    "carried_on": "bru33",
+    "stations": [
+      2,
+      8
+    ],
+    "per_station": "1-2 on BRU-33 VER (dstorm: either VER position)",
+    "sources": [
+      "https://man.fas.org/dod-101/sys/ac/equip/lau-10.htm",
+      "https://www.bulletpicker.com/pdf/NAVEDTRA-12308.pdf",
+      "https://www.designation-systems.net/dusrm/app4/5in-rockets.html",
+      "https://www.dstorm.eu/pages/loadout/f-18.html"
+    ],
+    "confidence": "low",
+    "notes": "Loaded weight ~500-550 lb (AO training manual via tpub snippet - not opened). Dimensions and empty weight UNVERIFIED. 14 or 30 in suspension. Desert Storm: VMFA(AW)-121 F/A-18D 'Fast FAC' carried LAU-10s on VERs at 2/8 (A/B use unverified). A DCS-forum claim says Hornet BRU-32 cannot take LAU pods directly - unverified."
+  },
+  {
+    "id": "lau61",
+    "designation": "LAU-61C/A 2.75 in rocket pod (19 tubes)",
+    "category": "rocket_pod",
+    "era": "baseline",
+    "length_m": 1.519,
+    "diameter_m": 0.406,
+    "span_m": null,
+    "span_notes": "n/a",
+    "weight_kg": 70.3,
+    "shape_notes": "Cylinder of 19 aluminium tubes; aluminium open-ended tail fairing; frangible nose fairing optional; 14 in suspension.",
+    "colour_notes": "Thermally coated (Navy).",
+    "carried_on": "bru33?",
+    "stations": [],
+    "per_station": "unverified",
+    "sources": [
+      "https://arnolddefense.com/wp-content/uploads/2025/06/LAU-61-CA-slick-final.pdf",
+      "https://man.fas.org/dod-101/sys/ac/equip/lau-hydra-7.htm",
+      "https://www.bulletpicker.com/pdf/NAVEDTRA-12308.pdf"
+    ],
+    "confidence": "low",
+    "notes": "Manufacturer sheet (Arnold Defense): 59.8 in, 16.0 in, 155 lb unloaded. F/A-18 carriage NOT documented in sources found."
+  },
+  {
+    "id": "lau68",
+    "designation": "LAU-68D/A 2.75 in rocket pod (7 tubes)",
+    "category": "rocket_pod",
+    "era": "baseline",
+    "length_m": 1.557,
+    "diameter_m": 0.249,
+    "span_m": null,
+    "span_notes": "n/a",
+    "weight_kg": 39.0,
+    "shape_notes": "Cylinder of 7 aluminium tubes; open aluminium tail fairing; 14 in suspension.",
+    "colour_notes": "Navy D/A thermally coated; colour unverified.",
+    "carried_on": "bru33",
+    "stations": [
+      2,
+      8
+    ],
+    "per_station": "1-2 on BRU-33 VER",
+    "sources": [
+      "https://bulletpicker.com/pdf/Weapons-File-2003.pdf",
+      "https://man.fas.org/dod-101/sys/ac/equip/lau-hydra-19.htm",
+      "https://www.bulletpicker.com/pdf/NAVEDTRA-12308.pdf",
+      "https://www.dstorm.eu/pages/loadout/f-18.html"
+    ],
+    "confidence": "medium",
+    "notes": "USAF WF 2003 (generic LAU-68): 61.29 in, 9.80 in, 86 lb empty. Desert Storm Hornet load shows LAU-68D/A on VERs at 2/8."
+  },
+  {
+    "id": "b57",
+    "designation": "B57 nuclear bomb",
+    "category": "nuclear",
+    "era": "baseline",
+    "length_m": 2.997,
+    "diameter_m": 0.375,
+    "span_m": null,
+    "span_notes": "Unverified.",
+    "weight_kg": 226.8,
+    "shape_notes": "Streamlined supersonic-capable case; some versions parachute-retarded; also usable as nuclear depth bomb.",
+    "colour_notes": "Unverified.",
+    "carried_on": "bru32 (unverified)",
+    "stations": [],
+    "per_station": "unverified",
+    "sources": [
+      "https://man.fas.org/dod-101/sys/ac/f-18.htm",
+      "https://en.wikipedia.org/wiki/B57_nuclear_bomb"
+    ],
+    "confidence": "low",
+    "notes": "Wikipedia: ~3 m (9 ft 10 in), ~37.5 cm (14.75 in), basic weight ~227 kg (500 lb); retired June 1993. FAS F/A-18 page lists 'B-57 or B-61'."
+  },
+  {
+    "id": "b61",
+    "designation": "B61 nuclear bomb (Mods 3/4/7 dims)",
+    "category": "nuclear",
+    "era": "baseline",
+    "length_m": 3.598,
+    "diameter_m": 0.338,
+    "span_m": null,
+    "span_notes": "Tail fins - span unverified.",
+    "weight_kg": 340.6,
+    "shape_notes": "Slender bomb with ogive nose and finned tail (parachute options).",
+    "colour_notes": "Unverified.",
+    "carried_on": "bru32 (unverified)",
+    "stations": [],
+    "per_station": "unverified",
+    "sources": [
+      "https://bulletpicker.com/pdf/Weapons-File-2003.pdf",
+      "https://man.fas.org/dod-101/sys/ac/f-18.htm",
+      "https://en.wikipedia.org/wiki/B61_nuclear_bomb"
+    ],
+    "confidence": "low",
+    "notes": "WF 2003: Mods 3/4/10 751 lb, Mod 7 763 lb, 141.64 in, 13.3 in. Which B61 mods the Navy F/A-18 used is unverified (Navy-specific Mods 6/8 were cancelled - Wikipedia). Wikipedia lists F/A-18 as cleared."
+  },
+  {
+    "id": "b43",
+    "designation": "B43 nuclear bomb",
+    "category": "nuclear",
+    "era": "baseline",
+    "length_m": 3.81,
+    "diameter_m": 0.45,
+    "span_m": null,
+    "span_notes": "Unverified.",
+    "weight_kg": 935,
+    "shape_notes": "Large streamlined bomb; length 3.81-4.15 m depending on version.",
+    "colour_notes": "Unverified.",
+    "carried_on": "bru32 (unverified)",
+    "stations": [],
+    "per_station": "unverified",
+    "sources": [
+      "https://en.wikipedia.org/wiki/B43_nuclear_bomb"
+    ],
+    "confidence": "low",
+    "notes": "Wikipedia lists the F/A-18 among B43 carriers; retired 1991; 935-960 kg (2,060-2,120 lb). Not on the FAS F/A-18 list - weak evidence."
+  },
+  {
+    "id": "mk76",
+    "designation": "Mk 76 Mod 5 25 lb practice bomb",
+    "category": "bomb",
+    "era": "baseline",
+    "length_m": 0.582,
+    "diameter_m": 0.102,
+    "span_m": null,
+    "span_notes": "Small box/cruciform tail; span unverified.",
+    "weight_kg": 11.3,
+    "shape_notes": "Solid cast teardrop body, centrally bored for a signal (smoke) cartridge; crimped tail tube with fins.",
+    "colour_notes": "Light blue (practice).",
+    "carried_on": "unverified (practice bomb adapters on MER/TER, or PMBR)",
+    "stations": [],
+    "per_station": "unverified",
+    "sources": [
+      "https://www.bulletpicker.com/pdf/NAVEDTRA-12308.pdf",
+      "https://bulletpicker.com/pdf/Weapons-File-2003.pdf"
+    ],
+    "confidence": "low",
+    "notes": "Dims are the USAF BDU-33 equivalent (WF 2003: 25 lb, 22.9 in, 4 in) - Mk 76 dims not separately confirmed. Hornet rack/stations unverified."
+  },
+  {
+    "id": "mk106",
+    "designation": "Mk 106 Mod 4/5 5 lb practice bomb",
+    "category": "bomb",
+    "era": "baseline",
+    "length_m": 0.533,
+    "diameter_m": 0.099,
+    "span_m": null,
+    "span_notes": "Box-type conical fins; span unverified.",
+    "weight_kg": 2.3,
+    "shape_notes": "Thin-case cylinder with box-type conical fins; simulates retarded delivery.",
+    "colour_notes": "Light blue.",
+    "carried_on": "unverified",
+    "stations": [],
+    "per_station": "unverified",
+    "sources": [
+      "https://www.bulletpicker.com/pdf/NAVEDTRA-12308.pdf",
+      "https://bulletpicker.com/pdf/Weapons-File-2003.pdf"
+    ],
+    "confidence": "low",
+    "notes": "WF 2003: 5 lb, 21 in, 3.88 in. Hornet carriage unverified."
+  },
+  {
+    "id": "bdu48",
+    "designation": "BDU-48 10 lb practice bomb (retarded)",
+    "category": "bomb",
+    "era": "baseline",
+    "length_m": 0.533,
+    "diameter_m": 0.098,
+    "span_m": null,
+    "span_notes": "Unverified.",
+    "weight_kg": 4.5,
+    "shape_notes": "Thin-case cylinder, retarded-weapon simulator.",
+    "colour_notes": "Light blue.",
+    "carried_on": "unverified",
+    "stations": [],
+    "per_station": "unverified",
+    "sources": [
+      "https://bulletpicker.com/pdf/Weapons-File-2003.pdf"
+    ],
+    "confidence": "low",
+    "notes": "WF 2003: 10 lb, 21 in, 3.875 in. Navy/Hornet use not confirmed in sources found."
+  },
+  {
+    "id": "fuel_tank_330",
+    "designation": "330 US gal external fuel tank (FPU-8/A)",
+    "category": "fuel_tank",
+    "era": "baseline",
+    "length_m": null,
+    "diameter_m": null,
+    "span_m": null,
+    "span_notes": "n/a (tank has no fins - verify from photos)",
+    "weight_kg": 194.6,
+    "shape_notes": "Length/diameter UNVERIFIED (no public drawing found). Gravity/pressure refuel cap on top, precheck valve (NATOPS preflight).",
+    "colour_notes": "Normally airframe grey (unverified).",
+    "carried_on": "bru32 (via SUU-62/63 pylon)",
+    "stations": [
+      3,
+      5,
+      7
+    ],
+    "per_station": "1",
+    "sources": [
+      "https://www.vmfa251.org/pdffiles/F18-ABCD-000.pdf",
+      "https://www.designation-systems.net/usmilav/asetds/u-f.html",
+      "https://en.wikipedia.org/wiki/McDonnell_Douglas_F/A-18_Hornet"
+    ],
+    "confidence": "medium",
+    "notes": "NATOPS Fig 4-4 (2008): tanks only on 3, 5, 7; configuration weights E454/429, F2596/2673 lb for a single centreline '315/330 gal' tank -> interpreted 330 gal: 429 lb empty (194.6 kg), 2,673 lb full (1,212 kg) (interpretation of the slash notation is mine). Carriage 1.6 IMN; carrier landing with >500 lb in the centreline tank prohibited. designation-systems calls FPU-8/A a '350 Gal.' tank - DISAGREES with 330 gal (NATOPS, Wikipedia)."
+  },
+  {
+    "id": "fuel_tank_315",
+    "designation": "315 US gal external fuel tank (FPU-6/A)",
+    "category": "fuel_tank",
+    "era": "baseline",
+    "length_m": null,
+    "diameter_m": null,
+    "span_m": null,
+    "span_notes": "n/a",
+    "weight_kg": 205.9,
+    "shape_notes": "Dimensions unverified. NATOPS mentions a 'cylindrical tank' (prohibited on centreline aboard carriers with non-flush deck catapults); whether that is the 315 gal tank is not stated in the text read.",
+    "colour_notes": "Unverified.",
+    "carried_on": "bru32 (via pylon)",
+    "stations": [
+      3,
+      5,
+      7
+    ],
+    "per_station": "1",
+    "sources": [
+      "https://www.vmfa251.org/pdffiles/F18-ABCD-000.pdf",
+      "https://www.designation-systems.net/usmilav/asetds/u-f.html"
+    ],
+    "confidence": "medium",
+    "notes": "designation-systems: FPU-6/A 315 gal, F/A-18A/B/C/D. NATOPS Fig 4-4 interpretation: 454 lb empty, 2,596 lb full."
+  },
+  {
+    "id": "an_aas38",
+    "designation": "AN/AAS-38 NITE Hawk targeting FLIR pod (AAS-38A/B with laser)",
+    "category": "pod",
+    "era": "baseline",
+    "length_m": 1.829,
+    "diameter_m": 0.33,
+    "span_m": null,
+    "span_notes": "n/a",
+    "weight_kg": 154.4,
+    "shape_notes": "Cylindrical pod; forward section = rotating optics stabiliser (+30 to -150 deg look angles) with window; aft section = FLIR receiver.",
+    "colour_notes": "Unverified (grey).",
+    "carried_on": "station 4 pod adapter (fuselage missile station)",
+    "stations": [
+      4
+    ],
+    "per_station": "1 (station 4 = port/left fuselage only)",
+    "sources": [
+      "https://en.wikipedia.org/wiki/AN/AAS-38",
+      "https://man.fas.org/dod-101/sys/smart/aas-38.htm",
+      "https://www.dstorm.eu/pages/loadout/f-18.html",
+      "https://www.vmfa251.org/pdffiles/F18-ABCD-000.pdf"
+    ],
+    "confidence": "medium",
+    "notes": "Wikipedia (citing Forecast Intl): 182.88 cm (72 in) long, ~33 cm dia; AAS-38 154.36 kg (340 lb), AAS-38A 172.52 kg, AAS-38B 167.98 kg. Original AAS-38 = FLIR only (A/B era, limited numbers in Desert Storm on Navy and USMC Hornets); AAS-38A laser designator from 1993 and AAS-38B LST are tied to Night Attack C/D (FAS) - A+ use unverified."
+  },
+  {
+    "id": "an_asq173",
+    "designation": "AN/ASQ-173 LDT/SCAM laser spot tracker / strike camera pod",
+    "category": "pod",
+    "era": "baseline",
+    "length_m": null,
+    "diameter_m": null,
+    "span_m": null,
+    "span_notes": "n/a",
+    "weight_kg": null,
+    "shape_notes": "Slim pod: PAVE PENNY-derived laser spot tracker in the nose, 35 mm strike camera in the tail. Dimensions unverified.",
+    "colour_notes": "Unverified.",
+    "carried_on": "station 6 pod adapter",
+    "stations": [
+      6
+    ],
+    "per_station": "1 (station 6 = starboard/right fuselage)",
+    "sources": [
+      "https://man.fas.org/dod-101/sys/smart/aas-38.htm",
+      "https://www.dstorm.eu/pages/loadout/f-18.html",
+      "https://en.wikipedia.org/wiki/AN/AAS-38",
+      "https://www.vmfa251.org/pdffiles/F18-ABCD-000.pdf"
+    ],
+    "confidence": "medium",
+    "notes": "FAS: Martin-Marietta derivative of PAVE PENNY, cannot designate. NATOPS preflight lists 'LDT/SCAM' on the right fuselage station. Dims/weight not found."
+  },
+  {
+    "id": "an_aar50",
+    "designation": "AN/AAR-50 TINS navigation FLIR (reference only)",
+    "category": "pod",
+    "era": "C/D only (not A/B) - reference",
+    "length_m": null,
+    "diameter_m": null,
+    "span_m": null,
+    "span_notes": "n/a",
+    "weight_kg": null,
+    "shape_notes": "Wide-FOV nav FLIR pod. Dims unverified.",
+    "colour_notes": "Unverified.",
+    "carried_on": "station 6 pod adapter",
+    "stations": [
+      6
+    ],
+    "per_station": "1 (right fuselage only)",
+    "sources": [
+      "https://www.dstorm.eu/pages/loadout/f-18.html",
+      "https://en.wikipedia.org/wiki/McDonnell_Douglas_F/A-18_Hornet",
+      "https://www.vmfa251.org/pdffiles/F18-ABCD-000.pdf"
+    ],
+    "confidence": "medium",
+    "notes": "C/D night-attack item (Lot 12+); permanent clearance Oct 1992 (dstorm). Not an A/B store - listed so it is NOT modelled on A/B."
+  },
+  {
+    "id": "an_aww9",
+    "designation": "AN/AWW-9(B) Walleye ER/DL data-link pod",
+    "category": "pod",
+    "era": "baseline",
+    "length_m": null,
+    "diameter_m": null,
+    "span_m": null,
+    "span_notes": "n/a",
+    "weight_kg": null,
+    "shape_notes": "Data-link pod (antenna pod). Dimensions unverified.",
+    "colour_notes": "Unverified.",
+    "carried_on": "bru32 (centreline pylon)",
+    "stations": [
+      5
+    ],
+    "per_station": "1",
+    "sources": [
+      "https://www.dstorm.eu/pages/loadout/f-18.html",
+      "https://man.fas.org/dod-101/sys/smart/agm-62.htm",
+      "https://www.designation-systems.net/dusrm/m-62.html"
+    ],
+    "confidence": "medium",
+    "notes": "Desert Storm Hornet Walleye load: AN/AWW-9A on centreline 5 (dstorm). NATOPS TAC menu lists 'AWW-9/13'."
+  },
+  {
+    "id": "an_aww13",
+    "designation": "AN/AWW-13 Advanced Data Link pod",
+    "category": "pod",
+    "era": "baseline",
+    "length_m": null,
+    "diameter_m": null,
+    "span_m": null,
+    "span_notes": "n/a",
+    "weight_kg": null,
+    "shape_notes": "Data-link pod for Walleye/SLAM/SLAM-ER (and JSOW-C). Dimensions unverified.",
+    "colour_notes": "Unverified.",
+    "carried_on": "bru32 (pylon)",
+    "stations": [
+      2,
+      3,
+      5,
+      7,
+      8
+    ],
+    "per_station": "1",
+    "sources": [
+      "https://man.fas.org/dod-101/sys/smart/aww-13.htm",
+      "https://man.fas.org/dod-101/sys/smart/agm-84.htm",
+      "https://www.vmfa251.org/pdffiles/F18-ABCD-000.pdf"
+    ],
+    "confidence": "medium",
+    "notes": "Stations from the C/D SLAM-ER interim flight clearance (FAS): AWW-13 on 2/8 (config II) or 3/5/7 (config I/II). Introduction date vs A/B service and A/B-specific clearance unverified."
+  },
+  {
+    "id": "an_aaq28_litening",
+    "designation": "AN/AAQ-28(V) LITENING AT targeting pod (USMC)",
+    "category": "pod",
+    "era": "A+ upgrade",
+    "length_m": 2.2,
+    "diameter_m": 0.406,
+    "span_m": null,
+    "span_notes": "n/a",
+    "weight_kg": 208,
+    "shape_notes": "Cylindrical pod with rotating nose sensor head; station-4 version is a 'left-handed' pod with its own mounting pylon.",
+    "colour_notes": "Unverified (grey).",
+    "carried_on": "station 4 LITENING pylon / centreline",
+    "stations": [
+      4,
+      5
+    ],
+    "per_station": "1",
+    "sources": [
+      "https://en.wikipedia.org/wiki/AN/AAQ-28_Litening",
+      "https://www.militaryaerospace.com/rf-analog/article/16712524/marine-corps-f-18-to-use-litening-targeting-pods",
+      "https://www.defencetalk.com/us-marine-corpss-expeditionary-f-18s-with-litening-at-targeting-systems-3680"
+    ],
+    "confidence": "medium",
+    "notes": "2.20 m, 40.6 cm, 208 kg (Wikipedia). Station 4: 2005 contract for left-handed pods 'designed for pylon station four, the same location ... on F/A-18C/Ds' (Military & Aerospace Electronics). Station 5: Marines first used pods borrowed from AV-8Bs on station 5 via a quick-reaction mod (Defencetalk, via search summary). USMC use on A+ inferred, not quoted."
+  },
+  {
+    "id": "an_alq167",
+    "designation": "AN/ALQ-167(V) ECM threat-simulation pod",
+    "category": "pod",
+    "era": "baseline",
+    "length_m": null,
+    "diameter_m": null,
+    "span_m": null,
+    "span_notes": "n/a",
+    "weight_kg": null,
+    "shape_notes": "Training/threat-simulation jammer pod (ULQ-21 modules), many variants. Dimensions unverified.",
+    "colour_notes": "FAS photo caption describes a blue ALQ-167 on an A-6 (colour on Hornet unverified).",
+    "carried_on": "unverified",
+    "stations": [],
+    "per_station": "unverified",
+    "sources": [
+      "https://man.fas.org/dod-101/sys/ac/equip/an-alq-167.htm"
+    ],
+    "confidence": "low",
+    "notes": "F/A-18 carriage not documented in sources found."
+  },
+  {
+    "id": "acmi_pod",
+    "designation": "ACMI/TACTS instrumentation pod (AN/ASQ-T series; 'ARDS'/'EATS' pods)",
+    "category": "pod",
+    "era": "baseline",
+    "length_m": null,
+    "diameter_m": 0.127,
+    "span_m": null,
+    "span_notes": "Sidewinder-like fins - unverified.",
+    "weight_kg": null,
+    "shape_notes": "AIM-9-sized cylindrical pod carried on the wingtip LAU-7 in place of a missile. Exact dims unverified.",
+    "colour_notes": "Unverified.",
+    "carried_on": "lau7",
+    "stations": [
+      1,
+      9
+    ],
+    "per_station": "1",
+    "sources": [
+      "https://man.fas.org/dod-101/sys/smart/agm-84.htm"
+    ],
+    "confidence": "low",
+    "notes": "FAS-quoted C/D SLAM-ER clearance lists 'ballasted ARDS pod' and 'ballasted EATS pod' on stations 1/9. Diameter assumed 5 in (AIM-9 form factor) - unverified."
+  },
+  {
+    "id": "bru32",
+    "designation": "BRU-32/A bomb ejector rack (parent rack)",
+    "category": "rack",
+    "era": "baseline",
+    "length_m": null,
+    "diameter_m": null,
+    "span_m": null,
+    "span_notes": "n/a",
+    "weight_kg": null,
+    "shape_notes": "Internal to the SUU-62/63 pylons; 14 in and 30 in suspension hooks; automatic sway braces; two-cartridge primary ejection, one-cartridge auxiliary (hooks-open) release.",
+    "colour_notes": "n/a (inside pylon; sway braces visible).",
+    "carried_on": "suu62 / suu63",
+    "stations": [
+      2,
+      3,
+      5,
+      7,
+      8
+    ],
+    "per_station": "1",
+    "sources": [
+      "https://www.bulletpicker.com/pdf/NAVEDTRA-12308.pdf",
+      "https://man.fas.org/dod-101/sys/ac/equip/bru-32.htm",
+      "https://www.vmfa251.org/pdffiles/F18-ABCD-000.pdf",
+      "https://www.designation-systems.net/usmilav/asetds/u-b.html"
+    ],
+    "confidence": "high",
+    "notes": "Carries single stores, BRU-33/A VERs and LAU-115/117/118 launchers. Emergency jettison releases everything on BRU-32s at 2,3,5,7,8 in pairs 2/8, 3/7, then 5 (NATOPS)."
+  },
+  {
+    "id": "bru33",
+    "designation": "BRU-33/A VER and BRU-33A/A CVER (twin rack)",
+    "category": "rack",
+    "era": "baseline",
+    "length_m": null,
+    "diameter_m": null,
+    "span_m": null,
+    "span_notes": "n/a",
+    "weight_kg": null,
+    "shape_notes": "Accessory rack hung on the BRU-32/A: two side-by-side ejector units with 14 in hooks and sway braces; on the BRU-33A/A (CVER) the ejector units are canted 5 deg outboard to clear large-diameter stores.",
+    "colour_notes": "Unverified.",
+    "carried_on": "bru32",
+    "stations": [
+      2,
+      3,
+      5,
+      7,
+      8
+    ],
+    "per_station": "1 rack per station, carrying 2 stores of up to 1,000 lb each",
+    "sources": [
+      "https://www.bulletpicker.com/pdf/NAVEDTRA-12308.pdf",
+      "https://man.fas.org/dod-101/sys/ac/equip/bru-32.htm",
+      "https://www.dstorm.eu/pages/loadout/f-18.html"
+    ],
+    "confidence": "high",
+    "notes": "Station list from AO 3&2 (1990) Fig 14-21. Dimensions/weight not found."
+  },
+  {
+    "id": "mer_ter",
+    "designation": "MER/TER (A/A37B-6E MER, A/A37B-5E TER; BRU-41/42 improved; 'MER-7')",
+    "category": "rack",
+    "era": "baseline",
+    "length_m": null,
+    "diameter_m": null,
+    "span_m": null,
+    "span_notes": "n/a",
+    "weight_kg": null,
+    "shape_notes": "Strongback with 6 (MER) or 3 (TER) ejector units, 14 in hook pairs; practice-bomb adapters available.",
+    "colour_notes": "Unverified.",
+    "carried_on": "bru32",
+    "stations": [],
+    "per_station": "unverified for Hornet",
+    "sources": [
+      "https://www.vmfa251.org/pdffiles/F18-ABCD-000.pdf",
+      "https://man.fas.org/dod-101/sys/ac/equip/mer.htm",
+      "https://man.fas.org/dod-101/sys/ac/equip/ter.htm",
+      "https://www.bulletpicker.com/pdf/NAVEDTRA-12308.pdf",
+      "https://en.wikipedia.org/wiki/ADM-141_TALD"
+    ],
+    "confidence": "low",
+    "notes": "NATOPS (2008) section-takeoff rules mention 'VERS, MERS, TERS' and the CG table lists 'MER-7' on stations 2,3,5,7,8 - so some MER use is implied, but loads/stations are unverified. Not in the 1990 AO F/A-18 station chart. TALD carried on TERs (Wikipedia)."
+  },
+  {
+    "id": "bru55",
+    "designation": "BRU-55/A smart bomb rack (twin JDAM/JSOW)",
+    "category": "rack",
+    "era": "A+ upgrade",
+    "length_m": null,
+    "diameter_m": null,
+    "span_m": null,
+    "span_notes": "n/a",
+    "weight_kg": null,
+    "shape_notes": "Twin-store MIL-STD-1760 rack. Dims unverified.",
+    "colour_notes": "Unverified.",
+    "carried_on": "bru32",
+    "stations": [],
+    "per_station": "2 stores per rack (C/D); A+ unverified",
+    "sources": [
+      "https://www.designation-systems.net/usmilav/asetds/u-b.html",
+      "https://bulletpicker.com/pdf/Weapons-File-2003.pdf"
+    ],
+    "confidence": "low",
+    "notes": "designation-systems: used for AGM-154/JDAM/WCMD on F/A-18. WF 2003: 8x GBU-38 on F-18 via BRU-55. A+ use unverified."
+  },
+  {
+    "id": "lau7",
+    "designation": "LAU-7/A (e.g. LAU-7/A-4, -6) Sidewinder rail launcher",
+    "category": "launcher",
+    "era": "baseline",
+    "length_m": null,
+    "diameter_m": null,
+    "span_m": null,
+    "span_notes": "n/a",
+    "weight_kg": null,
+    "shape_notes": "Rail launcher housing with nitrogen receiver (3,200 psig bottle for seeker cooling), power supply, mechanism; forward/aft fairings.",
+    "colour_notes": "Unverified.",
+    "carried_on": "wingtip / lau115",
+    "stations": [
+      1,
+      2,
+      8,
+      9
+    ],
+    "per_station": "1 at 1/9 (always fitted); 2 side-mounted on LAU-115/A at 2/8",
+    "sources": [
+      "https://www.bulletpicker.com/pdf/NAVEDTRA-12308.pdf",
+      "https://man.fas.org/dod-101/sys/ac/equip/lau-7.htm",
+      "https://www.vmfa251.org/pdffiles/F18-ABCD-000.pdf",
+      "https://www.dstorm.eu/pages/loadout/f-18.html"
+    ],
+    "confidence": "high",
+    "notes": "NATOPS prohibits flight without the LAU-7A wingtip rails. Desert Storm Hornets used LAU-7/A-6 (dstorm). Dims/weight not found."
+  },
+  {
+    "id": "lau115",
+    "designation": "LAU-115/A and LAU-115A/A wing missile launcher",
+    "category": "launcher",
+    "era": "baseline",
+    "length_m": 2.083,
+    "diameter_m": null,
+    "span_m": null,
+    "span_notes": "n/a",
+    "weight_kg": 23.6,
+    "shape_notes": "AIM-7 rail launcher hung from the BRU-32 in the outboard pylon; side attachment points for one or two LAU-7 (AIM-9) or LAU-127 (AIM-120/AIM-9).",
+    "colour_notes": "Unverified.",
+    "carried_on": "bru32",
+    "stations": [
+      2,
+      8
+    ],
+    "per_station": "1",
+    "sources": [
+      "https://www.bulletpicker.com/pdf/NAVEDTRA-12308.pdf",
+      "https://man.fas.org/dod-101/sys/ac/equip/lau-115.htm"
+    ],
+    "confidence": "medium",
+    "notes": "Stations 2/8 only (AO 1990 Fig 14-21). Length 82 in / weight 52 lb come from a tpub search fragment of NAVEDTRA 14313 Table 3-3 - LOW confidence, variant unclear."
+  },
+  {
+    "id": "lau116",
+    "designation": "LAU-116/A and LAU-116A/A fuselage missile launcher",
+    "category": "launcher",
+    "era": "baseline",
+    "length_m": null,
+    "diameter_m": null,
+    "span_m": null,
+    "span_notes": "n/a",
+    "weight_kg": null,
+    "shape_notes": "Ejection launcher mounted internally in fuselage cavities (left/right handed) so the missile rides semi-recessed; two CCU-45 impulse cartridges.",
+    "colour_notes": "n/a",
+    "carried_on": "fuselage",
+    "stations": [
+      4,
+      6
+    ],
+    "per_station": "1",
+    "sources": [
+      "https://www.bulletpicker.com/pdf/NAVEDTRA-12308.pdf",
+      "https://man.fas.org/dod-101/sys/ac/equip/lau-116.htm"
+    ],
+    "confidence": "high",
+    "notes": "LAU-116A/A also launches AIM-120 (A+). Latch assembly also listed at 4/6 (pod/adapter mounting)."
+  },
+  {
+    "id": "lau127",
+    "designation": "LAU-127/A Common Rail Launcher",
+    "category": "launcher",
+    "era": "A+ upgrade",
+    "length_m": null,
+    "diameter_m": null,
+    "span_m": null,
+    "span_notes": "n/a",
+    "weight_kg": null,
+    "shape_notes": "Rail launcher for AIM-120 and AIM-9; on Hornet attached to the sides of the LAU-115.",
+    "colour_notes": "Unverified.",
+    "carried_on": "lau115",
+    "stations": [
+      2,
+      8
+    ],
+    "per_station": "1-2 (on LAU-115 sides)",
+    "sources": [
+      "https://man.fas.org/dod-101/sys/ac/equip/lau-127.htm",
+      "https://man.fas.org/dod-101/sys/ac/equip/lau-115.htm",
+      "https://www.designation-systems.net/usmilav/asetds/u-l.html"
+    ],
+    "confidence": "medium",
+    "notes": "Dims not found (USAF LAU-128A/A for comparison: 103.14 in, 87 lb - WF 2003, different launcher). Wingtip use on A+ unverified."
+  },
+  {
+    "id": "lau117",
+    "designation": "LAU-117/A Maverick launcher",
+    "category": "launcher",
+    "era": "baseline",
+    "length_m": 2.388,
+    "diameter_m": null,
+    "span_m": null,
+    "span_notes": "11 x 11 in cross-section (USAF (V)3/A)",
+    "weight_kg": 61.2,
+    "shape_notes": "Box-section rail with lug fittings, front/rear fairings and aft electronics; 14 or 30 in suspension.",
+    "colour_notes": "Unverified.",
+    "carried_on": "bru32",
+    "stations": [
+      2,
+      3,
+      7,
+      8
+    ],
+    "per_station": "1",
+    "sources": [
+      "https://www.bulletpicker.com/pdf/NAVEDTRA-12308.pdf",
+      "https://bulletpicker.com/pdf/Weapons-File-2003.pdf",
+      "https://man.fas.org/dod-101/sys/ac/equip/lau-117.htm"
+    ],
+    "confidence": "medium",
+    "notes": "Stations from AO 1990 Fig 14-21. Dims are USAF LAU-117A(V)3/A (WF 2003: 94 in, 11x11 in, 125-145 lb) - Navy (V)2/A assumed similar."
+  },
+  {
+    "id": "lau118",
+    "designation": "LAU-118(V)1/A HARM launcher",
+    "category": "launcher",
+    "era": "baseline",
+    "length_m": 2.007,
+    "diameter_m": null,
+    "span_m": null,
+    "span_notes": "11.65 in wide, 8 in high (USAF (V)4/A)",
+    "weight_kg": 54.4,
+    "shape_notes": "Structurally modified Aero 5B-1 rail launcher with fore/aft fairings.",
+    "colour_notes": "Unverified.",
+    "carried_on": "bru32",
+    "stations": [
+      2,
+      3,
+      7,
+      8
+    ],
+    "per_station": "1",
+    "sources": [
+      "https://www.bulletpicker.com/pdf/NAVEDTRA-12308.pdf",
+      "https://bulletpicker.com/pdf/Weapons-File-2003.pdf",
+      "https://man.fas.org/dod-101/sys/ac/equip/lau-118.htm"
+    ],
+    "confidence": "medium",
+    "notes": "Dims are USAF LAU-118(V)4/A (WF 2003); Navy (V)1/A is electrically different (FAS); external match assumed."
+  },
+  {
+    "id": "suu62",
+    "designation": "SUU-62/A centreline pylon (SUU-62A/A later)",
+    "category": "pylon",
+    "era": "baseline",
+    "length_m": null,
+    "diameter_m": null,
+    "span_m": null,
+    "span_notes": "n/a",
+    "weight_kg": null,
+    "shape_notes": "Centreline pylon housing a BRU-32/A. Dims unverified.",
+    "colour_notes": "Airframe grey (unverified).",
+    "carried_on": "fuselage station 5",
+    "stations": [
+      5
+    ],
+    "per_station": "1",
+    "sources": [
+      "https://www.bulletpicker.com/pdf/NAVEDTRA-12308.pdf",
+      "https://www.designation-systems.net/usmilav/asetds/u-s.html",
+      "https://squadron.com/fln-48-8013"
+    ],
+    "confidence": "high",
+    "notes": "Model-kit vendor listings distinguish SUU-62/A (early A/B) from SUU-62A/A (A+/C/D) - low-confidence source for that split."
+  },
+  {
+    "id": "suu63",
+    "designation": "SUU-63/A wing pylon (SUU-63A/A, SUU-63C/A later)",
+    "category": "pylon",
+    "era": "baseline",
+    "length_m": null,
+    "diameter_m": null,
+    "span_m": null,
+    "span_notes": "n/a",
+    "weight_kg": null,
+    "shape_notes": "Wing pylon housing a BRU-32/A. Dims unverified. Pylon variants differ by production block (check photos).",
+    "colour_notes": "Airframe grey (unverified).",
+    "carried_on": "wing",
+    "stations": [
+      2,
+      3,
+      7,
+      8
+    ],
+    "per_station": "1",
+    "sources": [
+      "https://www.bulletpicker.com/pdf/NAVEDTRA-12308.pdf",
+      "https://www.designation-systems.net/usmilav/asetds/u-s.html",
+      "https://www.dstorm.eu/pages/loadout/f-18.html",
+      "https://squadron.com/fln-48-8013"
+    ],
+    "confidence": "high",
+    "notes": "Desert Storm USMC: SUU-63A on VMFA-314/333/451 (A models), SUU-63A/A on VMFA-212/232/235, SUU-63C/A on VMFA(AW)-121 (dstorm). Kit vendor: SUU-63/A for BuNo 161353-163175 (A/B)."
+  }
+]

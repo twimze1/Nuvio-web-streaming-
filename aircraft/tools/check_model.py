@@ -5,10 +5,13 @@
 1. Every hinged part rests at zero rotation (its "_Hinge" parent holds the
    hinge orientation), and port/starboard pairs move the same way for the
    same positive rotation.
-2. No two meshes intersect, apart from joints that are meant to touch or
-   that sit inside the fuselage (fin and wing roots inside the nacelles,
-   stores on their stations, canopy parts).  Hidden objects (stores, the
-   extended refuelling probe) are checked too.
+2. No two airframe meshes intersect, apart from joints that are meant to
+   touch or sit inside the fuselage (fin and wing roots inside the nacelles,
+   canopy frames on their transparencies).
+3. Cockpit parts stay inside the closed canopy, windscreen and their frames.
+4. In every loadout, no store intersects the airframe, the gear or another
+   station's store (a store touching its own rack, launcher or pylon at the
+   lugs is expected).
 
 Exits non-zero if a check fails.
 """
@@ -74,28 +77,47 @@ for name, (dx, dy, dz) in moves.items():
             failures.append("%s and its port twin move differently" % name)
 
 # -- 2. clashes ---------------------------------------------------------------
-meshes = [o for o in objs if o.type == "MESH"]
-trees = {o.name: BVHTree.FromPolygons(verts(o), [list(p.vertices) for p in o.data.polygons])
-         for o in meshes}
+def coll_of(o):
+    return o.users_collection[0].name if o.users_collection else ""
+
+
+all_meshes = [o for o in objs if o.type == "MESH"]
+library = [o for o in all_meshes if coll_of(o) == "Stores Library"]
+loadout_objs = [o for o in all_meshes if "Loadout" in coll_of(o)]
+cockpit = [o for o in all_meshes if coll_of(o).endswith(" Cockpit")]
+base_meshes = [o for o in all_meshes if o not in library and o not in loadout_objs and o not in cockpit]
+meshes = base_meshes
+cache = {}
+
+
+def tree(o):
+    if o.name not in cache:
+        cache[o.name] = BVHTree.FromPolygons(verts(o), [list(p.vertices) for p in o.data.polygons])
+    return cache[o.name]
 
 
 def part(name):
-    return name.split("_", 1)[1]
+    return name.split("_", 1)[1] if "_" in name else name
 
 
 ATTACHED_TO_FUSELAGE = ("Wing_Inner", "Fin_", "Stabilator", "Canopy", "Seats", "Antennae",
-                        "GunPort", "AIM7", "MainGear", "NoseGear", "Nozzle", "ArrestingHook",
-                        "SpeedBrake", "RefuelProbe", "CockpitInterior")
+                        "GunPort", "MainGear", "NoseGear", "Nozzle", "ArrestingHook",
+                        "SpeedBrake", "RefuelProbe", "Windscreen", "Pylon_STA5")
 EXPECTED = [
     ("Fin_", "Wing_Inner"),          # both roots buried inside the nacelle
-    ("AIM9", "Wing_Outer"),          # launcher on the tip rail
-    ("Canopy", "CanopyFrames"), ("Canopy", "Seats"), ("Canopy", "CockpitInterior"),
-    ("CanopyFrames", "CockpitInterior"), ("Seats", "CockpitInterior"),
-    ("CanopyFrames", "Seats"),
+    ("Canopy", "CanopyFrames"), ("Windscreen", "WindscreenFrame"),
 ]
 clashes = []
-for a, b in itertools.combinations(sorted(trees), 2):
-    pa, pb = part(a), part(b)
+
+
+def check(a, b, label=""):
+    n = len(tree(a).overlap(tree(b)))
+    if n:
+        clashes.append("%s%s x %s (%d triangle pairs)" % (label, a.name, b.name, n))
+
+
+for a, b in itertools.combinations(sorted(base_meshes, key=lambda o: o.name), 2):
+    pa, pb = part(a.name), part(b.name)
     if pa == "Fuselage" and pb.startswith(ATTACHED_TO_FUSELAGE):
         continue
     if pb == "Fuselage" and pa.startswith(ATTACHED_TO_FUSELAGE):
@@ -103,14 +125,37 @@ for a, b in itertools.combinations(sorted(trees), 2):
     if any((pa.startswith(x) and pb.startswith(y)) or (pa.startswith(y) and pb.startswith(x))
            for x, y in EXPECTED):
         continue
-    n = len(trees[a].overlap(trees[b]))
-    if n:
-        clashes.append("%s x %s (%d triangle pairs)" % (a, b, n))
+    check(a, b)
+# cockpit interior against the transparencies and their frames (canopy closed)
+glass = [o for o in base_meshes if part(o.name).startswith(("Canopy", "Windscreen"))]
+for c in cockpit:
+    if c.parent and part(c.parent.name).startswith("Canopy"):
+        continue                      # mirrors ride on the canopy bow
+    for g in glass:
+        check(c, g, "cockpit: ")
+# every loadout: its stores against the airframe and against each other
+by_load = {}
+for o in loadout_objs:
+    by_load.setdefault(coll_of(o), []).append(o)
+for lname, items in sorted(by_load.items()):
+    for o in items:
+        for b in base_meshes:
+            pb = part(b.name)
+            if pb.startswith("Pylon_STA") or pb == "Fuselage" and "STA4" in o.name or \
+                    pb == "Fuselage" and "STA6" in o.name:
+                continue                  # lugs sit in the rack; LAU-116 stores are semi-recessed
+            check(o, b, lname + ": ")
+    for a, b in itertools.combinations(items, 2):
+        sa = a.name.split("_STA")[1].split("_")[0]
+        sb_ = b.name.split("_STA")[1].split("_")[0]
+        if sa == sb_:
+            continue                      # store and its own rack / launcher
+        check(a, b, lname + ": ")
 for c in clashes:
     print("CLASH", c)
 failures += ["clash: " + c for c in clashes]
 
-print("\n%d meshes, %d hinged parts checked" % (len(meshes), len(hinged)))
+print("\n%d meshes (%d cockpit, %d in loadouts), %d hinged parts checked" % (len(base_meshes), len(cockpit), len(loadout_objs), len(hinged)))
 if failures:
     print("FAILED:\n  " + "\n  ".join(failures))
     sys.exit(1)

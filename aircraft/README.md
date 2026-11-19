@@ -1,151 +1,401 @@
 # Legacy Hornet models: F/A-18A and F/A-18B
 
-Two Blender models of the original McDonnell Douglas Hornet, built by one
-script from the general-arrangement drawings of the F/A-18A and F/A-18B.
-This is the legacy airframe, not the larger F/A-18E/F Super Hornet.
+Game-ready Blender models of the original McDonnell Douglas Hornet, built by
+a script from the F/A-18A and F/A-18B general-arrangement drawings. This is
+the legacy airframe, not the larger F/A-18E/F Super Hornet. Each variant has:
+
+- weathered PBR textures (a worn fleet-service finish);
+- a cockpit modelled from NASA photographs and NASA's F/A-18 cockpit layout
+  drawing, with eye points for a first-person camera;
+- the external stores the US Navy and Marine Corps carried on the A/B, with
+  pylons, station sockets and example loadouts.
+
+![F/A-18A](previews/FA-18A_hero.jpg)
+![F/A-18A front cockpit](previews/cockpit_A_front.jpg)
+
+## Files
 
 | File | What it is |
 | --- | --- |
-| `FA-18A_Hornet.blend` | Single-seat F/A-18A |
-| `FA-18B_Hornet.blend` | Tandem two-seat F/A-18B |
-| `FA-18A_Hornet.glb`, `FA-18B_Hornet.glb` | Same aircraft for game engines: clean airframe, gear down |
-| `fa18_hornet.py` | Generator that builds both models. Edit this file, not the meshes. |
-| `tools/` | Reference-overlay check, model checks, preview renders |
-| `previews/` | Renders of both variants, the stores and the moving parts |
-
-![F/A-18A](previews/FA-18A_views.jpg)
-![F/A-18B](previews/FA-18B_views.jpg)
+| `FA-18A_Hornet.blend`, `FA-18B_Hornet.blend` | The models. Textures are in `textures/`, referenced by relative path. |
+| `FA-18A_Hornet.glb`, `FA-18B_Hornet.glb` | Same aircraft for game engines, textures embedded. Includes the airframe, cockpit, pylons, station sockets and cameras, with the gear down. Loadouts are not included. |
+| `FA-18_Stores.glb` | Every store, pylon, rack and launcher. Each node sits at the origin, which is also the store's attach point. |
+| `FA-18A_stations.json`, `FA-18B_stations.json` | Station manifest: socket positions, what each station carries, store data and sources, and the loadouts. |
+| `textures/` | Cockpit atlas, display images, exterior atlases and the stores atlas. |
+| `fa18_hornet.py` | Generator for the airframe; it builds everything else by calling the modules below. |
+| `fa18_cockpit.py`, `cockpit_layout.py` | Cockpit geometry, and the panel layout it shares with the texture painter. |
+| `fa18_stores.py`, `stores_data.py` | Stores, pylons, sockets and loadouts, and the weapons data they use. |
+| `fa18_materials.py` | PBR materials and the exterior bake. |
+| `tools/` | Texture painters, reference-line prep, overlay check, model checks, preview renders. |
+| `docs/weapons_research.md`, `.json` | Research notes behind every weapon number, with sources. |
 
 ## Variants
 
-The two variants share every part except the cockpit:
+The two variants share everything except the crew area:
 
-- **F/A-18A**: one seat. The canopy runs from 3.22 m to 7.15 m aft of the nose
-  tip, with a windscreen bow and a rear canopy frame.
-- **F/A-18B**: two seats in tandem. The canopy runs from 3.18 m to 8.70 m aft of
-  the nose tip and is taller. It has a windscreen bow, a centre frame between
-  the cockpits, and a rear frame. The spine is raised behind it, as drawn on
-  the B sheet.
+- **F/A-18A:** one seat. The canopy runs 3.22–7.15 m aft of the nose tip.
+- **F/A-18B:** two seats in tandem. The canopy runs 3.18–8.70 m, with a frame between the
+  cockpits and a raised spine behind them. The rear cockpit has its own instrument panel,
+  without a HUD (head-up display).
 
 ## Regenerating
 
-Tested with Blender 5.3 (the `bpy` module). It uses no 5.x-only API, so it
-should also run on 4.2 and newer, but that is untested.
+Tested with Blender 5.3 (the `bpy` module). It should also run on Blender
+4.2+, but that is untested.
 
 ```sh
 cd aircraft
-blender --background --python fa18_hornet.py -- --variant both --glb
+# 1. paint the cockpit and stores textures (Python 3 with Pillow and numpy)
+python tools/make_cockpit_textures.py
+python tools/make_store_textures.py
+# 2. optional, slow (about an hour on 4 CPU cores): re-bake the exterior textures.
+#    Panel lines come from the F/A-18B drawing, which is not stored in this repo:
+python tools/prepare_reference_lines.py PATH/TO/fa18b_sheet.gif /tmp/refs
+blender -b -P fa18_hornet.py -- --variant A --bake --refs /tmp/refs/refs.json
+blender -b -P fa18_hornet.py -- --variant B --bake fuselage --refs /tmp/refs/refs.json
+# 3. build both variants, with GLB files and the stores library
+blender -b -P fa18_hornet.py -- --variant both --glb
 ```
 
-`--variant A|B|both`, `--out DIR`, `--glb` (also write .glb files),
-`--no-uv` (skip the automatic UV unwrap). You can also open the script in
-Blender's Text Editor, set `VARIANT` at the top, and run it. That adds the
-aircraft to the open scene.
+Options:
+
+- `--variant A|B|both`
+- `--out DIR`
+- `--glb` (also writes `FA-18_Stores.glb`)
+- `--bake [GROUP ...]`, `--refs`, `--samples`
+- `--no-uv`
+
+Without `--bake`, the build uses the textures already in `textures/`. The
+wings, tail and gear atlases are shared by both variants; each variant has its
+own fuselage atlas.
+
+Rebuilds are deterministic. If you change exterior geometry, though, re-bake
+that part's atlas: its automatic UV layout changes with the mesh.
 
 ## Structure and conventions
 
-- Real-world scale in metres. The nose points along −Y, +Z is up, and the port
-  wing is on +X.
-- One root Empty per aircraft (`FA-18A_Hornet` / `FA-18B_Hornet`), with its
-  origin on the centreline at 25 % of the mean aerodynamic chord. It carries
-  the custom properties `variant`, `seats`, `length_m`, `span_m` and
-  `ground_z` (wheel contact height).
-- **Moving parts.** Each moving part is a separate object under a
-  `<name>_Hinge` empty that lies on the hinge line. The part rests at zero
-  rotation. Rotate it about its local X axis to deflect it. Each part's
-  `hinge` custom property records its sign, and it is exported to glTF as
-  `extras`:
+- Real-world scale in metres. The nose points along −Y, +Z is up and the port wing
+  is on +X. glTF converts this on export as usual.
+- One root empty per aircraft (`FA-18A_Hornet`), with its origin on the centreline at
+  25 % of the mean aerodynamic chord.
+- **Moving parts.** Each sits under a `<name>_Hinge` empty on its hinge line and rests
+  at zero rotation; rotate it about its local X axis. Its `hinge` custom property (a
+  glTF extra) records which way positive goes:
 
   | Part | Positive rotation |
   | --- | --- |
-  | `Flap_L/R`, `Aileron_L/R`, `Stabilator_L/R` | trailing edge down |
-  | `LEFlap_Inner_L/R`, `LEFlap_Outer_L/R` | leading edge down |
-  | `Rudder_L/R` | trailing edge to starboard |
-  | `Wing_Outer_L/R` | wing folds up (90° = folded) |
+  | `Flap_*`, `Aileron_*`, `Stabilator_*` | trailing edge down |
+  | `LEFlap_Inner_*`, `LEFlap_Outer_*` | leading edge down |
+  | `Rudder_*` | trailing edge to starboard |
+  | `Wing_Outer_*` | wing folds up (90° = folded) |
+  | `Canopy` | opens (front edge up, hinged at the aft end) |
   | `SpeedBrake` | opens |
   | `ArrestingHook` | hook down |
 
-  The outer leading-edge flaps and the ailerons ride on the outer wing
-  panels, so they fold with them.
 - **Collections:**
-  - `… Landing Gear`: twin-wheel nose gear with launch bar, and the main gear.
-  - `… Optional`: refuelling probe in the extended position, hidden.
-  - `… Stores (AIM-9 / AIM-7)`: hidden.
-- Materials are flat colours: airframe grey, glass, dark, nozzle, gear,
-  tyre and seat. All meshes have Smart-UV-projected UVs, packed into one
-  shared space, so they can be textured.
+  - `Landing Gear`
+  - `Cockpit`
+  - `Pylons` (fitted, as usual in service)
+  - `Station Sockets`
+  - `Optional` (extended refuelling probe, hidden)
+  - `Loadouts` (hidden)
+  - `Stores Library` (hidden, laid out beside the aircraft)
+
+## Cockpit
+
+![F/A-18B rear cockpit](previews/cockpit_B_rear.jpg)
+
+**Sources.** All are public-domain NASA photographs:
+
+- **ARC-1993-A83-0499-34**, NASA Ames, "F/A-18 Hornet cockpit": a layout drawing of the
+  front cockpit. Its scale is about 1 mm per pixel, confirmed by the 8 in DDI bezels.
+  The front instrument panel is laid out in millimetres from it, in `cockpit_layout.py`.
+- **ED08-0252-06**, NASA 845, an F/A-18B: the rear instrument panel. It shows the same
+  displays and lower panel as the front, without the HUD.
+- **ED06-0075-11:** the HUD combiner and the canopy bow.
+- **EC02-0102-1, AFRC2018-0104-04, ED08-0252-26, AFRC2026-0188-01:** the SJU-5/6 seats,
+  the perforated sill longerons and the canopy interior.
+
+The photos are searchable at images.nasa.gov. NASA additions seen in them (cameras,
+video panels, the large test display) were left out.
+
+**What is modelled:**
+
+- **Main instrument panel, laid out as in the drawing:**
+  - two DDIs (digital display indicators) with 20 push buttons each;
+  - the up-front control panel: keypad, five option windows, scratchpad and function row;
+  - the HUD control panel;
+  - glareshield warning lights (FIRE, MASTER CAUTION, APU FIRE);
+  - the master arm panel;
+  - jettison station select and flap/gear lights;
+  - the engine monitor display and fuel quantity gauge;
+  - HDG/CRS knobs;
+  - the horizontal situation display;
+  - standby attitude, airspeed, altimeter and vertical-speed instruments, and the RWR
+    (radar warning receiver) azimuth indicator.
+- **Glareshield coaming and HUD:** the HUD has its projector body, side posts and a tilted
+  combiner.
+- **Canopy bow:** three rear-view mirrors and the AIM-7 LOCK/SHOOT lights.
+- **Ejection seats:** Martin-Baker SJU-5/A (front) and SJU-6/A (rear), with headbox,
+  parachute container, side beams, gas-generator tubes, survival-kit cushion, harness and
+  the yellow-and-black firing handle.
+- **Controls:** the control stick, throttle quadrant with HOTAS grips, and rudder pedals.
+- **Side consoles.**
+- **Tub:** walls and a floor cut into the fuselage, the perforated canopy-sill
+  longerons, and a foot well under the panel.
+- **Canopy and windscreen:** separate thin transparencies (1.4 cm), so you can sit inside.
+
+**Displays for a game.** Every screen is its own object, with 0–1 UVs and its own
+material:
+
+- `DDI_L_*`, `DDI_R_*`, `HSD_*`
+- `UFC_*` (scratchpad plus the five option windows)
+- `HUD_Combiner_*` (alpha)
+
+Each object has a `display` property. Swap in render textures to drive them live. The
+supplied images (stores page, radar page, map, UFC readout, HUD symbology) are
+representative Hornet-style formats, not recordings.
+
+**First-person.**
+- `Eye_Front` and `Eye_Rear` are empties at the design eye. Their −Z axis points
+  forward and +Y up, the usual camera convention.
+- Each has a child camera, `Cam_Front` or `Cam_Rear`, with an 80° field of view that
+  exports to glTF.
+- The front eye is 0.80 m behind the panel. The seat sits on an 18° back angle, and the
+  knees clear the lower panel.
+- Over the nose, the line of sight is about −11° past the glareshield. The eye sits
+  1.34 m above the nose-tip waterline.
+
+**Cockpit limits:**
+- **Side consoles:** no photo of the A/B side consoles was available. They follow the
+  general Hornet arrangement (throttle quadrant forward-left, rows of 5.75 in DZUS
+  panels) with generic switch placement. Replace them with exact panels if you have
+  references.
+- **Legends:** panel legends were painted from the layout, not copied from the drawing,
+  and are slightly larger than life so they stay legible on screen.
+- **Not modelled:** the pilot.
+
+## Textures and materials
+
+Every material is a standard glTF metallic-roughness PBR material: base colour, an ORM
+map (R occlusion, G roughness, B metallic) and an OpenGL-style normal map.
+
+| Set | Maps | How it is made |
+| --- | --- | --- |
+| Exterior (`ext_fuselage_A/B`, `ext_wings`, `ext_tail`, `ext_gear`) | 4K / 4K / 4K / 2K / 2K | Procedural shader (`fa18_materials.exterior_shader`) baked in Cycles |
+| Cockpit (`cockpit_*`) | 4K atlas plus display images | Painted by `tools/make_cockpit_textures.py` from the shared layout |
+| Stores (`stores_*`) | 4K atlas | Painted by `tools/make_store_textures.py` |
+
+**Exterior finish:** the legacy Hornet's tactical paint scheme, worn.
+
+- **Paint:** FS 36320 dark ghost grey on top and FS 36375 light ghost grey underneath,
+  with a soft demarcation down the sides and a flatter grey radome. sRGB values are
+  approximate.
+- **Touch-ups:** blocky patches of fresher, mismatched paint.
+- **Dirt:** grime in recesses and hinge gaps, flow streaks running aft (heavier
+  underneath), and a general dirt film.
+- **Wear:** chipped leading edges with bare metal showing.
+- **Soot:** exhaust soot ahead of and between the nozzles, and gun-gas soot streaming aft
+  from the M61 muzzle on top of the nose.
+- **Panel lines:** projected from the F/A-18B drawing's top view onto upper surfaces and
+  its side view onto the sides, so they follow the real airframe. The drawing has no
+  underside view, so the underside only has the structural breaks.
+- **Markings:** only low-visibility national insignia, on the upper port and lower
+  starboard wing. There are no unit markings, so the geometry has to read on its own.
+- **Nozzles:** heat-tinted. **Gear:** dirty white.
+- **Frames:** canopy frames are grey outside and flat black inside.
+
+**Cockpit finish:**
+- **Colours:** FS 36231 dark gull grey cockpit with black instrument modules and white
+  legends.
+- **Wear:** scuffed and chipped paint showing primer and metal at the edges, polished
+  finger wear on buttons and keypad keys, boot and knee scuffs on the lower panel, and
+  worn longeron tops.
+- **Materials:** fabric, webbing and rubber each have their own height detail.
+
+**Stores finish** (Navy ordnance practice, NAVEDTRA 12308):
+- **Bombs:** olive-drab bodies with a rough thermal-protective coating.
+- **Bands:** yellow for high explosive, brown for rocket motors, light blue for practice
+  stores.
+- **Missiles and other stores:** white missile bodies; grey guidance kits, tanks, pods
+  and pylons.
+- **Stencils:** yellow on olive drab and black on white. The nomenclature is
+  representative.
+- **Wear:** grime streaking aft, handling and sway-brace scuffs at the lugs, and chipped
+  noses and fins.
+
+## Weapons and stations
+
+![Loadouts](previews/loadouts.jpg)
+![Stores library](previews/stores_library.jpg)
+
+**Station map.** Spanwise distances are from the F/A-18A/B/C/D NATOPS flight manual
+(A1-F18AC-NFM-000), Fig. 4-4. The equipment per station comes from NAVEDTRA 12308,
+*Aviation Ordnanceman 3 & 2* (1990, approved for public release), Fig. 14-21. That
+manual is publicly posted but marked Distribution C, so check its status before citing
+it in a product.
+
+| Station | Distance from centreline | Equipment |
+| --- | --- | --- |
+| 1, 9 | 5.94 m | wingtip LAU-7 (always fitted) |
+| 2, 8 | 3.41 m | SUU-63 pylon (BRU-32): BRU-33 twin rack, LAU-115 (+2 LAU-7), LAU-117, LAU-118 |
+| 3, 7 | 2.23 m | SUU-63 pylon (BRU-32): BRU-33, LAU-117, LAU-118, 330 gal tank |
+| 4, 6 | 1.13 m | LAU-116, semi-recessed (AIM-7 / AIM-120); AAS-38 pod on 4, ASQ-173 on 6 |
+| 5 | 0 | SUU-62 pylon (BRU-32): BRU-33, 330 gal tank, single stores |
+
+Fore-and-aft positions are not published. They were taken from the drawings: the pylon
+noses sit about 0.35 m ahead of the wing leading edge, as in the F/A-18B top view.
+
+**Attaching stores.**
+
+- **Sockets:** `STA_1` … `STA_9` sit where the store's suspension point goes. Every store
+  has its origin at that point (top of the body, between the lugs or rail hangers), with
+  its nose along −Y.
+- **Racks and launchers:** these hang their store H metres lower. The value is in
+  `stores_data.EQUIPMENT` and `*_stations.json`.
+- **BRU-33 CVER:** its two units sit 0.13 m either side and are canted 5° outboard.
+- **Pods on 4 and 6:** these ride 1.6 m forward of the AIM-7 position, under the intake,
+  clear of the extended main gear.
+- **Example loadouts:** seven, built from loads the A/B and Desert Storm Hornets actually
+  flew: `CAP`, `Fleet_air_defence`, `Strike_Mk83`, `Heavy_strike_Mk84`, `SEAD_HARM`,
+  `Walleye_1991` and `Rockeye_CAS`. They are hidden collections of linked copies, and are
+  also listed in the manifests.
+- **Checked:** `tools/check_model.py` confirms that no store in any loadout intersects the
+  airframe, the gear or another store.
+
+**Stores modelled.** The table is generated from `stores_data.py`.
+
+- **Era:** "baseline" means the A/B as built. "A+" means the later USMC upgrade
+  (APG-73 radar, AMRAAM capability; Lot XVII C-equivalent).
+- **Stations:** "not documented" means Hornets carried the store, but no source found
+  gives its stations on the A/B. The manifest leaves those for you to decide.
+- **Size data:** "published" means published length, diameter and span.
+  "Published L/D; fins scaled" means the length and diameter are published and the fin
+  planforms are scaled from photos. **Estimated** means no published dimensions were
+  found (see each store's `note`).
+
+| Id | Store | Era | Length m | Dia m | Fin span m | Carried on | A/B stations | Size data |
+|---|---|---|---|---|---|---|---|---|
+| AIM-9L | AIM-9L/M Sidewinder | baseline | 2.85 | 0.127 | 0.63 | LAU-7 | 1, 2, 8, 9 | published L/D; fins scaled |
+| AIM-9X | AIM-9X Sidewinder | A+ | 3.02 | 0.127 | 0.45 | LAU-7 | not documented | published L/D; fins scaled |
+| AIM-7M | AIM-7F/M Sparrow | baseline | 3.66 | 0.203 | 1.02 | LAU-116 (4/6), LAU-115 (2/8) | 2, 4, 6, 8 | published |
+| AIM-120A | AIM-120A/B AMRAAM | A+ | 3.66 | 0.178 | 0.64 | LAU-116, LAU-115+LAU-127 | 2, 4, 6, 8 | published |
+| AIM-120C | AIM-120C AMRAAM | A+ | 3.66 | 0.178 | 0.45 | LAU-116, LAU-115+LAU-127 | 2, 4, 6, 8 | published |
+| AGM-65E | AGM-65E/F Maverick | baseline | 2.49 | 0.305 | 0.72 | LAU-117 | 2, 3, 7, 8 | published |
+| AGM-88 | AGM-88 HARM | baseline | 4.17 | 0.254 | 1.12 | LAU-118 | 2, 3, 7, 8 | published |
+| AGM-84D | AGM-84D Harpoon | baseline | 3.85 | 0.343 | 0.91 | BRU-32 | not documented | published L/D; fins scaled |
+| AGM-84E | AGM-84E SLAM | A+ | 4.50 | 0.343 | 0.91 | BRU-32 | not documented | published L/D; fins scaled |
+| AGM-62 | AGM-62 Walleye I ER/DL | baseline | 3.45 | 0.318 | 1.16 | BRU-32 | 2, 8 | published L/D; fins scaled |
+| AGM-62II | AGM-62 Walleye II ER/DL | baseline | 4.04 | 0.457 | 1.29 | BRU-32 | not documented | published L/D; fins scaled |
+| AGM-154A | AGM-154A JSOW | A+ | 4.06 | 0.340 | 0.70 | BRU-32 | not documented | published L/D; fins scaled |
+| ADM-141 | ADM-141 TALD | baseline | 2.34 | 0.280 | 0.55 | TER | not documented | **estimated** section |
+| GBU-12 | GBU-12 Paveway II (500 lb) | baseline | 3.33 | 0.273 | 0.30 | BRU-32 | not documented | published |
+| GBU-16 | GBU-16 Paveway II (1,000 lb) | baseline | 3.68 | 0.356 | 0.38 | BRU-32 | not documented | published |
+| GBU-10 | GBU-10 Paveway II (2,000 lb) | baseline | 4.32 | 0.457 | 0.48 | BRU-32 | not documented | published |
+| GBU-24 | GBU-24 Paveway III | A+ | 4.39 | 0.457 | 0.91 | BRU-32 | not documented | published L/D; fins scaled |
+| GBU-38 | GBU-38 JDAM (500 lb) | A+ | 2.35 | 0.273 | 0.43 | BRU-32 | not documented | published |
+| GBU-32 | GBU-32 JDAM (1,000 lb) | A+ | 3.04 | 0.356 | 0.50 | BRU-32 | not documented | published |
+| GBU-31 | GBU-31 JDAM (2,000 lb) | A+ | 3.88 | 0.457 | 0.64 | BRU-32 | not documented | published |
+| MK-82 | Mk 82 LDGP / BLU-111 (500 lb) | baseline | 2.21 | 0.273 | 0.38 | BRU-32 or BRU-33 (two) | 2, 3, 5, 7, 8 | published L/D; fins scaled |
+| MK-82SE | Mk 82 Snakeye (Mk 15 fin) | baseline | 2.17 | 0.274 | 0.40 | BRU-32 or BRU-33 | not documented | published L/D; fins scaled |
+| MK-83 | Mk 83 LDGP / BLU-110 (1,000 lb) | baseline | 3.01 | 0.356 | 0.50 | BRU-32 or BRU-33 (two) | 2, 3, 5, 7, 8 | published L/D; fins scaled |
+| MK-84 | Mk 84 LDGP / BLU-117 (2,000 lb) | baseline | 3.85 | 0.457 | 0.64 | BRU-32 (single only) | 2, 3, 7, 8 | published L/D; fins scaled |
+| MK-20 | Mk 20 Rockeye II / CBU-59 / CBU-78 | baseline | 2.34 | 0.337 | 0.44 | BRU-32 or BRU-33 (two) | 2, 3, 5, 7, 8 | published |
+| MK-77 | Mk 77 fire bomb | baseline | 3.30 | 0.530 | – | BRU-32 | 5 | **estimated** |
+| LAU-61 | LAU-61 (19 x 2.75 in) | baseline | 1.52 | 0.406 | – | BRU-33 | not documented | published L/D |
+| LAU-68 | LAU-68 (7 x 2.75 in) | baseline | 1.56 | 0.249 | – | BRU-33 | 2, 8 | published L/D |
+| LAU-10 | LAU-10 (4 x 5 in Zuni) | baseline | 2.50 | 0.400 | – | BRU-33 | 2, 8 | **estimated** |
+| B61 | B61 (shape only) | baseline | 3.60 | 0.338 | 0.57 | BRU-32 | not documented | published L/D; fins estimated |
+| B57 | B57 (shape only) | baseline | 3.00 | 0.375 | 0.60 | BRU-32 | not documented | published L/D; fins estimated |
+| MK-76 | Mk 76 practice bomb | baseline | 0.58 | 0.102 | 0.17 | practice rack | not documented | published L/D |
+| TANK-330 | 330 US gal fuel tank (FPU-8/A) | baseline | 3.90 | 0.760 | – | BRU-32 | 3, 5, 7 | **estimated** (see note) |
+| AAS-38 | AN/AAS-38 NITE Hawk FLIR pod | baseline | 1.83 | 0.330 | – | station 4 adapter | 4 | published L/D |
+| LITENING | AN/AAQ-28 LITENING (USMC) | A+ | 2.20 | 0.406 | – | station 4 adapter / BRU-32 | 4, 5 | published L/D |
+| ASQ-173 | AN/ASQ-173 LST/SCAM pod | baseline | 2.20 | 0.220 | – | station 6 adapter | 6 | **estimated** |
+| AWW-13 | AN/AWW-13 data-link pod | baseline | 3.40 | 0.380 | – | BRU-32 | 2, 3, 5, 7, 8 | **estimated** |
+| ACMI | ACMI / TACTS pod | baseline | 2.85 | 0.127 | 0.63 | LAU-7 | 1, 9 | **estimated** |
+
+**Suspension equipment:**
+
+| Id | Equipment | Length m | Stations | Size data |
+|---|---|---|---|---|
+| SUU-63 | SUU-63 wing pylon (with BRU-32) | 2.40 | 2, 3, 7, 8 | **estimated** |
+| SUU-62 | SUU-62 centreline pylon (with BRU-32) | 1.90 | 5 | **estimated** |
+| BRU-33 | BRU-33 VER / CVER (twin) | 1.10 | 2, 3, 5, 7, 8 | **estimated** |
+| LAU-115 | LAU-115 wing missile launcher | 2.08 | 2, 8 | published length; section estimated |
+| LAU-7 | LAU-7 Sidewinder rail (pylon side mount) | 1.90 | 2, 8 | **estimated** |
+| LAU-117 | LAU-117 Maverick launcher | 2.39 | 2, 3, 7, 8 | published (11 × 11 in section) |
+| LAU-118 | LAU-118 HARM launcher | 2.01 | 2, 3, 7, 8 | published (11.65 × 8 in section) |
+
+**Gun.** The internal M61A1 20 mm gun holds 578 rounds (NAVEDTRA 12308). Its muzzle port
+sits on top of the nose, with gun-gas vents and soot. The gun itself is internal and not
+modelled.
+
+**Not modelled:**
+
+- **Foreign-only weapons:** ASRAAM, IRIS-T, Taurus, CRV-7, JASSM (Finland).
+- **Stores with no documented A/B carriage:** mines (Mk 36/40/41, Quickstrike),
+  CBU-87/89/97, SUU-25, the tow-banner adapter, the AN/ALQ-167 pod and the B43.
+- **Multiple ejector racks:** MER/TER racks (other than TALD's mount) and the BRU-55,
+  whose dimensions aren't published.
+- **Configuration details:** guidance-kit wings are shown folded, in carriage, and
+  Snakeye drag plates closed.
+
+**Sources** (full list and disagreements in `docs/weapons_research.md`):
+
+- NAVEDTRA 12308, *Aviation Ordnanceman 3 & 2* (1990)
+- USAF *Weapons File 2003–2004*
+- designation-systems.net
+- FAS military analysis pages
+- NWC TP 7033
+- Wikipedia (and its citations)
+- dstorm.eu Desert Storm loadouts (enthusiast site, medium reliability)
 
 ## What was matched to the drawings
 
-All views were registered to the supplied F/A-18A and F/A-18B sheets and
-checked by overlaying the model's outline on each drawing
-(`tools/overlay_reference.py`).
+All views were registered to the supplied F/A-18A and F/A-18B sheets and checked by
+overlaying the model's outline on each drawing (`tools/overlay_reference.py`):
 
-- **Top view:** nose and forward fuselage, the LEX curve from the windscreen to
-  the wing root, wing planform (leading-edge sweep, near-straight trailing
-  edge, tip chord), the leading-edge and trailing-edge hinge lines, the
-  wing-fold line (model 4.19 m, drawing 4.12 m), stabilator planform, and the
-  twin nozzles.
-- **Side view:** nose profile, canopy profile for each variant, spine, the
-  twin-fin outline and rudder, nozzle end, intake face, the spine and belly
-  blade antennae, and the nose- and main-wheel positions.
-- **Front view:** canopy height, fin cant and tip positions, fuselage and
-  nacelle outline, wing height and anhedral, stabilator line, wheel track,
-  and the main-gear legs leaving the nacelle bottom inboard of the AIM-7
-  station.
+- **Top view:** nose and forward fuselage, the LEX curve, wing planform and hinge lines,
+  wing-fold line (model 4.19 m, drawing 4.12 m), stabilators and nozzles.
+- **Side view:** nose profile, canopy profile for each variant, spine, twin fins and
+  rudders, nozzle end, intake face, antennae, and wheel positions.
+- **Front view:** canopy height, fin cant and tip positions, fuselage and nacelle outline,
+  wing height and anhedral, stabilator line, wheel track, main-gear legs, and the
+  wingtip missile position.
 - **Dimensions from the sheet and published specifications:**
-  - length 17.07 m, span 11.43 m, height 4.66 m, wing area 37.16 m²
+  - length 17.07 m, wing span 11.43 m, height 4.66 m, wing area 37.16 m²
   - 5 % root and 3.5 % tip sections (NACA 65A005 / 65A003.5 mod)
   - tailplane span 6.58 m
   - wheel track 3.11 m, wheelbase 5.42 m
-- **Values I supplied and then checked against the drawings:**
-  - taper 0.35 with 20° quarter-chord sweep, which gives 26.6° at the leading
-    edge against the commonly quoted 26.7°
-  - fold line for an 8.38 m folded width
-  - 20° fin cant
-  - 3° wing anhedral and 2° tailplane anhedral
-- **Characteristic details:**
-  - wing fold, leading-edge and trailing-edge flaps, ailerons, all-moving
-    stabilators, rudders, dorsal speed brake
-  - 20 mm cannon port on top of the nose, gun-bay gas vents
-  - intake splitter plates
-  - arresting hook, nose-gear launch bar
-  - refuelling probe on the starboard side, optional
-  - wingtip launcher rails
-  - two dorsal and two ventral blade antennae
-- **Stores** (optional, hidden by default): only the loadout drawn on the
-  sheets. An AIM-9 sits on each wingtip launcher, outboard of the rail as in
-  the front view, and an AIM-7 sits semi-recessed at each nacelle-corner
-  fuselage station. `tools/check_model.py` confirms they clear the gear and
-  the control surfaces.
+- **Station 1/9 at 5.94 m (NATOPS):** puts the wingtip LAU-7 launchers outboard of the
+  structural tip, on adapters, as both drawings show. The span over the launchers is
+  therefore 11.98 m.
 
 ## Limits
 
-- **Drawing accuracy.** The sheets are small, line-art scans, so registration
-  is good to about ±0.05–0.1 m. The two sheets also disagree slightly. For
-  example, the A sheet's ground line implies a height of about 4.57 m against
-  the published 4.66 m. Where they conflicted, published dimensions won.
-- **Cross-sections.** The drawings give only silhouettes and no fuselage
-  station cuts. Cross-sections are therefore smooth shapes fitted to the top,
-  side and front outlines, and the front view is their only check.
-- **Wing and LEX height.** The side view puts the LEX edge about 0.1 m higher
-  than the front view puts the wing root. The model splits the difference,
-  with the wing mid-plane at 0.50 m at the LEX junction.
-- **Simplified parts:**
-  - The intakes are rounded openings with a short dark duct; there is no
-    internal duct to the engine face.
-  - The landing gear is simplified to struts, braces and wheels. The
-    main-gear bay doors are omitted because the drawings don't show them
-    clearly.
-  - The AIM-7 sits about 0.2 m aft of the drawn position so its wings clear
-    the gear leg.
-- **Left out on purpose:**
-  - Panel lines and access-panel outlines. They are not modelled as geometry,
-    to avoid decorative lines that don't follow the airframe; add them in a
-    texture if wanted.
-  - LEX fences, which are not on these drawings.
-  - Formation lights, pitot tubes, probe-door outlines and markings.
-  - Wing pylons and bombs. They appear only in the stores-laden front view,
-    and their stations aren't dimensioned there.
-- **Flight model.** This repository has no flight model or game code, so no
-  flight behaviour was changed and no performance values were added.
+- **Drawing accuracy:**
+  - The sheets are small line-art scans, so registration is good to about ±0.05–0.1 m.
+    The sheets also disagree slightly, and published dimensions won where they
+    conflicted.
+  - Fuselage cross-sections are fitted to the three views; the drawings have no station
+    cuts.
+- **Cockpit:**
+  - Front panel: exact layout from the drawing. Rear panel: exact layout from the photo.
+    Consoles: generic (see above).
+  - Display content is representative.
+- **Textures:**
+  - Panel lines on the underside are limited, because no underside drawing was used.
+  - The exterior UV islands use about half of each atlas (automatic packing), so texel
+    density is lower than a hand-packed layout would give.
+- **Weapons:**
+  - Sizes marked estimated have no published dimensions in the sources found.
+  - Fore-and-aft station positions come from the drawings; the spanwise ones are
+    published.
+  - Leading-edge flaps do not have cut-outs for the pylon noses; drooping them far into a
+    loaded pylon will clip.
+- **Simplified parts:** the landing gear (main-gear doors left out), the intakes (short
+  ducts) and the guidance-kit details.
+- **Flight model:** this repository has no flight model or game code, so no flight
+  behaviour was changed and no performance values were added. `*_stations.json` carries
+  store masses where they are published.
