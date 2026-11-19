@@ -1,6 +1,6 @@
 """Build the browser viewer from the animated GLBs as ONE self-contained page.
 
-    python3 tools/make_web_viewer.py [--fragment PATH]     (run from the aircraft folder)
+    python3 tools/make_web_viewer.py [--fragment PATH] [--src DIR]     (run from the aircraft folder)
 
 For each FA-18?_Hornet_animated.glb the page carries a gzipped GLB with the
 same nodes, meshes, materials, cameras and animation clips, and every
@@ -12,6 +12,7 @@ itself, and opens straight from disk.
 Writes web/index.html, the page ready to open or serve, from the template
 tools/web_viewer.html.  --fragment PATH also writes the same page without the
 <html>/<head> shell, for hosts that add their own (claude.ai artifacts).
+--src DIR reads the animated GLBs from DIR instead of the aircraft folder.
 """
 import base64
 import gzip
@@ -117,7 +118,8 @@ def main():
     os.makedirs(WEB, exist_ok=True)
     textures, blocks = {}, []
     for v in "AB":
-        glb, clips = split(os.path.join(ROOT, "FA-18%s_Hornet_animated.glb" % v), textures)
+        src = sys.argv[sys.argv.index("--src") + 1] if "--src" in sys.argv else ROOT
+        glb, clips = split(os.path.join(src, "FA-18%s_Hornet_animated.glb" % v), textures)
         packed = gzip.compress(glb, 9)
         blocks.append(block('id="glb-%s"' % v, packed))
         print("FA-18%s: model %.1f MB, gzipped %.1f MB, %d clips" % (v, len(glb) / 1e6, len(packed) / 1e6, clips))
