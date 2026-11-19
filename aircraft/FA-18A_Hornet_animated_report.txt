@@ -1,0 +1,61 @@
+Source: /home/user/Nuvio-web-streaming-/aircraft/FA-18A_Hornet.blend
+== Scene inspection ==
+  aileron      F18A_Aileron_L                     side L  [trailing edge down]
+  aileron      F18A_Aileron_R                     side R  [trailing edge down]
+  airbrake     F18A_SpeedBrake                    side C  [opens (trailing edge up)]
+  canopy       F18A_Canopy                        side C  [canopy opens (front edge up)]
+  gear_brace   F18A_NoseGearBrace                 side C  [brace folds up into the bay]
+  gear_door    F18A_MainGearDoor_L                side L  [door closes (swings outboard)]
+  gear_door    F18A_MainGearDoor_R                side R  [door closes (swings outboard)]
+  gear_door    F18A_NoseGearDoorAft_L             side L  [door closes (swings inboard)]
+  gear_door    F18A_NoseGearDoorAft_R             side R  [door closes (swings inboard)]
+  gear_door    F18A_NoseGearDoorFwd_L             side L  [door closes (swings inboard)]
+  gear_door    F18A_NoseGearDoorFwd_R             side R  [door closes (swings inboard)]
+  hook         F18A_ArrestingHook                 side C  [hook down]
+  launch_bar   F18A_LaunchBar                     side C  [bar lowers (tip down to the deck)]
+  le_flap      F18A_LEFlap_Inner_L                side L  [leading edge down]
+  le_flap      F18A_LEFlap_Inner_R                side R  [leading edge down]
+  le_flap      F18A_LEFlap_Outer_L                side L  [leading edge down]
+  le_flap      F18A_LEFlap_Outer_R                side R  [leading edge down]
+  main_gear    F18A_MainGear_L                    side L  [needs pivot]
+  main_gear    F18A_MainGear_R                    side R  [needs pivot]
+  nose_gear    F18A_NoseGear                      side C  [needs pivot]
+  rudder       F18A_Rudder_L                      side L  [trailing edge to starboard (nose-right yaw)]
+  rudder       F18A_Rudder_R                      side R  [trailing edge to starboard (nose-right yaw)]
+  stabilator   F18A_Stabilator_L                  side L  [trailing edge down]
+  stabilator   F18A_Stabilator_R                  side R  [trailing edge down]
+  te_flap      F18A_Flap_L                        side L  [trailing edge down]
+  te_flap      F18A_Flap_R                        side R  [trailing edge down]
+  wing_fold    F18A_Wing_Outer_L                  side L  [wing folds up (90 deg = folded)]
+  wing_fold    F18A_Wing_Outer_R                  side R  [wing folds up (90 deg = folded)]
+
+== Set-up ==
+  pivot  F18A_NoseGear_Pivot          at (-0.00, -4.65, -0.55), retract 114.3 deg (fitted inside the lower skin)
+  pivot  F18A_MainGear_L_Pivot        at (0.80, 0.15, -0.70), retract 96.9 deg (post turned -33 deg about its axis, wheel within 6 deg of flat, inside the skin)
+  pivot  F18A_MainGear_R_Pivot        at (-0.80, 0.15, -0.70), retract 96.9 deg (post turned 33 deg about its axis, wheel within 6 deg of flat, inside the skin)
+  brace  F18A_NoseGearBrace           folds 34.3 deg
+  doors  F18A_MainGearDoor_L, F18A_MainGearDoor_R, F18A_NoseGearDoorAft_L, F18A_NoseGearDoorAft_R, F18A_NoseGearDoorFwd_L, F18A_NoseGearDoorFwd_R close after retraction and open first on extension
+  bar    F18A_LaunchBar               lowers 76.4 deg for a catapult hook-up (tip 3 cm above the deck)
+  clip   Gear_Retract       frames    1- 132  (12 objects)
+  clip   Gear_Extend        frames  145- 276  (12 objects)
+  clip   LaunchBar_Down     frames  289- 336  (1 objects)
+  clip   LaunchBar_Up       frames  349- 396  (1 objects)
+  clip   Canopy_Open        frames  409- 504  (1 objects)
+  clip   Canopy_Close       frames  517- 612  (1 objects)
+  clip   Airbrake_Extend    frames  625- 672  (1 objects)
+  clip   Airbrake_Retract   frames  685- 732  (1 objects)
+  clip   Controls_Roll      frames  745- 840  (4 objects)
+  clip   Controls_Pitch     frames  853- 924  (2 objects)
+  clip   Controls_Yaw       frames  937-1008  (2 objects)
+  clip   Flaps_Down         frames 1021-1092  (6 objects)
+  clip   Flaps_Up           frames 1105-1176  (6 objects)
+  clip   WingFold_Fold      frames 1189-1308  (2 objects)
+  clip   WingFold_Unfold    frames 1321-1440  (2 objects)
+  clip   Hook_Down          frames 1453-1488  (1 objects)
+  clip   Hook_Up            frames 1501-1548  (1 objects)
+
+== Crew ==
+  No pilot or crew mesh is modelled (eye points only: F18A_Eye_Front), so no head animation was
+  set up. Nothing was added.
+
+Saved /home/user/Nuvio-web-streaming-/aircraft/FA-18A_Hornet_animated.blend (source left unchanged)
