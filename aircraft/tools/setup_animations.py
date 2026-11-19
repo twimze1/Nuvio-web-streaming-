@@ -62,9 +62,10 @@ ROLE_WORDS = [
     ("stabilator", r"stabilator|elevator|(^|_)stab(_|$)"),
     ("wing_fold", r"wing_outer|wingfold|wing_fold"),
     ("hook", r"hook"),
+    ("gear_door", r"door"),
+    ("gear_brace", r"brace"),
     ("nose_gear", r"nose_?gear"),
     ("main_gear", r"main_?gear"),
-    ("gear_door", r"door"),
     ("pilot", r"pilot|crew|wso|helmet|(^|_)head(_|$)"),
 ]
 
@@ -124,7 +125,7 @@ def inspect(scene):
         if obj.type == "EMPTY":
             continue                                 # hinge empties are found through their mesh child
         if role in ("canopy", "airbrake", "rudder", "aileron", "le_flap", "te_flap", "stabilator", "wing_fold",
-                    "hook"):
+                    "hook", "gear_door", "gear_brace"):
             if "hinge" not in obj.keys():
                 skipped.append((obj.name, role, "no 'hinge' property / pivot: rotation axis unknown"))
                 continue
@@ -184,17 +185,73 @@ def gear_pivot(obj, kind):
     top = [v for v in V if v.z > ztop - 0.04]
     P = sum(top, Vector()) / len(top)
     zlow = min(v.z for v in V)
-    low = [v for v in V if v.z < zlow + 0.10]
-    W = sum(low, Vector()) / len(low)              # wheel(s)
+    low = [v for v in V if v.z < zlow + 0.80 * (P.z - zlow) * 0.5]
+    W = sum(low, Vector()) / len(low)              # centre of the wheel(s): roughly the axle
     a = W - P
     side = 1.0 if P.x > 0 else -1.0
     if kind == "nose_gear":
-        b = Vector((0.0, -1.0, 0.21)).normalized() * a.length        # Blender -Y is forward
+        b = Vector((0.0, -1.0, 0.215)).normalized() * a.length       # Blender -Y is forward
     else:
         b = Vector((-side * 0.30, 1.0, 0.30)).normalized() * a.length  # aft, inboard, up
     axis = a.cross(b)
     angle = a.angle(b)
     return P, axis, math.degrees(angle)
+
+
+# ----------------------------------------------------------------------------
+# stowed positions: fold a part until it is inside the lower skin
+# ----------------------------------------------------------------------------
+_skin = {}
+
+
+def lower_skin():
+    """BVH trees of the airframe skin: visible meshes whose name contains 'fuselage'."""
+    if "trees" not in _skin:
+        from mathutils.bvhtree import BVHTree
+        fus = [o for o in bpy.context.scene.objects if o.type == "MESH" and "fuselage" in o.name.lower()
+               and not any(("Library" in c.name or "Loadout" in c.name) for c in o.users_collection)]
+        _skin["trees"] = [BVHTree.FromPolygons(world_verts(o), [list(p.vertices) for p in o.data.polygons])
+                          for o in fus]
+    return _skin["trees"]
+
+
+def skin_z(p):
+    """Height of the lowest skin surface above or below world point p (None outside it)."""
+    zs = []
+    for t in lower_skin():
+        hit = t.ray_cast(Vector((p.x, p.y, -100.0)), Vector((0, 0, 1)))
+        if hit[0] is not None:
+            zs.append(hit[0].z)
+    return min(zs) if zs else None
+
+
+def fold_into_skin(obj, P, axis, lo, hi, clearance, step=0.5):
+    """Smallest rotation (deg, lo..hi) of obj about `axis` through P that leaves
+    every vertex at least `clearance` above the lower skin, or None."""
+    if not lower_skin():
+        return None
+    V = world_verts(obj)
+    axis = axis.normalized()
+
+    def inside(deg):
+        R = Matrix.Rotation(math.radians(deg), 3, axis)
+        for v in V:
+            w = P + R @ (v - P)
+            s = skin_z(w)
+            if s is None or w.z < s + clearance:
+                return False
+        return True
+
+    d = lo
+    while d <= hi:
+        if inside(d):
+            a, c = d - step, d                       # a fails (or is lo), c passes
+            for _ in range(8):
+                m = (a + c) / 2
+                a, c = (a, m) if inside(m) else (m, c)
+            return c
+        d += step
+    return None
 
 
 # ----------------------------------------------------------------------------
@@ -283,28 +340,57 @@ def build_clips(parts):
     for kind in ("nose_gear", "main_gear"):
         for o in by(kind):
             P, axis, ang = gear_pivot(o, kind)
+            how = "stow direction"
+            if kind == "nose_gear":
+                # swing forward just far enough that the wheels sit inside the
+                # lower skin, clear of the closed doors (as low in the bay as possible)
+                fit = fold_into_skin(o, P, axis, 60.0, 150.0, 0.012)
+                if fit is not None:
+                    ang, how = fit, "fitted inside the lower skin"
+            elif fold_into_skin(o, P, axis, ang, ang, 0.0) is None and lower_skin():
+                say("  NOTE   %s: parts stay below the lower skin when stowed at %.0f deg" % (o.name, ang))
             piv = make_pivot(o, P, axis)
             gear.append((kind, piv, ang))
-            say("  pivot  %-28s at (%.2f, %.2f, %.2f), retract %.0f deg" % (piv.name, P.x, P.y, P.z, ang))
+            say("  pivot  %-28s at (%.2f, %.2f, %.2f), retract %.1f deg (%s)"
+                % (piv.name, P.x, P.y, P.z, ang, how))
     doors = by("gear_door")
+    braces = []
+    for o in by("gear_brace"):
+        M = o.matrix_world
+        fit = fold_into_skin(o, M.translation.copy(), M.col[0].xyz, 0.0, 120.0, 0.008)
+        fold = 32.0 if fit is None else fit + 1.0
+        braces.append((o, fold))
+        say("  brace  %-28s folds %.1f deg%s" % (o.name, fold, "" if fit is not None else " (default)"))
     if gear:
-        ret = Clip("Gear_Retract", 120)
-        ext = Clip("Gear_Extend", 120)
+        # retract: legs swing up, the nose-gear brace folds with them, then the
+        # bay doors close; extend is the reverse (doors open first)
+        ret = Clip("Gear_Retract", 132)
+        ext = Clip("Gear_Extend", 132)
         for kind, piv, ang in gear:
-            t0, t1 = (12, 100) if kind == "nose_gear" else (18, 108)
-            ret.key(piv, [(1, 0.0), (t0, 0.0), (t1, ang), (120, ang)])
-            ext.key(piv, [(1, ang), (120 - t1 + 1, ang), (120 - t0 + 1, 0.0), (120, 0.0)])
+            t0, t1 = (10, 96) if kind == "nose_gear" else (16, 104)
+            ret.key(piv, [(1, 0.0), (t0, 0.0), (t1, ang), (132, ang)])
+            ext.key(piv, [(1, ang), (30, ang), (116, 0.0), (132, 0.0)])
+        for o, fold in braces:
+            t0, t1 = (10, 90) if "nose" in o.name.lower() else (16, 100)
+            ret.key(o, [(1, 0.0), (t0, 0.0), (t1, fold), (132, fold)])
+            ext.key(o, [(1, fold), (36, fold), (116, 0.0), (132, 0.0)])
+        for o in doors:
+            ret.key(o, [(1, 0.0), (100, 0.0), (126, 90.0), (132, 90.0)])
+            ext.key(o, [(1, 90.0), (4, 90.0), (28, 0.0), (132, 0.0)])
         made += [ret, ext]
     if not doors:
-        say("  NOTE   no separate gear-door objects found: the nose-gear doors are part of the nose-gear")
-        say("         mesh and the main-gear bays have no doors. Separate the door faces into objects whose")
-        say("         names contain 'door' and re-run to animate them.")
+        say("  NOTE   no separate gear-door objects found. Separate door faces into objects whose names")
+        say("         contain 'door' (with a 'hinge' property, or use the nose-gear doors as a pattern)")
+        say("         and re-run to animate them.")
+    else:
+        say("  doors  %s close after retraction; the main-gear bays have no doors in this model"
+            % ", ".join(o.name for o in doors))
     for kind, piv, ang in gear:
         leg = piv.children[0]
         V = world_verts(leg)
         P = piv.matrix_world.translation
         reach = max((v - P).length for v in V if v.z > P.z - 0.15)
-        if kind == "nose_gear" and reach > 0.6:
+        if kind == "nose_gear" and reach > 0.6 and not braces:
             say("  NOTE   %s: parts that hang from the top of the bay well away from the pivot (the drag" % leg.name)
             say("         brace and doors) are fused into the leg mesh, so they swing with the leg and show")
             say("         below the nose while the gear retracts. Separate them (names containing 'brace' or")

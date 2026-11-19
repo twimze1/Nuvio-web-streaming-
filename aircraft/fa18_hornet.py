@@ -961,31 +961,80 @@ class Hornet:
                    (0.78, radius), (1.0, radius * 0.80), (1.0, radius * 0.55)],
                   n=20, mat=1, cap_mats=(0, 0))
 
+    def skin_bottom(self, x, y):
+        """Design z of the fuselage's lower skin at (x, y), by a ray cast up from
+        below the finished fuselage mesh (None if (x, y) is outside it)."""
+        if getattr(self, "_skin_tree", None) is None:
+            from mathutils.bvhtree import BVHTree
+            fus = self.objects[self.prefix + "Fuselage"]
+            m = self.world.get(fus.name, Matrix.Identity(4))
+            self._skin_tree = BVHTree.FromPolygons([m @ v.co for v in fus.data.vertices],
+                                                   [list(p.vertices) for p in fus.data.polygons])
+        p = to_blender((x, y, -20.0))
+        hit = self._skin_tree.ray_cast(p, Vector((0, 0, 1)))
+        return None if hit[0] is None else hit[0].z + Z_REF
+
     def build_gear(self):
         gz = GROUND_Z
-        # nose gear: twin wheels, drag brace, launch bar, doors
+        # nose gear: strut with twin wheels and the launch bar in its raised
+        # (stowed) position along the front of the strut.  The drag brace and
+        # the two bay doors are separate hinged parts so the gear can retract
+        # (the legacy Hornet's nose gear retracts forward into a bay under the
+        # cockpit).  The strut top sits 0.11 m inside the skin so the leg stays
+        # inside when it lies forward in the bay.
         b = Builder()
         rn = 0.28
         ax = (NOSE_GEAR_X, 0, gz + rn)
-        top = (NOSE_GEAR_X - 0.27, 0, -0.36)
+        top = (NOSE_GEAR_X - 0.27, 0, -0.30)
         b.revolve(top, ax, [(0, 0.06), (0.55, 0.06), (0.55, 0.045), (1, 0.045)], n=10)
         b.revolve((ax[0], -0.21, ax[2]), (ax[0], 0.21, ax[2]), [(0, 0.035), (1, 0.035)], n=8)
-        b.revolve((NOSE_GEAR_X + 0.90, 0, -0.40), (NOSE_GEAR_X - 0.05, 0, ax[2] + 0.40),
-                  [(0, 0.03), (1, 0.03)], n=8)
-        b.revolve((ax[0] - 0.04, 0, ax[2] + 0.06), (ax[0] - 0.60, 0, ax[2] + 0.20),
+        b.revolve((ax[0] - 0.04, 0, ax[2] + 0.06), (ax[0] - 0.26, 0, ax[2] + 0.60),
                   [(0, 0.028), (1, 0.022)], n=8)
         for side in (+1, -1):
             self.wheel(b, (ax[0], side * 0.15, ax[2]), rn, 0.16)
-            y = side * 0.25
-            x0, x1 = NOSE_GEAR_X - 0.95, NOSE_GEAR_X - 0.10
-            b.box([(x0, y, -0.38), (x1, y, -0.40), (x1, y, -0.72), (x0, y, -0.66),
-                   (x0, y + side * 0.015, -0.38), (x1, y + side * 0.015, -0.40),
-                   (x1, y + side * 0.015, -0.72), (x0, y + side * 0.015, -0.66)])
         self.add("NoseGear", b, mats=("Gear", "Tire"), collection=self.col_gear, smooth=45.0)
+
+        # drag brace: an A-frame hinged at its aft (upper) end, folding up into
+        # the fuselage; its two arms straddle the blade antenna under the nose
+        brace_top = (NOSE_GEAR_X + 0.90, 0, -0.30)
+        b = Builder()
+        for s_ in (+1, -1):
+            b.revolve((brace_top[0], s_ * 0.12, brace_top[2]), (NOSE_GEAR_X - 0.05, s_ * 0.03, ax[2] + 0.40),
+                      [(0, 0.025), (1, 0.025)], n=8)
+        self.add("NoseGearBrace", b, mats=("Gear",), collection=self.col_gear, smooth=45.0,
+                 origin=brace_top, axis=(0, 1, 0), hinge="brace folds up into the bay")
+
+        # bay doors: hinged along their outer edges, hanging open with the gear
+        # down.  Each is modelled closed first, following the rounded lower skin
+        # (outer face 3 mm proud of it), then swung open 90 deg about its hinge
+        # line, so closing it by 90 deg brings it back flush; the two meet on
+        # the centreline under the stowed wheels.
+        x0, x1 = NOSE_GEAR_X - 1.72, NOSE_GEAR_X - 0.25
+        xs = list(np.linspace(x0, x1, 9))
+        T = 0.008
+        for side, tag in ((+1, "R"), (-1, "L")):
+            yh = side * 0.25
+            ys = [yh * (1 - k / 6) + side * 0.003 * (k / 6) for k in range(7)]   # hinge -> centreline
+            rings = []
+            for x in xs:
+                outer = [(x, y, self.skin_bottom(x, y) - 0.003) for y in ys]
+                inner = [(x, y, z + T) for x, y, z in outer]
+                rings.append(outer + inner[::-1])
+            A = Vector(rings[0][0])
+            B = Vector(rings[-1][0])
+            axis = (B - A).normalized() * -side            # positive rotation closes the door
+            R = Matrix.Rotation(math.radians(-90.0), 3, axis)
+            b = Builder()
+            b.loft([[tuple(A + R @ (Vector(p) - A)) for p in r] for r in rings])
+            self.add("NoseGearDoor_" + tag, b, mats=("Gear",), collection=self.col_gear, smooth=None,
+                     origin=tuple(A), axis=tuple(axis), hinge="door closes (swings inboard)")
 
         # main gear: per the side and front views the leg leaves the nacelle
         # bottom inboard of the AIM-7 station, splays outboard and down, and
-        # the wheel trails aft on a short arm (30 in tyre, 0.38 m radius).
+        # the wheel trails aft on a short arm (30 in tyre, 0.38 m radius).  The
+        # brace from the nacelle to the middle of the leg is a separate part,
+        # hinged at its forward (upper) end, so it can fold up into the nacelle
+        # as the leg swings aft.
         rm = 0.38
         yw = WHEEL_TRACK / 2
         for side, tag in ((+1, "R"), (-1, "L")):
@@ -996,10 +1045,14 @@ class Hornet:
             mid = tuple((a + c) / 2 for a, c in zip(top, knee))
             b.revolve(top, knee, [(0, 0.065), (1, 0.055)], n=10)
             b.revolve(knee, axle, [(0, 0.055), (1, 0.05)], n=10)
-            b.revolve((MAIN_GEAR_X - 0.97, side * 0.70, -0.52), mid, [(0, 0.03), (1, 0.03)], n=8)
             b.revolve(axle, (MAIN_GEAR_X, side * (yw + 0.02), gz + rm), [(0, 0.045), (1, 0.045)], n=8)
             self.wheel(b, (MAIN_GEAR_X, side * yw, gz + rm), rm, 0.26)
             self.add("MainGear_" + tag, b, mats=("Gear", "Tire"), collection=self.col_gear, smooth=45.0)
+            brace_top = (MAIN_GEAR_X - 0.97, side * 0.70, -0.48)
+            b = Builder()
+            b.revolve(brace_top, mid, [(0, 0.03), (1, 0.03)], n=8)
+            self.add("MainGearBrace_" + tag, b, mats=("Gear",), collection=self.col_gear, smooth=45.0,
+                     origin=brace_top, axis=(0, -1, 0), hinge="brace folds up (aft end rises)")
 
     def build(self):
         self.setup_collections()

@@ -22,6 +22,9 @@ from mathutils import Matrix, Vector
 
 import cockpit_layout as L
 
+NOSE_BAY_ROOF_Z = 0.21          # top of the raised front foot-well floor (m, design z)
+
+
 def SW(name):
     """Map faces into a worn-material tile of the cockpit atlas."""
     return lambda pts: L.cell_uvs(name, pts)
@@ -731,6 +734,21 @@ class Cockpit:
         b.paint(m, SW("darkgrey"))
         self.add("PanelEnclosure_" + st["name"], b)
 
+    def floor_plate(self, st):
+        """Raised floor in the front foot well.  It roofs the nose-wheel bay:
+        the retracted nose wheels (see build_gear and tools/setup_animations.py)
+        reach 0.19 m, above the tub floor."""
+        h = self.h
+        x0, x1 = h.cockpit_x[0] - 0.49, h.cockpit_x[0] + 0.08
+        z0, z1 = h.floor_z(x0) + 0.002, NOSE_BAY_ROOF_Z
+        hw = 0.29
+        b = self.Builder()
+        m = b.mark()
+        b.box([(x0, -hw, z0), (x1, -hw, z0), (x1, hw, z0), (x0, hw, z0),
+               (x0, -hw, z1), (x1, -hw, z1), (x1, hw, z1), (x0, hw, z1)])
+        b.paint(m, SW("darkgrey"))
+        self.add("FloorPlate_" + st["name"], b)
+
     # -- entry point -------------------------------------------------------------
     def build(self, fus, canopy):
         h = self.h
@@ -750,6 +768,8 @@ class Cockpit:
             st["pedal_x"] = sx - 0.72
             if st["name"] != "Front":
                 self.enclosure(st)
+            else:
+                self.floor_plate(st)
             self.panel(st)
             self.glareshield(st)
             self.consoles(st)

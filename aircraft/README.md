@@ -164,8 +164,8 @@ representative Hornet-style formats, not recordings.
   exports to glTF.
 - The front eye is 0.80 m behind the panel. The seat sits on an 18° back angle, and the
   knees clear the lower panel.
-- Over the nose, the line of sight is about −11° past the glareshield. The eye sits
-  1.34 m above the nose-tip waterline.
+- Over the nose, the line of sight clears the front edge of the glareshield at about 7.5°
+  below horizontal. The eye sits 1.34 m above the nose-tip waterline.
 
 **Cockpit limits:**
 - **Side consoles:** no photo of the A/B side consoles was available. They follow the
@@ -397,6 +397,10 @@ blender -b FA-18A_Hornet.blend -P tools/setup_animations.py -- --glb
 2. **Sets up pivots.** Hinged parts already pivot on their hinge empties. Each gear leg
    gets a new `<name>_Pivot` empty at the top of the leg, and the leg is re-parented to
    it without moving. No mesh is edited.
+   - The nose leg's retraction angle is fitted by ray casts against the lower skin: it
+     swings forward just far enough for the wheels to sit inside, clear of the closed
+     doors.
+   - Each drag brace folds until it is inside the skin.
 3. **Builds one Action per clip.** Blender 4.4+ slotted actions give each object its own
    slot. Keys are Bezier with clamped auto handles, eased in and out, with a fake user.
 4. **Lays the clips out on the NLA.** Each object gets a track per clip, strips hold
@@ -404,11 +408,30 @@ blender -b FA-18A_Hornet.blend -P tools/setup_animations.py -- --glb
    therefore sits in its neutral pose whenever no clip is playing.
 5. **Exports a GLB** with one glTF animation per clip, each starting at time 0.
 
+**Model changes made for the animation.** The landing gear was rebuilt so it can retract
+cleanly. The rest of the airframe is unchanged.
+
+- **Nose gear:** split into three parts:
+  - the leg, with its wheels;
+  - an A-frame drag brace, whose arms straddle the blade antenna under the nose;
+  - two bay doors.
+- **Bay doors:** modelled closed, following the rounded lower skin, then hung open on
+  their outer hinges. Closing them by 90° brings them back flush.
+- **Nose leg:** its top sits 0.11 m inside the skin, and the launch bar is shown in its
+  raised (stowed) position along the front of the strut.
+- **Main-gear braces:** now separate parts, hinged at the nacelle.
+- **Front foot well:** has a raised floor plate (top at 0.21 m) that roofs the nose-wheel
+  bay, because the stowed tyres reach above the tub floor.
+
+`tools/check_model.py` checks the rest pose. Both gear clips were also checked at every
+third frame against the rest of the airframe, the antennae, the cockpit and every loadout.
+The one contact found is listed below.
+
 **Clips** at 24 fps:
 
 | Clip | Parts |
 | --- | --- |
-| `Gear_Retract`, `Gear_Extend` | nose and main gear (nose forward, mains aft-inboard, as on the legacy Hornet) |
+| `Gear_Retract`, `Gear_Extend` | gear legs (nose forward, mains aft-inboard, as on the legacy Hornet), their drag braces, and the nose-bay doors (they close after the legs are up and open first on extension) |
 | `Canopy_Open`, `Canopy_Close` | canopy, about its aft hinge |
 | `Airbrake_Extend`, `Airbrake_Retract` | dorsal speed brake |
 | `Controls_Roll` | ailerons and differential stabilators |
@@ -423,12 +446,18 @@ of the script.
 
 **Not animated, and why** (also in each `*_report.txt`):
 
-- **Gear doors:** the nose-gear doors are part of the nose-gear mesh, and the main-gear
-  bays have no doors. Separate the door faces into objects whose names contain `door` and
-  re-run to animate them.
-- **Nose-gear drag brace:** it is fused into the leg mesh. As the nose gear swings
-  forward, the brace's aft end shows below the nose. Separating it (and the doors) gives
-  them their own motion.
+- **Main-gear doors:** the main-gear bays have no doors in this model.
+- **Wheel wells:** the skin has no cut-out bays. While the gear moves, the legs pass
+  through the closed skin; once stowed, every gear part is inside it.
+- **Main wheels:** on the real aircraft they turn 90° to lie flat as the legs retract.
+  Here the legs swing aft and inboard without that twist (the wheels still end up inside
+  the nacelles).
+- **Gear against stations 4/6:** with an AIM-7 (or AIM-120) on station 4 or 6, each main
+  leg passes through the missile's lower inboard fin for about one second in the middle
+  of `Gear_Retract` and `Gear_Extend`. Stowed, the legs and braces overlap the recessed
+  missile body and the ASQ-173 pod only inside the nacelle, where they are hidden. The
+  real gear's twisting retraction and bay layout would be needed to model the true
+  clearance.
 - **Pilot heads:** no pilot is modelled, only eye points. For the F/A-18B, the second crew
   member is missing as well. No geometry was added.
 
