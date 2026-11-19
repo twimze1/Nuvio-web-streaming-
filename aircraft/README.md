@@ -488,7 +488,11 @@ drawing doesn't show. The rest of the airframe is unchanged.
   through its whole swing, the stowed leg while the door swings, the stores on that
   side's stations at rest (Sparrow and fuel tanks included), and the other door.
 - **Bay doors:** every door is modelled closed along the skin, then hung open, so it
-  closes flush into its opening.
+  closes flush into its opening. The outer skin and edges carry the airframe paint and
+  the inside face the white gear-bay paint. The bake poses the doors closed and the gear
+  up, so the closed doors get the panel lines, rivets and grime of the skin around them.
+  The gear and doors are hidden while the rest of the airframe bakes, so they cast no
+  shadows onto the skin.
 - **Front foot well:** has a raised floor plate (top at 0.21 m) that roofs the nose-wheel
   bay, because the stowed tyres reach above the tub floor.
 - **Pods on 4 and 6:** moved forward so they end ahead of the main bays.

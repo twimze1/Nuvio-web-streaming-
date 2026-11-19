@@ -18,6 +18,7 @@ import math
 import os
 
 import bpy
+from mathutils import Matrix
 
 TPS_DARK = (0.105, 0.125, 0.140)      # FS 36320, linear
 TPS_LIGHT = (0.250, 0.268, 0.285)     # FS 36375, linear
@@ -498,6 +499,13 @@ def bake_exterior(h, tex, refs, samples=12, groups=None):
             continue
         size = SIZES[group]
         state = _show_all(objs)
+        # the airframe is painted as it flies: legs, braces and bay doors cast no
+        # shadow onto it (their own group bakes them in the flight pose)
+        movers = [o for o in bpy.data.objects if o.type == "MESH" and o not in objs
+                  and any(k in o.keys() for k in ("stow_angle", "travel", "stow_fold"))]
+        hidden = [(o, o.hide_render) for o in movers]
+        for o in movers:
+            o.hide_render = True
         # swap in procedural materials
         saved = {}
         for o in objs:
@@ -506,6 +514,9 @@ def bake_exterior(h, tex, refs, samples=12, groups=None):
                 if s.material and s.material.name in procs:
                     s.material = procs[s.material.name]
         used = {s.material for o in objs for s in o.material_slots if s.material}
+        # bay doors are painted as they sit in flight: closed, with the gear stowed
+        doors = [o for o in objs if "travel" in o.keys()]
+        rest = [o for o in objs if o not in doors]
         results = {}
         for channel in ("basecolor", "roughness", "metallic", "normal", "ao"):
             img = bpy.data.images.new("bake_%s_%s" % (group, channel), size, size, alpha=False,
@@ -518,14 +529,23 @@ def bake_exterior(h, tex, refs, samples=12, groups=None):
                 tgt.image = img
                 nodes.active = tgt
                 _route(m, channel)
-            bpy.ops.object.select_all(action="DESELECT")
-            for o in objs:
-                o.select_set(True)
-            bpy.context.view_layer.objects.active = objs[0]
             kind = {"normal": "NORMAL", "ao": "AO"}.get(channel, "EMIT")
             if channel == "ao":
                 sc.cycles.samples = max(samples, 32)
-            bpy.ops.object.bake(type=kind, margin=16, normal_space="TANGENT")
+            passes = [(doors, True), (rest, False)] if doors else [(objs, False)]
+            for k, (sel, flight) in enumerate(passes):
+                if not sel:
+                    continue
+                saved_pose = _flight_pose(h) if flight else None
+                bpy.ops.object.select_all(action="DESELECT")
+                for o in sel:
+                    o.select_set(True)
+                bpy.context.view_layer.objects.active = sel[0]
+                sc.render.bake.use_clear = (k == 0)
+                bpy.ops.object.bake(type=kind, margin=16, normal_space="TANGENT")
+                if saved_pose is not None:
+                    _restore_pose(saved_pose)
+            sc.render.bake.use_clear = True
             sc.cycles.samples = samples
             for m in used:
                 _route(m, None)
@@ -536,9 +556,43 @@ def bake_exterior(h, tex, refs, samples=12, groups=None):
         for o in objs:
             for s, m in zip(o.material_slots, saved[o.name]):
                 s.material = m
+        for o, was in hidden:
+            o.hide_render = was
         _restore(state)
     for m in procs.values():
         bpy.data.materials.remove(m)
+
+
+def _flight_pose(h):
+    """Stow the gear and close every bay door (for baking the doors); returns
+    what _restore_pose needs."""
+    saved = []
+    legs = [o for o in bpy.data.objects if o.type == "MESH" and "stow_angle" in o.keys()]
+    for leg in legs:
+        if not hasattr(h, "stow_pose"):
+            break
+        P, R = h.stow_pose(leg, 1.0)
+        saved.append((leg, leg.matrix_basis.copy(), None))
+        M = Matrix.Translation(P) @ R.to_4x4() @ Matrix.Translation(-P)
+        leg.matrix_world = M @ leg.matrix_world
+    for o in bpy.data.objects:
+        if o.type != "MESH":
+            continue
+        ang = o.get("travel", o.get("stow_fold"))
+        if ang is not None:
+            saved.append((o, None, o.rotation_euler.x))
+            o.rotation_euler.x = math.radians(float(ang))
+    bpy.context.view_layer.update()
+    return saved
+
+
+def _restore_pose(saved):
+    for o, basis, rx in reversed(saved):
+        if basis is not None:
+            o.matrix_basis = basis
+        else:
+            o.rotation_euler.x = rx
+    bpy.context.view_layer.update()
 
 
 def _route(mat, channel):

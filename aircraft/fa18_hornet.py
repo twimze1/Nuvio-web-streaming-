@@ -182,6 +182,16 @@ def lerp(a, b, t):
     return a + (b - a) * t
 
 
+def door_paint(b, n_outer, n_rings):
+    """Material per face of a door lofted from rings of (outer skin points +
+    inner points reversed): the outer skin and the edges take the airframe
+    paint (index 0), the inside the gear-bay white (index 1)."""
+    nring = 2 * n_outer
+    for k in range(n_rings - 1):
+        for j in range(nring):
+            b.mats[k * nring + j] = 1 if n_outer <= j <= 2 * n_outer - 2 else 0
+
+
 def to_blender(p):
     """Design (x aft, y starboard, z up) -> Blender (X port, Y aft, Z up)."""
     return Vector((-p[1], p[0] - X_REF, p[2] - Z_REF))
@@ -1004,7 +1014,8 @@ class Hornet:
         R = Matrix.Rotation(math.radians(-travel), 3, axis)
         b = Builder()
         b.loft([[tuple(A + R @ (Vector(p) - A)) for p in r] for r in rings])
-        door = self.add(name, b, mats=("Gear",), collection=self.col_gear, smooth=None,
+        door_paint(b, len(ys), len(rings))
+        door = self.add(name, b, mats=("Airframe", "Gear"), collection=self.col_gear, smooth=None,
                         origin=tuple(A), axis=tuple(axis), hinge=closes)
         door["travel"] = travel
         return door
@@ -1277,7 +1288,8 @@ class Hornet:
         R = Matrix.Rotation(math.radians(-travel), 3, axis)
         b = Builder()
         b.loft([[tuple(A + R @ (Vector(p) - A)) for p in r] for r in rings])
-        door = self.add(name, b, mats=("Gear",), collection=self.col_gear, smooth=None,
+        door_paint(b, len(contours[0][0]), len(rings))
+        door = self.add(name, b, mats=("Airframe", "Gear"), collection=self.col_gear, smooth=None,
                         origin=tuple(A), axis=tuple(axis), hinge=closes)
         door["travel"] = float(travel)
         return door, BVHTree.FromPolygons(opened(travel), faces)
