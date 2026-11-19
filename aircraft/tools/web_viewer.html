@@ -267,52 +267,35 @@ const state = {};            // group id -> { text, live }
 let speed = 1;
 let run = 0;                 // bumps to cancel "play all"
 
-// The models are glTF JSON with their geometry and animation buffer embedded
-// as base64.  Hosts with a strict content security policy (claude.ai
-// included) refuse fetch() of data: URLs, so the page fetches the JSON itself,
-// decodes the buffer and hands three.js an in-memory GLB; textures load from
-// tex/ beside the page as ordinary same-origin files.
-async function fetchGlb(v, onBytes) {
-  const res = await fetch("FA-18" + v + ".json");
-  if (!res.ok) throw new Error("the server answered " + res.status + " for FA-18" + v + ".json");
-  const total = +res.headers.get("Content-Length") || 0;
-  let text;
-  if (res.body && res.body.getReader && total) {
-    const reader = res.body.getReader(), parts = [];
-    let got = 0;
-    for (;;) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      parts.push(value); got += value.length; onBytes(got, total);
-    }
-    const all = new Uint8Array(got);
-    let o = 0;
-    for (const p of parts) { all.set(p, o); o += p.length; }
-    text = new TextDecoder().decode(all);
-  } else {
-    text = await res.text();
+// Everything the viewer shows is embedded in this page (base64 blocks at the
+// end): a gzipped GLB per variant, whose images point at tex/<file>, and each
+// texture once.  Nothing is fetched, so the page works on hosts that serve
+// only the page itself and from disk.  Textures are handed to three.js as
+// blob: URLs and loaded through <img> elements (no fetch of blob: or data:).
+function bytesOf(text) {
+  const s = atob(text.trim());
+  const u = new Uint8Array(s.length);
+  for (let i = 0; i < s.length; i++) u[i] = s.charCodeAt(i);
+  return u;
+}
+async function gunzip(u8) {
+  if (typeof DecompressionStream === "undefined") throw new Error("this browser cannot unpack the model (no DecompressionStream); update it or try another browser");
+  const stream = new Blob([u8]).stream().pipeThrough(new DecompressionStream("gzip"));
+  return await new Response(stream).arrayBuffer();
+}
+const texURLs = {};
+function texURL(name) {
+  if (!texURLs[name]) {
+    const el = [...document.querySelectorAll("script[data-tex]")].find(e => e.dataset.tex === name);
+    if (!el) return null;
+    texURLs[name] = URL.createObjectURL(new Blob([bytesOf(el.textContent)], { type: name.endsWith(".png") ? "image/png" : "image/jpeg" }));
   }
-  const doc = JSON.parse(text);
-  let bin = new Uint8Array(0);
-  const buf = doc.buffers && doc.buffers[0];
-  const m = buf && buf.uri && /^data:[^,]*;base64,(.*)$/.exec(buf.uri);
-  if (m) {
-    const s = atob(m[1]);
-    bin = new Uint8Array(s.length);
-    for (let i = 0; i < s.length; i++) bin[i] = s.charCodeAt(i);
-    delete buf.uri;
-  }
-  const js = new TextEncoder().encode(JSON.stringify(doc));
-  const jsPad = (4 - js.length % 4) % 4, binPad = (4 - bin.length % 4) % 4;
-  const size = 12 + 8 + js.length + jsPad + 8 + bin.length + binPad;
-  const out = new ArrayBuffer(size), dv = new DataView(out), u8 = new Uint8Array(out);
-  dv.setUint32(0, 0x46546C67, true); dv.setUint32(4, 2, true); dv.setUint32(8, size, true);
-  dv.setUint32(12, js.length + jsPad, true); dv.setUint32(16, 0x4E4F534A, true);
-  u8.set(js, 20); u8.fill(0x20, 20 + js.length, 20 + js.length + jsPad);
-  const o = 20 + js.length + jsPad;
-  dv.setUint32(o, bin.length + binPad, true); dv.setUint32(o + 4, 0x004E4942, true);
-  u8.set(bin, o + 8);
-  return out;
+  return texURLs[name];
+}
+async function embeddedGlb(v) {
+  const el = document.getElementById("glb-" + v);
+  if (!el) throw new Error("the F/A-18" + v + " model is missing from this page");
+  return gunzip(bytesOf(el.textContent));
 }
 
 function load(v) {
@@ -328,17 +311,22 @@ function load(v) {
     $("loadText").textContent = (err && err.message ? err.message : String(err)) + ". Reload the page to try again.";
   };
   const manager = new THREE.LoadingManager();
+  manager.setURLModifier(url => { const m = /tex\/([^/?#]+)$/.exec(url); return (m && texURL(m[1])) || url; });
   manager.onProgress = (url, done, total) => {
     if (failed) return;
-    $("loadBar").style.width = Math.round(30 + 70 * done / Math.max(total, 1)) + "%";
+    $("loadBar").style.width = Math.round(20 + 80 * done / Math.max(total, 1)) + "%";
     $("loadText").textContent = "Textures: " + done + " of " + total;
   };
   const loader = new GLTFLoader(manager);
-  return fetchGlb(v, (got, total) => {
-    $("loadBar").style.width = Math.round(30 * got / total) + "%";
-    $("loadText").textContent = "Model: " + (got / 1e6).toFixed(1) + " of " + (total / 1e6).toFixed(1) + " MB";
-  }).then(glb => new Promise((resolve, reject) => {
-    loader.parse(glb, "./", gltf => {
+  $("loadText").textContent = "Unpacking the model";
+  $("loadBar").style.width = "10%";
+  return embeddedGlb(v).then(glb => new Promise((resolve, reject) => {
+    // load textures through <img> (TextureLoader), not fetch (ImageBitmapLoader):
+    // GLTFLoader picks its loader when the parser is built, inside parse()
+    const cib = window.createImageBitmap;
+    try { window.createImageBitmap = undefined; } catch (e) {}
+    try {
+    loader.parse(glb, "", gltf => {
       const root = gltf.scene;
       root.traverse(o => {
         if (o.isMesh) {
@@ -361,6 +349,9 @@ function load(v) {
       cache[v] = { v, root, mixer, actions, clips, cams, floor: box.min.y };
       resolve(cache[v]);
     }, reject);
+    } finally {
+      try { window.createImageBitmap = cib; } catch (e) {}
+    }
   })).catch(err => { fail(err); throw err; });
 }
 
@@ -591,3 +582,4 @@ renderer.setAnimationLoop(() => {
 
 show("A");
 </script>
+<!--EMBEDDED-DATA-->

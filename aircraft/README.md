@@ -20,7 +20,7 @@ the legacy airframe, not the larger F/A-18E/F Super Hornet. Each variant has:
 | `FA-18A_Hornet.blend`, `FA-18B_Hornet.blend` | The models. Textures are in `textures/`, referenced by relative path. |
 | `FA-18A_Hornet.glb`, `FA-18B_Hornet.glb` | Same aircraft for game engines, textures embedded. Includes the airframe, cockpit, pylons, station sockets and cameras, with the gear down. Loadouts are not included. |
 | `FA-18A_Hornet_animated.blend`, `FA-18B_Hornet_animated.blend` | Copies of the models with the animation clips set up by `tools/setup_animations.py` (the originals are untouched); `*_animated.glb` carry the clips as glTF animations, and `*_animated_report.txt` lists what was found and set up. |
-| `web/` | Browser viewer: plays every animation clip on either variant, with orbit and cockpit views. `index.html`, the two models as glTF (`FA-18A.json`, `FA-18B.json`) and web-sized textures in `web/tex/` (9.6 MB in all). |
+| `web/index.html` | Browser viewer: plays every animation clip on either variant, with zoom, orbit and cockpit views. One self-contained 6.8 MB file (both models gzipped, web-sized textures, all embedded) that opens straight from disk or any host. |
 | `FA-18_Stores.glb` | Every store, pylon, rack and launcher. Each node sits at the origin, which is also the store's attach point. |
 | `FA-18A_stations.json`, `FA-18B_stations.json` | Station manifest: socket positions, what each station carries, store data and sources, and the loadouts. |
 | `textures/` | Cockpit atlas, display images, exterior atlases and the stores atlas. |
@@ -479,13 +479,12 @@ the strut, the stowed tyres under the foot-well plate) and the one listed below.
   `0` keys also zoom. Outside, zoom goes toward the cursor, down to 1.2 m.
 
 Clips in different systems can run together, for example gear up with the wings folded.
-To rebuild it after changing the models, run `python3 tools/make_web_viewer.py`. That
-writes the glTF files and textures and copies the page from `tools/web_viewer.html`.
-Serve the folder over HTTP to open it:
-
-```sh
-python3 -m http.server -d web 8000     # then open http://localhost:8000
-```
+The page is a single file with both models and their textures embedded, so it needs no
+server: open `web/index.html` in a browser. It only needs internet access for the three.js
+library and the fonts. To rebuild it after changing the models, run
+`python3 tools/make_web_viewer.py`, which fills the template `tools/web_viewer.html`. The
+textures are web-sized: exterior 1536 px, cockpit 2048 px and stores 1024 px. The full
+4096 px maps stay in `textures/` and the GLBs.
 
 **Video (optional).** Two tools render the same clips to an MP4. Each clip gets its own
 camera with a slow eased orbit and a caption. EEVEE takes several seconds a frame without
