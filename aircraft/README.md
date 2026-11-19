@@ -255,8 +255,9 @@ noses sit about 0.35 m ahead of the wing leading edge, as in the F/A-18B top vie
 - **Racks and launchers:** these hang their store H metres lower. The value is in
   `stores_data.EQUIPMENT` and `*_stations.json`.
 - **BRU-33 CVER:** its two units sit 0.13 m either side and are canted 5° outboard.
-- **Pods on 4 and 6:** these ride 1.6 m forward of the AIM-7 position, under the intake,
-  clear of the extended main gear.
+- **Pods on 4 and 6:** these ride 2.0 m forward of the AIM-7 position, under the intake,
+  ending just ahead of the main-gear post. This is an estimate: no source gave their exact
+  fore-and-aft position.
 - **Example loadouts:** seven, built from loads the A/B and Desert Storm Hornets actually
   flew: `CAP`, `Fleet_air_defence`, `Strike_Mk83`, `Heavy_strike_Mk84`, `SEAD_HARM`,
   `Walleye_1991` and `Rockeye_CAS`. They are hidden collections of linked copies, and are
@@ -397,10 +398,21 @@ blender -b FA-18A_Hornet.blend -P tools/setup_animations.py -- --glb
 2. **Sets up pivots.** Hinged parts already pivot on their hinge empties. Each gear leg
    gets a new `<name>_Pivot` empty at the top of the leg, and the leg is re-parented to
    it without moving. No mesh is edited.
-   - The nose leg's retraction angle is fitted by ray casts against the lower skin: it
+   - Each pivot sits under a static `<name>_Pivot_Frame` empty that holds its
+     orientation, so the pivot rests at zero and only its local X rotation is keyed.
+   - **Nose leg:** its retraction angle is fitted by ray casts against the lower skin. It
      swings forward just far enough for the wheels to sit inside, clear of the closed
      doors.
-   - Each drag brace folds until it is inside the skin.
+   - **Main legs:** these swing aft, and a `<name>_Twist` empty turns each post about
+     its own axis on the way. The swing and twist come from a search for the pose
+     closest to "post aft, wheel flat under the nacelle" that keeps the whole leg
+     inside the skin and on its own side. The result is 97° aft with a 33° post twist,
+     and the wheel ends within 6° of flat.
+   - The legs carry `wheel_centre`, `wheel_axle` and `post_axis` properties for this.
+   - **Drag brace:** folds until it is inside the skin.
+   - **Doors:** close by their `travel` property (90° plus the splay they hang open at).
+   - **Launch bar:** its catapult angle is the one that brings its tip 3 cm above the
+     deck.
 3. **Builds one Action per clip.** Blender 4.4+ slotted actions give each object its own
    slot. Keys are Bezier with clamped auto handles, eased in and out, with a fake user.
 4. **Lays the clips out on the NLA.** Each object gets a track per clip, strips hold
@@ -408,30 +420,60 @@ blender -b FA-18A_Hornet.blend -P tools/setup_animations.py -- --glb
    therefore sits in its neutral pose whenever no clip is playing.
 5. **Exports a GLB** with one glTF animation per clip, each starting at time 0.
 
-**Model changes made for the animation.** The landing gear was rebuilt so it can retract
-cleanly. The rest of the airframe is unchanged.
+**Model changes made for the animation.** The landing gear was rebuilt from the F/A-18B
+drawing's side view. Three public-domain NASA photos (listed below) settled what the
+drawing doesn't show. The rest of the airframe is unchanged.
 
-- **Nose gear:** split into three parts:
-  - the leg, with its wheels;
-  - an A-frame drag brace, whose arms straddle the blade antenna under the nose;
-  - two bay doors.
-- **Bay doors:** modelled closed, following the rounded lower skin, then hung open on
-  their outer hinges. Closing them by 90° brings them back flush.
-- **Nose leg:** its top sits 0.11 m inside the skin, and the launch bar is shown in its
-  raised (stowed) position along the front of the strut.
-- **Main-gear braces:** now separate parts, hinged at the nacelle.
+- **Nose gear:** five separate parts:
+  - **Leg:** the strut and twin wheels. Its top sits 0.11 m inside the skin, so it stays
+    inside when it lies forward in the bay.
+  - **Launch bar:** pivoted at the front of the strut 0.27 m above the axle and resting
+    about 31° nose-up, as drawn and photographed.
+  - **Drag brace:** an A-frame from aft, whose arms straddle the blade antenna under the
+    nose.
+  - **Two pairs of bay doors**, at the drawing's positions:
+    - forward pair: 3.60–4.37 m, over the stowed wheels;
+    - aft pair: 4.38–5.67 m, flanking the strut.
+
+    Both pairs hinge just outboard of the tyres and splay outward when open, by the angle
+    that gives the drawing's hanging depths (0.23 m forward, 0.18 m aft).
+- **Main gear:** each leg is now built as drawn:
+  - a near-vertical post ahead of the wheel;
+  - a trailing arm aft to the axle;
+  - a diagonal shock absorber;
+  - a bay door hanging aft of the wheel, at 11.33–12.16 m. That is where a wheel
+    retracted aft and turned flat ends up, which cross-checks the published retraction.
+
+  Across the aircraft the legs splay outboard to the 3.11 m track, as in a head-on photo.
+  The door hangs from the inboard side of the nacelle, also from that photo. It is
+  0.40 m wide (the drawing shows 0.46 m) so that, closed, it clears a Sparrow on
+  station 4 or 6.
+- **Bay doors:** every door is modelled closed along the skin, then hung open, so it
+  closes flush.
 - **Front foot well:** has a raised floor plate (top at 0.21 m) that roofs the nose-wheel
   bay, because the stowed tyres reach above the tub floor.
+- **Pods on 4 and 6:** moved 0.4 m further forward so they end ahead of the main-gear post.
 
 `tools/check_model.py` checks the rest pose. Both gear clips were also checked at every
 third frame against the rest of the airframe, the antennae, the cockpit and every loadout.
-The one contact found is listed below.
+The only contacts are the parts that are meant to touch (each brace and the launch bar on
+the strut, the stowed tyres under the foot-well plate) and the one listed below.
+
+**References for the gear:**
+- The F/A-18B general-arrangement drawing (side view), supplied with the project.
+- NASA KSC-20170822-PH_SWW01_0215: F/A-18B nose gear, its doors, brace and launch bar.
+- NASA AFRC2026-0196-027: head-on view of both main legs and the doors.
+- NASA KSC-20170822-PH_SWW01_0101: underside, gear up.
+- Joe Baugher's F/A-18 notes: "the main undercarriage units retract aft and rotate
+  through 90 degrees so as to lie flat underneath the air intake ducts. The twin-wheel
+  nose gear retracts forward."
 
 **Clips** at 24 fps:
 
 | Clip | Parts |
 | --- | --- |
-| `Gear_Retract`, `Gear_Extend` | gear legs (nose forward, mains aft-inboard, as on the legacy Hornet), their drag braces, and the nose-bay doors (they close after the legs are up and open first on extension) |
+| `Gear_Retract`, `Gear_Extend` | gear legs (nose forward; mains aft, the posts turning so the wheels lie flat), the nose drag brace, and all bay doors (they close after the legs are up and open first on extension) |
+| `LaunchBar_Down`, `LaunchBar_Up` | nose-gear launch bar, lowered to the deck for a catapult hook-up |
 | `Canopy_Open`, `Canopy_Close` | canopy, about its aft hinge |
 | `Airbrake_Extend`, `Airbrake_Retract` | dorsal speed brake |
 | `Controls_Roll` | ailerons and differential stabilators |
@@ -446,18 +488,22 @@ of the script.
 
 **Not animated, and why** (also in each `*_report.txt`):
 
-- **Main-gear doors:** the main-gear bays have no doors in this model.
 - **Wheel wells:** the skin has no cut-out bays. While the gear moves, the legs pass
   through the closed skin; once stowed, every gear part is inside it.
-- **Main wheels:** on the real aircraft they turn 90° to lie flat as the legs retract.
-  Here the legs swing aft and inboard without that twist (the wheels still end up inside
-  the nacelles).
-- **Gear against stations 4/6:** with an AIM-7 (or AIM-120) on station 4 or 6, each main
-  leg passes through the missile's lower inboard fin for about one second in the middle
-  of `Gear_Retract` and `Gear_Extend`. Stowed, the legs and braces overlap the recessed
-  missile body and the ASQ-173 pod only inside the nacelle, where they are hidden. The
-  real gear's twisting retraction and bay layout would be needed to model the true
-  clearance.
+- **Gear linkage:** the real legs fold and turn through linkages (retraction actuator,
+  planing link, shock-strut travel) that no available source shows. Here each leg
+  moves rigidly: it swings, and the main posts also turn about their own axis.
+- **Main wheels:** they end within 6° of flat rather than exactly flat. Their axle is
+  not square to the splayed post, so a single post twist cannot lay them perfectly flat.
+- **Gear against stations 4/6:**
+  - With an AIM-7 (or AIM-120) on station 4 or 6, each main leg passes through the
+    missile's lower inboard fin below the nacelle. This lasts about half a second
+    (frames 45–57 of `Gear_Retract`, and the mirror of that in `Gear_Extend`).
+  - After that, and when stowed, the leg overlaps only the parts of the semi-recessed
+    missile that sit inside the nacelle, where they are hidden.
+  - The real bay layout would be needed to model the true clearance.
+- **Holdback fitting:** the short arm behind the nose wheel in the drawing is not
+  modelled.
 - **Pilot heads:** no pilot is modelled, only eye points. For the F/A-18B, the second crew
   member is missing as well. No geometry was added.
 
@@ -469,10 +515,12 @@ overlaying the model's outline on each drawing (`tools/overlay_reference.py`):
 - **Top view:** nose and forward fuselage, the LEX curve, wing planform and hinge lines,
   wing-fold line (model 4.19 m, drawing 4.12 m), stabilators and nozzles.
 - **Side view:** nose profile, canopy profile for each variant, spine, twin fins and
-  rudders, nozzle end, intake face, antennae, and wheel positions.
+  rudders, nozzle end, intake face, antennae, wheel positions, and the landing-gear
+  layout (struts, braces, launch bar and bay doors).
 - **Front view:** canopy height, fin cant and tip positions, fuselage and nacelle outline,
-  wing height and anhedral, stabilator line, wheel track, main-gear legs, and the
-  wingtip missile position.
+  wing height and anhedral, stabilator line, and the wingtip missile position. The front
+  view shows the aircraft without its gear. The 3.11 m wheel track is the published
+  figure, and the legs' outboard splay follows a NASA head-on photo.
 - **Dimensions from the sheet and published specifications:**
   - length 17.07 m, wing span 11.43 m, height 4.66 m, wing area 37.16 m²
   - 5 % root and 3.5 % tip sections (NACA 65A005 / 65A003.5 mod)
@@ -504,7 +552,7 @@ overlaying the model's outline on each drawing (`tools/overlay_reference.py`):
     published.
   - Leading-edge flaps do not have cut-outs for the pylon noses; drooping them far into a
     loaded pylon will clip.
-- **Simplified parts:** the landing gear (main-gear doors left out), the intakes (short
+- **Simplified parts:** the landing gear (rigid legs, no wheel wells), the intakes (short
   ducts) and the guidance-kit details.
 - **Flight model:** this repository has no flight model or game code, so no flight
   behaviour was changed and no performance values were added. `*_stations.json` carries

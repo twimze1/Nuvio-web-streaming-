@@ -106,8 +106,8 @@ ATTACHED_TO_FUSELAGE = ("Wing_Inner", "Fin_", "Stabilator", "Canopy", "Seats", "
 EXPECTED = [
     ("Fin_", "Wing_Inner"),          # both roots buried inside the nacelle
     ("Canopy", "CanopyFrames"), ("Windscreen", "WindscreenFrame"),
-    ("NoseGearBrace", "NoseGear"),   # the braces pin to their legs
-    ("MainGearBrace", "MainGear"),
+    ("NoseGearBrace", "NoseGear"),   # the brace pins to the strut
+    ("LaunchBar", "NoseGear"),       # the launch bar pivots in the strut's yoke
 ]
 clashes = []
 

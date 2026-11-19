@@ -18,6 +18,12 @@ What it does
      axis using the sign stated in that property.  Landing-gear legs get a new
      "<name>_Pivot" empty at the top of the leg (found from the mesh), and the
      leg is re-parented to it with its world position kept: no mesh is edited.
+     Like the hinges, each pivot sits under a static "<name>_Pivot_Frame" empty
+     that holds its orientation, so the pivot itself rests at zero and only
+     its local X rotation is keyed.
+     Main legs also get a "<name>_Twist" empty that turns the post about its
+     own axis as it swings aft, so the wheel ends up lying flat (as on the
+     Hornet).
   3. Actions: one Action per clip (Blender 4.4+ slotted actions: one slot per
      animated object), Bezier keys with eased in/out, fake user set.  Every
      clip is laid out on an NLA "showreel" (a track per clip on each object,
@@ -62,6 +68,7 @@ ROLE_WORDS = [
     ("stabilator", r"stabilator|elevator|(^|_)stab(_|$)"),
     ("wing_fold", r"wing_outer|wingfold|wing_fold"),
     ("hook", r"hook"),
+    ("launch_bar", r"launch_?bar"),
     ("gear_door", r"door"),
     ("gear_brace", r"brace"),
     ("nose_gear", r"nose_?gear"),
@@ -125,7 +132,7 @@ def inspect(scene):
         if obj.type == "EMPTY":
             continue                                 # hinge empties are found through their mesh child
         if role in ("canopy", "airbrake", "rudder", "aileron", "le_flap", "te_flap", "stabilator", "wing_fold",
-                    "hook", "gear_door", "gear_brace"):
+                    "hook", "gear_door", "gear_brace", "launch_bar"):
             if "hinge" not in obj.keys():
                 skipped.append((obj.name, role, "no 'hinge' property / pivot: rotation axis unknown"))
                 continue
@@ -147,7 +154,7 @@ def world_verts(obj):
     return [M @ v.co for v in obj.data.vertices]
 
 
-def make_pivot(obj, location, axis, up=Vector((0, 0, 1))):
+def make_pivot(obj, location, axis, up=Vector((0, 0, 1)), suffix="_Pivot"):
     """Empty at `location` whose local X is `axis`; obj re-parented to it with
     its world transform unchanged."""
     ax = axis.normalized()
@@ -158,20 +165,53 @@ def make_pivot(obj, location, axis, up=Vector((0, 0, 1))):
     zv = ax.cross(yv).normalized()
     frame = Matrix(((ax.x, yv.x, zv.x, location.x), (ax.y, yv.y, zv.y, location.y),
                     (ax.z, yv.z, zv.z, location.z), (0, 0, 0, 1)))
-    piv = bpy.data.objects.new(obj.name + "_Pivot", None)
+    # a static empty holds the hinge orientation; its child does the rotating
+    # and rests at zero, so a clip only ever keys its local X rotation
+    base = bpy.data.objects.new(obj.name + suffix + "_Frame", None)
+    base.empty_display_type = "PLAIN_AXES"
+    base.empty_display_size = 0.15
+    base.rotation_mode = "QUATERNION"
+    piv = bpy.data.objects.new(obj.name + suffix, None)
     piv.empty_display_type = "SINGLE_ARROW"
     piv.empty_display_size = 0.3
     for c in obj.users_collection:
+        c.objects.link(base)
         c.objects.link(piv)
-    parent = obj.parent
-    piv.parent = parent
-    piv.matrix_world = frame
+    base.parent = obj.parent
+    base.matrix_world = frame
+    bpy.context.view_layer.update()
+    piv.parent = base
+    piv.matrix_parent_inverse = Matrix.Identity(4)
+    piv.matrix_basis = Matrix.Identity(4)
     bpy.context.view_layer.update()
     world = obj.matrix_world.copy()
     obj.parent = piv
     obj.matrix_world = world                    # keep the leg exactly where it is
     piv["pivot"] = "added by setup_animations.py; rotate about local X"
     return piv
+
+
+def tyre_frame(obj):
+    """Centre and axle direction of the wheel: from the leg's "wheel_centre" /
+    "wheel_axle" properties (object-local) if present, else from the faces
+    using a tyre material, else None."""
+    import numpy as np
+    if "wheel_centre" in obj.keys() and "wheel_axle" in obj.keys():
+        M = obj.matrix_world
+        return (M @ Vector(obj["wheel_centre"]),
+                (M.to_3x3() @ Vector(obj["wheel_axle"])).normalized())
+    mats = [i for i, m in enumerate(obj.data.materials) if m and re.search("tire|tyre", m.name.lower())]
+    idx = {v for p in obj.data.polygons if p.material_index in mats for v in p.vertices}
+    if not idx:
+        return None
+    M = obj.matrix_world
+    V = [M @ obj.data.vertices[i].co for i in idx]
+    lo = Vector([min(v[k] for v in V) for k in range(3)])
+    hi = Vector([max(v[k] for v in V) for k in range(3)])
+    c = (lo + hi) / 2
+    A = np.array([list(v - c) for v in V])
+    w, U = np.linalg.eigh(A.T @ A)
+    return c, Vector(U[:, 0]).normalized()        # the tyre is thinnest along its axle
 
 
 def gear_pivot(obj, kind):
@@ -187,6 +227,9 @@ def gear_pivot(obj, kind):
     zlow = min(v.z for v in V)
     low = [v for v in V if v.z < zlow + 0.80 * (P.z - zlow) * 0.5]
     W = sum(low, Vector()) / len(low)              # centre of the wheel(s): roughly the axle
+    tf = tyre_frame(obj)
+    if tf is not None:
+        W = tf[0]                                  # exact, from the tyre faces
     a = W - P
     side = 1.0 if P.x > 0 else -1.0
     if kind == "nose_gear":
@@ -225,12 +268,99 @@ def skin_z(p):
     return min(zs) if zs else None
 
 
+def mesh_verts(obj):
+    """World vertices of obj and of every mesh carried below it."""
+    V = world_verts(obj) if obj.type == "MESH" else []
+    for c in obj.children_recursive:
+        if c.type == "MESH":
+            V += world_verts(c)
+    return V
+
+
+def top_z(p):
+    """Height of the highest skin surface above or below world point p (None outside it)."""
+    zs = []
+    for t in lower_skin():
+        hit = t.ray_cast(Vector((p.x, p.y, 100.0)), Vector((0, 0, -1)))
+        if hit[0] is not None:
+            zs.append(hit[0].z)
+    return max(zs) if zs else None
+
+
+def inside_skin(V, P, R, clearance):
+    """Every transformed vertex between the lower and upper skin."""
+    for v in V:
+        w = P + R @ (v - P)
+        s = skin_z(w)
+        if s is None or w.z < s + clearance:
+            return False
+        t = top_z(w)
+        if t is None or w.z > t - clearance:
+            return False
+    return True
+
+
+def main_stow(obj, P, W, clearance=0.01):
+    """Aft retraction with the wheel turned flat, as on the Hornet: the post
+    turns about its own axis (carrying the trailing arm and wheel round) while
+    it swings aft about its top.  Searches swing directions around straight
+    aft and twist angles, and returns (pivot, axis, angle, twist axis, twist,
+    flatness, fits) for the pose closest to "post aft, wheel flat under the
+    nacelle, just aft of the pivot" that keeps the whole leg inside the skin
+    and on its own side of the centreline.  The post comes from the leg's
+    "post_top" / "post_axis" properties if present (else the pivot-to-wheel
+    line)."""
+    M = obj.matrix_world
+    if "post_top" in obj.keys() and "post_axis" in obj.keys():
+        P = M @ Vector(obj["post_top"])
+        p = (M.to_3x3() @ Vector(obj["post_axis"])).normalized()
+    else:
+        p = (W - P).normalized()
+    tf = tyre_frame(obj)
+    axle = tf[1] if tf else Vector((1, 0, 0))
+    side = 1.0 if P.x > 0 else -1.0                 # Blender +X is port
+    V = mesh_verts(obj)
+    w = W - P
+    ideal = P + Vector((0.0, w.length, 0.10))        # wheel just aft of the pivot, under the nacelle
+    cands = []
+    for e in range(-10, 41, 2):
+        for az in range(-30, 31, 3):
+            el, a_ = math.radians(e), math.radians(az)
+            d = Vector((side * math.sin(a_) * math.cos(el), math.cos(a_) * math.cos(el), math.sin(el)))
+            ax1 = p.cross(d)
+            if ax1.length < 1e-9:
+                continue
+            ax1.normalize()
+            ang = p.angle(d)
+            R1 = Matrix.Rotation(ang, 3, ax1)
+            for t in range(-180, 180, 3):
+                R = R1 @ Matrix.Rotation(math.radians(t), 3, p)
+                flat = abs((R @ axle).z)
+                if flat < 0.7:
+                    continue
+                wc = P + R @ w
+                cost = 6.0 * (1.0 - flat) + (wc - ideal).length
+                cands.append((cost, ax1, math.degrees(ang), float(t), flat, R))
+    cands.sort(key=lambda c: c[0])
+    for cost, ax1, ang, t, flat, R in cands:
+        if not lower_skin():
+            break
+        if not inside_skin(V, P, R, clearance):
+            continue
+        if any(side * (P + R @ (v - P)).x < 0.03 for v in V):
+            continue                                  # stays on its own side of the centreline
+        return P, ax1, ang, p, t, flat, True
+    c = cands[0]
+    return P, c[1], c[2], p, c[3], c[4], False
+
+
 def fold_into_skin(obj, P, axis, lo, hi, clearance, step=0.5):
-    """Smallest rotation (deg, lo..hi) of obj about `axis` through P that leaves
-    every vertex at least `clearance` above the lower skin, or None."""
+    """Smallest rotation (deg, lo..hi) of obj (and the meshes it carries) about
+    `axis` through P that leaves every vertex at least `clearance` above the
+    lower skin, or None."""
     if not lower_skin():
         return None
-    V = world_verts(obj)
+    V = mesh_verts(obj)
     axis = axis.normalized()
 
     def inside(deg):
@@ -337,6 +467,7 @@ def build_clips(parts):
 
     # landing gear (pivots added); doors only if they exist as separate objects
     gear = []
+    twists = []
     for kind in ("nose_gear", "main_gear"):
         for o in by(kind):
             P, axis, ang = gear_pivot(o, kind)
@@ -347,9 +478,18 @@ def build_clips(parts):
                 fit = fold_into_skin(o, P, axis, 60.0, 150.0, 0.012)
                 if fit is not None:
                     ang, how = fit, "fitted inside the lower skin"
-            elif fold_into_skin(o, P, axis, ang, ang, 0.0) is None and lower_skin():
-                say("  NOTE   %s: parts stay below the lower skin when stowed at %.0f deg" % (o.name, ang))
-            piv = make_pivot(o, P, axis)
+                piv = make_pivot(o, P, axis)
+            else:
+                # aft, turning the wheel flat: pivot, then a twist about the leg
+                tf = tyre_frame(o)
+                W = tf[0] if tf else P + Vector((0, 0, -1))
+                P, axis, ang, post, tw, flat, fits = main_stow(o, P, W)
+                how = ("post turned %.0f deg about its axis, wheel within %.0f deg of flat, %s"
+                       % (tw, math.degrees(math.acos(min(1.0, flat))),
+                          "inside the skin" if fits else "NOT fully inside the skin"))
+                piv = make_pivot(o, P, axis)
+                twi = make_pivot(o, P, post, suffix="_Twist")
+                twists.append((twi, tw))
             gear.append((kind, piv, ang))
             say("  pivot  %-28s at (%.2f, %.2f, %.2f), retract %.1f deg (%s)"
                 % (piv.name, P.x, P.y, P.z, ang, how))
@@ -370,31 +510,48 @@ def build_clips(parts):
             t0, t1 = (10, 96) if kind == "nose_gear" else (16, 104)
             ret.key(piv, [(1, 0.0), (t0, 0.0), (t1, ang), (132, ang)])
             ext.key(piv, [(1, ang), (30, ang), (116, 0.0), (132, 0.0)])
+        for twi, tw in twists:
+            ret.key(twi, [(1, 0.0), (16, 0.0), (104, tw), (132, tw)])
+            ext.key(twi, [(1, tw), (30, tw), (116, 0.0), (132, 0.0)])
         for o, fold in braces:
             t0, t1 = (10, 90) if "nose" in o.name.lower() else (16, 100)
             ret.key(o, [(1, 0.0), (t0, 0.0), (t1, fold), (132, fold)])
             ext.key(o, [(1, fold), (36, fold), (116, 0.0), (132, 0.0)])
         for o in doors:
-            ret.key(o, [(1, 0.0), (100, 0.0), (126, 90.0), (132, 90.0)])
-            ext.key(o, [(1, 90.0), (4, 90.0), (28, 0.0), (132, 0.0)])
+            tr = float(o.get("travel", 90.0))      # closing angle (doors that splay open travel further)
+            ret.key(o, [(1, 0.0), (100, 0.0), (126, tr), (132, tr)])
+            ext.key(o, [(1, tr), (4, tr), (28, 0.0), (132, 0.0)])
         made += [ret, ext]
     if not doors:
         say("  NOTE   no separate gear-door objects found. Separate door faces into objects whose names")
         say("         contain 'door' (with a 'hinge' property, or use the nose-gear doors as a pattern)")
         say("         and re-run to animate them.")
     else:
-        say("  doors  %s close after retraction; the main-gear bays have no doors in this model"
+        say("  doors  %s close after retraction and open first on extension"
             % ", ".join(o.name for o in doors))
-    for kind, piv, ang in gear:
-        leg = piv.children[0]
-        V = world_verts(leg)
-        P = piv.matrix_world.translation
-        reach = max((v - P).length for v in V if v.z > P.z - 0.15)
-        if kind == "nose_gear" and reach > 0.6 and not braces:
-            say("  NOTE   %s: parts that hang from the top of the bay well away from the pivot (the drag" % leg.name)
-            say("         brace and doors) are fused into the leg mesh, so they swing with the leg and show")
-            say("         below the nose while the gear retracts. Separate them (names containing 'brace' or")
-            say("         'door') to give them their own motion.")
+    # launch bar: lowered for a catapult hook-up until its tip is just above the deck
+    if by("launch_bar"):
+        o = by("launch_bar")[0]
+        tyre_z = [v.z for g in by("nose_gear") + by("main_gear") for v in world_verts(g)]
+        M = o.matrix_world
+        P, axis = M.translation.copy(), M.col[0].xyz.normalized()
+        V = world_verts(o)
+        down = None
+        if tyre_z:
+            deck = min(tyre_z)
+            for k in range(1, 1201):
+                R = Matrix.Rotation(math.radians(k / 10), 3, axis)
+                if min((P + R @ (v - P)).z for v in V) <= deck + 0.03:
+                    down = k / 10
+                    break
+        if down is None:
+            down = 45.0
+        say("  bar    %-28s lowers %.1f deg for a catapult hook-up (tip 3 cm above the deck)" % (o.name, down))
+        lo = Clip("LaunchBar_Down", 48)
+        lo.key(o, [(1, 0.0), (40, down), (48, down)])
+        up = Clip("LaunchBar_Up", 48)
+        up.key(o, [(1, down), (40, 0.0), (48, 0.0)])
+        made += [lo, up]
     # canopy
     if by("canopy"):
         o = by("canopy")[0]
