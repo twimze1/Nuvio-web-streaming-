@@ -20,7 +20,7 @@ the legacy airframe, not the larger F/A-18E/F Super Hornet. Each variant has:
 | `FA-18A_Hornet.blend`, `FA-18B_Hornet.blend` | The models. Textures are in `textures/`, referenced by relative path. |
 | `FA-18A_Hornet.glb`, `FA-18B_Hornet.glb` | Same aircraft for game engines, textures embedded. Includes the airframe, cockpit, pylons, station sockets and cameras, with the gear down. Loadouts are not included. |
 | `FA-18A_Hornet_animated.blend`, `FA-18B_Hornet_animated.blend` | Copies of the models with the animation clips set up by `tools/setup_animations.py` (the originals are untouched); `*_animated.glb` carry the clips as glTF animations, and `*_animated_report.txt` lists what was found and set up. |
-| `previews/FA-18A_showreel.mp4` | Video of every animation clip on the F/A-18A (1280×720, 24 fps), each with its own camera and a caption. |
+| `web/` | Browser viewer: plays every animation clip on either variant, with orbit and cockpit views. `index.html`, the two models as glTF (`FA-18A.json`, `FA-18B.json`) and web-sized textures in `web/tex/` (9.6 MB in all). |
 | `FA-18_Stores.glb` | Every store, pylon, rack and launcher. Each node sits at the origin, which is also the store's attach point. |
 | `FA-18A_stations.json`, `FA-18B_stations.json` | Station manifest: socket positions, what each station carries, store data and sources, and the loadouts. |
 | `textures/` | Cockpit atlas, display images, exterior atlases and the stores atlas. |
@@ -28,7 +28,7 @@ the legacy airframe, not the larger F/A-18E/F Super Hornet. Each variant has:
 | `fa18_cockpit.py`, `cockpit_layout.py` | Cockpit geometry, and the panel layout it shares with the texture painter. |
 | `fa18_stores.py`, `stores_data.py` | Stores, pylons, sockets and loadouts, and the weapons data they use. |
 | `fa18_materials.py` | PBR materials and the exterior bake. |
-| `tools/` | Texture painters, reference-line prep, overlay check, model checks, preview renders, animation set-up. |
+| `tools/` | Texture painters, reference-line prep, overlay check, model checks, preview renders, animation set-up, browser viewer and video builders. |
 | `docs/weapons_research.md`, `.json` | Research notes behind every weapon number, with sources. |
 
 ## Variants
@@ -469,16 +469,28 @@ the strut, the stowed tyres under the foot-well plate) and the one listed below.
   through 90 degrees so as to lie flat underneath the air intake ducts. The twin-wheel
   nose gear retracts forward."
 
-**Showreel.** `previews/FA-18A_showreel.mp4` plays every clip in timeline order. It
-opens with a short orbit of the neutral pose. Each clip then gets its own camera, aimed at
-the parts that move, with a slow eased orbit, and holds briefly on its first and last
-frames. It is rendered in EEVEE and remade with two tools:
+**Browser viewer.** `web/index.html` plays the clips live in three.js. It has:
+- a switch between the F/A-18A and F/A-18B;
+- one row per moving system, showing its state;
+- play-all, reset and speed controls (¼× to 2×);
+- views from outside and from each seat's eye point.
+
+Clips in different systems can run together, for example gear up with the wings folded.
+To rebuild it after changing the models, run `python3 tools/make_web_viewer.py`. That
+writes the glTF files and textures and copies the page from `tools/web_viewer.html`.
+Serve the folder over HTTP to open it:
 
 ```sh
-# frames, split across N worker processes (worker index, worker count, samples)
-blender -b -P tools/render_showreel.py -- FA-18A_Hornet_animated.blend /tmp/reel 0 3 3   # and 1, 2
-# captions and H.264 encode (Pillow and ffmpeg)
-python3 tools/make_showreel.py /tmp/reel previews/FA-18A_showreel.mp4
+python3 -m http.server -d web 8000     # then open http://localhost:8000
+```
+
+**Video (optional).** Two tools render the same clips to an MP4. Each clip gets its own
+camera with a slow eased orbit and a caption. EEVEE takes several seconds a frame without
+a GPU, so a full reel is about an hour and a half on 4 CPU cores:
+
+```sh
+blender -b -P tools/render_showreel.py -- FA-18A_Hornet_animated.blend /tmp/reel 0 3 3   # workers 0, 1, 2
+python3 tools/make_showreel.py /tmp/reel FA-18A_showreel.mp4                            # captions, H.264
 ```
 
 **Clips** at 24 fps:

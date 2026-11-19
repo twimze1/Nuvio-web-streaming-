@@ -1,0 +1,462 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+</head>
+<body>
+<title>F/A-18 Hornet Viewer</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: full-bleed 3D stage under a flight-line control placard, docked right on wide screens, a bottom sheet on phones */
+:root {
+  --bg: #e3e8ed;
+  --sky-top: #f0f3f6;
+  --sky-bottom: #bfcad5;
+  --panel: rgba(249, 250, 252, 0.92);
+  --line: #cdd5de;
+  --fg: #13202b;
+  --muted: #5a6876;
+  --accent: #b47600;
+  --accent-ink: #ffffff;
+  --chip: #e6ebf0;
+  --live: #fff0cc;
+  --focus: #1d68c9;
+  --display: "Barlow Condensed", "Arial Narrow", system-ui, sans-serif;
+  --body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0d1318; --sky-top: #1c2731; --sky-bottom: #0a0e13;
+    --panel: rgba(17, 24, 31, 0.92); --line: #2a3743; --fg: #e4ebf1; --muted: #92a1af;
+    --accent: #f0b03a; --accent-ink: #1a1200; --chip: #1c2731; --live: #3b2c0b; --focus: #6ea9ff;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0d1318; --sky-top: #1c2731; --sky-bottom: #0a0e13;
+  --panel: rgba(17, 24, 31, 0.92); --line: #2a3743; --fg: #e4ebf1; --muted: #92a1af;
+  --accent: #f0b03a; --accent-ink: #1a1200; --chip: #1c2731; --live: #3b2c0b; --focus: #6ea9ff;
+  color-scheme: dark;
+}
+[hidden] { display: none !important; }
+html, body { height: 100%; }
+body { margin: 0; background: var(--bg); color: var(--fg); font: 14px/1.45 var(--body); overflow: hidden; }
+.stage { position: fixed; inset: 0; background: linear-gradient(180deg, var(--sky-top), var(--sky-bottom)); }
+.stage canvas { display: block; width: 100%; height: 100%; touch-action: none; outline: none; }
+.ui {
+  position: fixed; inset: 0; pointer-events: none; display: flex; justify-content: flex-end; align-items: flex-start;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: calc(16px + env(safe-area-inset-top, 0px)) calc(16px + env(safe-area-inset-bottom, 0px));
+}
+.panel {
+  pointer-events: auto; width: 330px; max-height: 100%; overflow: auto; box-sizing: border-box;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  display: flex; flex-direction: column; gap: 14px; padding: 16px;
+}
+.head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+h1 { margin: 0; font: 700 26px/1 var(--display); letter-spacing: 0.02em; text-transform: uppercase; text-wrap: balance; }
+.sub { margin: 4px 0 0; color: var(--muted); font-size: 12.5px; }
+.label { font: 600 12px/1 var(--display); letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+.seg { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 0; border: 1px solid var(--line); border-radius: 7px; overflow: hidden; }
+.seg button { border: 0; border-radius: 0; }
+.seg button + button { border-left: 1px solid var(--line); }
+.row { display: flex; flex-direction: column; gap: 6px; }
+button {
+  font: 500 13px/1.1 var(--body); color: var(--fg); background: var(--chip);
+  border: 1px solid var(--line); border-radius: 7px; padding: 9px 10px; cursor: pointer;
+  display: inline-flex; align-items: baseline; justify-content: center; gap: 6px; min-width: 0;
+}
+button:hover { border-color: var(--muted); }
+button:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+button:disabled { opacity: 0.45; cursor: default; }
+button small { font: 400 11px/1 var(--mono); opacity: 0.75; }
+.groups { display: flex; flex-direction: column; gap: 10px; }
+.grp { display: grid; grid-template-columns: 1fr auto; gap: 6px 10px; align-items: center; padding-top: 10px; border-top: 1px solid var(--line); }
+.grp-name { font: 600 16px/1 var(--display); letter-spacing: 0.04em; text-transform: uppercase; }
+.state { font: 500 11.5px/1 var(--mono); padding: 4px 7px; border-radius: 999px; background: var(--chip); border: 1px solid var(--line); white-space: nowrap; }
+.state.live { background: var(--live); border-color: var(--accent); }
+.grp-btns { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(auto-fit, minmax(84px, 1fr)); gap: 6px; }
+.play { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.speed { display: grid; grid-template-columns: repeat(4, 1fr); }
+.hint { margin: 0; color: var(--muted); font-size: 12px; }
+.toggle { padding: 6px 9px; font-size: 12px; flex: none; }
+.overlay {
+  position: fixed; inset: 0; display: grid; place-items: center; pointer-events: none;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.loading { pointer-events: auto; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; width: min(320px, 100%); box-sizing: border-box; }
+.bar { height: 6px; border-radius: 3px; background: var(--chip); overflow: hidden; margin-top: 10px; }
+.bar i { display: block; height: 100%; width: 0; background: var(--accent); transition: width 0.2s; }
+.loading p { margin: 6px 0 0; font: 400 12px var(--mono); color: var(--muted); font-variant-numeric: tabular-nums; }
+.now { font: 500 12px/1.3 var(--mono); color: var(--muted); min-height: 1.3em; font-variant-numeric: tabular-nums; }
+@media (max-width: 720px) {
+  .ui { align-items: flex-end; }
+  .panel { width: 100%; max-height: 52%; padding: 12px; gap: 10px; }
+  .panel.collapsed .collapsible { display: none; }
+  h1 { font-size: 22px; }
+}
+@media (min-width: 721px) { .toggle { display: none; } }
+@media (prefers-reduced-motion: reduce) { .bar i { transition: none; } }
+</style>
+
+<div class="stage" id="stage"></div>
+<div class="ui">
+  <aside class="panel" id="panel" aria-label="Viewer controls">
+    <div class="head">
+      <div>
+        <h1>F/A-18 Hornet</h1>
+        <p class="sub" id="sub">Animation clips from the game model</p>
+      </div>
+      <button class="toggle" id="toggle" aria-expanded="true">Hide</button>
+    </div>
+    <div class="row">
+      <span class="label">Variant</span>
+      <div class="seg" id="variant">
+        <button data-v="A" aria-pressed="true">F/A-18A · 1 seat</button>
+        <button data-v="B" aria-pressed="false">F/A-18B · 2 seats</button>
+      </div>
+    </div>
+    <div class="row collapsible">
+      <span class="label">View</span>
+      <div class="seg" id="views">
+        <button data-view="ext" aria-pressed="true">Exterior</button>
+        <button data-view="Front" aria-pressed="false">Front seat</button>
+        <button data-view="Rear" aria-pressed="false" hidden>Rear seat</button>
+      </div>
+    </div>
+    <div class="row collapsible">
+      <span class="label">Playback</span>
+      <div class="play">
+        <button id="all">Play all clips</button>
+        <button id="reset">Reset pose</button>
+      </div>
+      <div class="seg speed" id="speed">
+        <button data-s="0.25" aria-pressed="false">¼×</button>
+        <button data-s="0.5" aria-pressed="false">½×</button>
+        <button data-s="1" aria-pressed="true">1×</button>
+        <button data-s="2" aria-pressed="false">2×</button>
+      </div>
+      <div class="now" id="now" aria-live="polite"></div>
+    </div>
+    <div class="groups collapsible" id="groups"></div>
+    <p class="hint collapsible">Drag to orbit, scroll or pinch to zoom, right-drag or two-finger drag to pan. Clips run at 24 fps; f = frames.</p>
+  </aside>
+</div>
+<div class="overlay" id="overlay">
+  <div class="loading" role="status">
+    <span class="label" id="loadTitle">Loading F/A-18A</span>
+    <div class="bar"><i id="loadBar"></i></div>
+    <p id="loadText">Starting</p>
+  </div>
+</div>
+
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+<script type="module">
+import * as THREE from "three";
+import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
+
+const FPS = 24;
+// moving systems, in the order the clips run on the model's timeline
+const GROUPS = [
+  { id: "gear", name: "Landing gear", rest: "Down", clips: [["Gear_Retract", "Retract", "Up"], ["Gear_Extend", "Extend", "Down"]] },
+  { id: "bar", name: "Launch bar", rest: "Up", clips: [["LaunchBar_Down", "Down", "On deck"], ["LaunchBar_Up", "Up", "Up"]] },
+  { id: "canopy", name: "Canopy", rest: "Closed", clips: [["Canopy_Open", "Open", "Open"], ["Canopy_Close", "Close", "Closed"]] },
+  { id: "brake", name: "Speed brake", rest: "In", clips: [["Airbrake_Extend", "Extend", "Out"], ["Airbrake_Retract", "Retract", "In"]] },
+  { id: "controls", name: "Flight controls", rest: "Neutral", clips: [["Controls_Roll", "Roll", "Neutral"], ["Controls_Pitch", "Pitch", "Neutral"], ["Controls_Yaw", "Yaw", "Neutral"]] },
+  { id: "flaps", name: "Flaps", rest: "Up", clips: [["Flaps_Down", "Down", "Down"], ["Flaps_Up", "Up", "Up"]] },
+  { id: "fold", name: "Wing fold", rest: "Spread", clips: [["WingFold_Fold", "Fold", "Folded"], ["WingFold_Unfold", "Unfold", "Spread"]] },
+  { id: "hook", name: "Arresting hook", rest: "Up", clips: [["Hook_Down", "Down", "Down"], ["Hook_Up", "Up", "Up"]] },
+];
+const ORDER = GROUPS.flatMap(g => g.clips.map(c => c[0]));
+const $ = id => document.getElementById(id);
+
+// -- renderer, scene, lights --------------------------------------------------
+const stage = $("stage");
+let renderer;
+try {
+  renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+} catch (e) {
+  $("loadTitle").textContent = "WebGL is not available";
+  $("loadText").textContent = "This browser or device cannot show 3D graphics. Try another browser with hardware acceleration on.";
+  throw e;
+}
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.0;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+stage.appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+const pmrem = new THREE.PMREMGenerator(renderer);
+scene.environment = pmrem.fromScene(new RoomEnvironment(renderer), 0.04).texture;
+const sun = new THREE.DirectionalLight(0xffffff, 2.2);
+sun.position.set(-9, 22, 12);
+sun.castShadow = true;
+sun.shadow.mapSize.set(2048, 2048);
+Object.assign(sun.shadow.camera, { left: -13, right: 13, top: 13, bottom: -13, near: 1, far: 70 });
+sun.shadow.bias = -0.0004;
+sun.shadow.normalBias = 0.02;
+scene.add(sun, sun.target);
+const ground = new THREE.Mesh(new THREE.PlaneGeometry(80, 80), new THREE.ShadowMaterial({ opacity: 0.22 }));
+ground.rotation.x = -Math.PI / 2;
+ground.receiveShadow = true;
+scene.add(ground);
+
+const camera = new THREE.PerspectiveCamera(35, 1, 0.05, 500);
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+const EXT = { pos: new THREE.Vector3(-15, 5.5, 17), target: new THREE.Vector3(0, -0.4, 0.5) };
+function exteriorView() {
+  camera.fov = 35; camera.near = 0.05; camera.updateProjectionMatrix();
+  // pull back on tall, narrow screens so the whole aircraft fits across
+  const aspect = stage.clientWidth / Math.max(1, stage.clientHeight);
+  const k = Math.max(1, 0.95 / aspect);
+  camera.position.copy(EXT.target).addScaledVector(EXT.pos.clone().sub(EXT.target), k);
+  controls.target.copy(EXT.target);
+  Object.assign(controls, { minDistance: 3, maxDistance: 90, enablePan: true, enableZoom: true, maxPolarAngle: Math.PI - 0.05 });
+  controls.update();
+}
+exteriorView();
+
+// keep the aircraft centred in the part of the screen the panel leaves free
+const phone = window.matchMedia("(max-width: 720px)");
+function resize() {
+  const w = stage.clientWidth, h = stage.clientHeight;
+  renderer.setSize(w, h, false);
+  camera.aspect = w / Math.max(1, h);
+  const r = $("panel").getBoundingClientRect();
+  const dx = phone.matches ? 0 : Math.max(0, w - r.left) / 2;
+  const dy = phone.matches ? Math.max(0, h - r.top) / 2 : 0;
+  camera.setViewOffset(w, h, dx, dy, w, h);
+  camera.updateProjectionMatrix();
+}
+const ro = new ResizeObserver(resize);
+ro.observe(stage);
+ro.observe($("panel"));
+resize();
+
+// -- models -------------------------------------------------------------------
+const cache = {};
+let current = null;          // { v, root, mixer, actions, clips, cams }
+const state = {};            // group id -> { text, live }
+let speed = 1;
+let run = 0;                 // bumps to cancel "play all"
+
+function load(v) {
+  if (cache[v]) return Promise.resolve(cache[v]);
+  const overlay = $("overlay");
+  overlay.hidden = false;
+  $("loadTitle").textContent = "Loading F/A-18" + v;
+  $("loadBar").style.width = "0%";
+  const manager = new THREE.LoadingManager();
+  manager.onProgress = (url, done, total) => {
+    $("loadBar").style.width = Math.round(100 * done / Math.max(total, 1)) + "%";
+    $("loadText").textContent = done + " of " + total + " files";
+  };
+  const loader = new GLTFLoader(manager);
+  return new Promise((resolve, reject) => {
+    loader.load("FA-18" + v + ".json", gltf => {
+      const root = gltf.scene;
+      root.traverse(o => {
+        if (o.isMesh) {
+          o.castShadow = true;
+          const mats = Array.isArray(o.material) ? o.material : [o.material];
+          mats.forEach(m => { if (m.transparent) m.depthWrite = false; });
+        }
+      });
+      const mixer = new THREE.AnimationMixer(root);
+      const actions = {}, clips = {};
+      gltf.animations.forEach(c => {
+        const a = mixer.clipAction(c);
+        a.setLoop(THREE.LoopOnce, 1);
+        a.clampWhenFinished = true;
+        actions[c.name] = a; clips[c.name] = c;
+      });
+      const cams = {};
+      root.traverse(o => { const m = /_Cam_(Front|Rear)$/.exec(o.name); if (m) cams[m[1]] = o; });
+      const box = new THREE.Box3().setFromObject(root);
+      const done = () => { cache[v] = { v, root, mixer, actions, clips, cams, floor: box.min.y }; resolve(cache[v]); };
+      // textures stream in after the model; wait for them before hiding the overlay
+      if (manager.itemsLoaded >= manager.itemsTotal) done(); else manager.onLoad = done;
+    }, undefined, err => {
+      $("loadTitle").textContent = "Could not load F/A-18" + v;
+      $("loadText").textContent = "The model file did not load (" + (err && err.message ? err.message : "network error") + "). Reload the page to try again.";
+      reject(err);
+    });
+  });
+}
+
+async function show(v) {
+  run++;
+  const m = await load(v);
+  if (current) { current.mixer.stopAllAction(); scene.remove(current.root); }
+  current = m;
+  scene.add(m.root);
+  ground.position.y = m.floor - 0.002;
+  $("overlay").hidden = true;
+  document.querySelectorAll("#variant button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.v === v)));
+  $("sub").textContent = v === "A" ? "Single seat. Animation clips from the game model." : "Tandem two-seat. Animation clips from the game model.";
+  const rear = document.querySelector('#views [data-view="Rear"]');
+  rear.hidden = !m.cams.Rear;
+  setView("ext");
+  buildGroups();
+  resetPose();
+}
+
+// -- clip panel ---------------------------------------------------------------
+function frames(name) { return Math.round(current.clips[name].duration * FPS) + 1; }
+
+function buildGroups() {
+  const host = $("groups");
+  host.textContent = "";
+  GROUPS.forEach(g => {
+    const have = g.clips.filter(c => current.actions[c[0]]);
+    if (!have.length) return;
+    const el = document.createElement("div");
+    el.className = "grp";
+    el.innerHTML = '<span class="grp-name"></span><span class="state" id="st-' + g.id + '"></span><div class="grp-btns"></div>';
+    el.querySelector(".grp-name").textContent = g.name;
+    const btns = el.querySelector(".grp-btns");
+    have.forEach(([clip, label]) => {
+      const b = document.createElement("button");
+      b.dataset.clip = clip;
+      b.setAttribute("aria-pressed", "false");
+      b.innerHTML = "<span></span><small></small>";
+      b.firstChild.textContent = label;
+      b.lastChild.textContent = frames(clip) + " f";
+      b.title = clip.replace("_", " ") + ", " + frames(clip) + " frames (" + (current.clips[clip].duration).toFixed(1) + " s)";
+      b.addEventListener("click", () => { run++; play(clip); });
+      btns.appendChild(b);
+    });
+    host.appendChild(el);
+  });
+}
+
+function groupOf(clip) { return GROUPS.find(g => g.clips.some(c => c[0] === clip)); }
+
+function paint() {
+  GROUPS.forEach(g => {
+    const st = $("st-" + g.id);
+    if (!st) return;
+    const s = state[g.id] || { text: g.rest, live: false };
+    st.textContent = s.live ? "→ " + s.text : s.text;
+    st.classList.toggle("live", s.live);
+  });
+  document.querySelectorAll("#groups button").forEach(b => {
+    const g = groupOf(b.dataset.clip);
+    b.setAttribute("aria-pressed", String((state[g.id] || {}).clip === b.dataset.clip));
+  });
+}
+
+function play(clip) {
+  const g = groupOf(clip);
+  g.clips.forEach(([other]) => { if (other !== clip && current.actions[other]) current.actions[other].stop(); });
+  const a = current.actions[clip];
+  a.reset();
+  a.timeScale = speed;
+  a.play();
+  const end = g.clips.find(c => c[0] === clip)[2];
+  state[g.id] = { text: end, live: true, clip };
+  $("now").textContent = "Playing " + clip + " · " + frames(clip) + " f";
+  paint();
+  return new Promise(resolve => {
+    const onDone = e => {
+      if (e.action !== a) return;
+      current.mixer.removeEventListener("finished", onDone);
+      if (state[g.id] && state[g.id].clip === clip) {
+        state[g.id].live = false;
+        if (g.id === "controls") { a.stop(); state[g.id] = { text: g.rest, live: false }; }
+      }
+      if ($("now").textContent.startsWith("Playing " + clip)) $("now").textContent = "";
+      paint();
+      resolve();
+    };
+    current.mixer.addEventListener("finished", onDone);
+  });
+}
+
+function resetPose() {
+  run++;
+  if (current) current.mixer.stopAllAction();
+  Object.keys(state).forEach(k => delete state[k]);
+  $("now").textContent = "";
+  paint();
+}
+
+async function playAll() {
+  resetPose();
+  const id = ++run;
+  for (const clip of ORDER) {
+    if (!current.actions[clip]) continue;
+    await play(clip);
+    if (id !== run) return;
+    await new Promise(r => setTimeout(r, 350 / speed));
+    if (id !== run) return;
+  }
+  $("now").textContent = "All clips played";
+}
+
+// -- views ----------------------------------------------------------------------
+function setView(view) {
+  document.querySelectorAll("#views button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.view === view)));
+  if (view === "ext" || !current.cams[view]) { exteriorView(); return; }
+  const node = current.cams[view];
+  node.updateWorldMatrix(true, false);
+  const pos = new THREE.Vector3(), q = new THREE.Quaternion();
+  node.matrixWorld.decompose(pos, q, new THREE.Vector3());
+  const fwd = new THREE.Vector3(0, 0, -1).applyQuaternion(q);
+  camera.fov = 70; camera.near = 0.01; camera.updateProjectionMatrix();
+  camera.position.copy(pos);
+  controls.target.copy(pos).addScaledVector(fwd, 0.05);
+  Object.assign(controls, { minDistance: 0.05, maxDistance: 0.05, enablePan: false, enableZoom: false, maxPolarAngle: Math.PI - 0.05 });
+  controls.update();
+}
+
+// -- wiring ---------------------------------------------------------------------
+document.querySelectorAll("#variant button").forEach(b => b.addEventListener("click", () => {
+  if (!current || b.dataset.v !== current.v) show(b.dataset.v);
+}));
+document.querySelectorAll("#views button").forEach(b => b.addEventListener("click", () => setView(b.dataset.view)));
+document.querySelectorAll("#speed button").forEach(b => b.addEventListener("click", () => {
+  speed = parseFloat(b.dataset.s);
+  document.querySelectorAll("#speed button").forEach(x => x.setAttribute("aria-pressed", String(x === b)));
+  if (current) Object.values(current.actions).forEach(a => { a.timeScale = speed; });
+}));
+$("all").addEventListener("click", playAll);
+$("reset").addEventListener("click", resetPose);
+$("toggle").addEventListener("click", () => {
+  const p = $("panel");
+  const collapsed = p.classList.toggle("collapsed");
+  $("toggle").textContent = collapsed ? "Show" : "Hide";
+  $("toggle").setAttribute("aria-expanded", String(!collapsed));
+});
+
+const clock = new THREE.Clock();
+renderer.setAnimationLoop(() => {
+  const dt = Math.min(clock.getDelta(), 0.1);
+  if (current) current.mixer.update(dt);
+  controls.update();
+  renderer.render(scene, camera);
+});
+
+show("A");
+</script>
+
+</body>
+</html>
