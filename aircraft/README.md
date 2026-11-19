@@ -20,6 +20,7 @@ the legacy airframe, not the larger F/A-18E/F Super Hornet. Each variant has:
 | `FA-18A_Hornet.blend`, `FA-18B_Hornet.blend` | The models. Textures are in `textures/`, referenced by relative path. |
 | `FA-18A_Hornet.glb`, `FA-18B_Hornet.glb` | Same aircraft for game engines, textures embedded. Includes the airframe, cockpit, pylons, station sockets and cameras, with the gear down. Loadouts are not included. |
 | `FA-18A_Hornet_animated.blend`, `FA-18B_Hornet_animated.blend` | Copies of the models with the animation clips set up by `tools/setup_animations.py` (the originals are untouched); `*_animated.glb` carry the clips as glTF animations, and `*_animated_report.txt` lists what was found and set up. |
+| `previews/FA-18A_showreel.mp4` | Video of every animation clip on the F/A-18A (1280×720, 24 fps), each with its own camera and a caption. |
 | `FA-18_Stores.glb` | Every store, pylon, rack and launcher. Each node sits at the origin, which is also the store's attach point. |
 | `FA-18A_stations.json`, `FA-18B_stations.json` | Station manifest: socket positions, what each station carries, store data and sources, and the loadouts. |
 | `textures/` | Cockpit atlas, display images, exterior atlases and the stores atlas. |
@@ -467,6 +468,18 @@ the strut, the stowed tyres under the foot-well plate) and the one listed below.
 - Joe Baugher's F/A-18 notes: "the main undercarriage units retract aft and rotate
   through 90 degrees so as to lie flat underneath the air intake ducts. The twin-wheel
   nose gear retracts forward."
+
+**Showreel.** `previews/FA-18A_showreel.mp4` plays every clip in timeline order. It
+opens with a short orbit of the neutral pose. Each clip then gets its own camera, aimed at
+the parts that move, with a slow eased orbit, and holds briefly on its first and last
+frames. It is rendered in EEVEE and remade with two tools:
+
+```sh
+# frames, split across N worker processes (worker index, worker count, samples)
+blender -b -P tools/render_showreel.py -- FA-18A_Hornet_animated.blend /tmp/reel 0 3 3   # and 1, 2
+# captions and H.264 encode (Pillow and ffmpeg)
+python3 tools/make_showreel.py /tmp/reel previews/FA-18A_showreel.mp4
+```
 
 **Clips** at 24 fps:
 
