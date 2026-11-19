@@ -19,6 +19,7 @@ the legacy airframe, not the larger F/A-18E/F Super Hornet. Each variant has:
 | --- | --- |
 | `FA-18A_Hornet.blend`, `FA-18B_Hornet.blend` | The models. Textures are in `textures/`, referenced by relative path. |
 | `FA-18A_Hornet.glb`, `FA-18B_Hornet.glb` | Same aircraft for game engines, textures embedded. Includes the airframe, cockpit, pylons, station sockets and cameras, with the gear down. Loadouts are not included. |
+| `FA-18A_Hornet_animated.blend`, `FA-18B_Hornet_animated.blend` | Copies of the models with the animation clips set up by `tools/setup_animations.py` (the originals are untouched); `*_animated.glb` carry the clips as glTF animations, and `*_animated_report.txt` lists what was found and set up. |
 | `FA-18_Stores.glb` | Every store, pylon, rack and launcher. Each node sits at the origin, which is also the store's attach point. |
 | `FA-18A_stations.json`, `FA-18B_stations.json` | Station manifest: socket positions, what each station carries, store data and sources, and the loadouts. |
 | `textures/` | Cockpit atlas, display images, exterior atlases and the stores atlas. |
@@ -26,7 +27,7 @@ the legacy airframe, not the larger F/A-18E/F Super Hornet. Each variant has:
 | `fa18_cockpit.py`, `cockpit_layout.py` | Cockpit geometry, and the panel layout it shares with the texture painter. |
 | `fa18_stores.py`, `stores_data.py` | Stores, pylons, sockets and loadouts, and the weapons data they use. |
 | `fa18_materials.py` | PBR materials and the exterior bake. |
-| `tools/` | Texture painters, reference-line prep, overlay check, model checks, preview renders. |
+| `tools/` | Texture painters, reference-line prep, overlay check, model checks, preview renders, animation set-up. |
 | `docs/weapons_research.md`, `.json` | Research notes behind every weapon number, with sources. |
 
 ## Variants
@@ -350,6 +351,86 @@ modelled.
 - NWC TP 7033
 - Wikipedia (and its citations)
 - dstorm.eu Desert Storm loadouts (enthusiast site, medium reliability)
+
+## Maker's markings: Julian Defense MFG
+
+Every store, pod, tank, pylon and launcher carries Julian Defense MFG as its maker. The
+markings follow US ordnance practice:
+
+- **Bombs:** the nomenclature is stencilled in yellow, which marks high-explosive filler
+  (NAVEDTRA 12308), with yellow nose bands. The lot number is stencilled at the forward
+  end, followed by the maker's line. An engraved data plate sits on the body side.
+- **Missiles, pods, tanks and suspension equipment:** stencilled nomenclature plus an
+  engraved MIL-STD-130-style nameplate. Slim bodies carry a compact plate. The plate
+  lists:
+  - maker: JULIAN DEFENSE MFG
+  - nomenclature
+  - part number: `JDM-<store>-nnn`
+  - serial number
+  - lot number
+- **Lot numbers:** MIL-STD-1168C layout, with maker symbol `JDM`, 2-digit year, month
+  letter, 3-digit interfix and 3-digit sequence, for example `JDM88E325-021`. Baseline
+  stores use 1988; A+ stores use 2004.
+- **Practice stores:** marked INERT in white.
+- **Not invented:** no CAGE codes, since those are real registry identifiers.
+- **Changing them:** the maker name and symbol are `MAKER` and `MAKER_SYMBOL` in
+  `stores_data.py`. Re-run `tools/make_store_textures.py` to repaint.
+
+Nameplate lettering is also cut into the normal map, so it reads as engraved.
+
+## Animations
+
+![Animation clips](previews/animations.jpg)
+
+Run `tools/setup_animations.py` on a model to set up its clips without changing the model.
+It saves a new file, `<name>_animated.blend`:
+
+```sh
+blender -b FA-18A_Hornet.blend -P tools/setup_animations.py -- --glb
+# or: open the .blend, load the script in the Text Editor, Run Script
+```
+
+**What it does:**
+
+1. **Inspects the scene.** It finds the moving parts by name pattern and by the `hinge`
+   property, then reports what it found, what it skipped and what is missing.
+2. **Sets up pivots.** Hinged parts already pivot on their hinge empties. Each gear leg
+   gets a new `<name>_Pivot` empty at the top of the leg, and the leg is re-parented to
+   it without moving. No mesh is edited.
+3. **Builds one Action per clip.** Blender 4.4+ slotted actions give each object its own
+   slot. Keys are Bezier with clamped auto handles, eased in and out, with a fake user.
+4. **Lays the clips out on the NLA.** Each object gets a track per clip, strips hold
+   nothing outside their range, and the timeline has a marker per clip. The aircraft
+   therefore sits in its neutral pose whenever no clip is playing.
+5. **Exports a GLB** with one glTF animation per clip, each starting at time 0.
+
+**Clips** at 24 fps:
+
+| Clip | Parts |
+| --- | --- |
+| `Gear_Retract`, `Gear_Extend` | nose and main gear (nose forward, mains aft-inboard, as on the legacy Hornet) |
+| `Canopy_Open`, `Canopy_Close` | canopy, about its aft hinge |
+| `Airbrake_Extend`, `Airbrake_Retract` | dorsal speed brake |
+| `Controls_Roll` | ailerons and differential stabilators |
+| `Controls_Pitch` | stabilators |
+| `Controls_Yaw` | rudders |
+| `Flaps_Down`, `Flaps_Up` | leading- and trailing-edge flaps |
+| `WingFold_Fold`, `WingFold_Unfold` | outer wing panels |
+| `Hook_Down`, `Hook_Up` | arresting hook |
+
+Deflection angles are visual, not flight-control data. Edit them in `ANGLES` at the top
+of the script.
+
+**Not animated, and why** (also in each `*_report.txt`):
+
+- **Gear doors:** the nose-gear doors are part of the nose-gear mesh, and the main-gear
+  bays have no doors. Separate the door faces into objects whose names contain `door` and
+  re-run to animate them.
+- **Nose-gear drag brace:** it is fused into the leg mesh. As the nose gear swings
+  forward, the brace's aft end shows below the nose. Separating it (and the doors) gives
+  them their own motion.
+- **Pilot heads:** no pilot is modelled, only eye points. For the F/A-18B, the second crew
+  member is missing as well. No geometry was added.
 
 ## What was matched to the drawings
 

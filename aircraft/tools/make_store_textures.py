@@ -8,8 +8,11 @@ wrap (around x along) and a strip for its fins.  Paint follows US Navy
 ordnance practice (NAVEDTRA 12308): olive-drab Mk 80 bodies with a rough
 thermally-protective coating on shipboard bombs, yellow band(s) for high
 explosive, brown band for rocket motors, light blue for practice stores;
-white missile bodies; grey pods, tanks and suspension equipment.  Stencils
-are representative nomenclature, not copies of real lot markings.
+white missile bodies; grey pods, tanks and suspension equipment.  Markings
+follow US ordnance practice with Julian Defense MFG as the maker: stencilled
+nomenclature (yellow on high-explosive bombs), a MIL-STD-1168C-style lot
+number at the forward end, the maker's line, and an engraved MIL-STD-130-style
+nameplate (maker, part number, serial, lot) that also goes into the normal map.
 Wear: grime streaking aft, handling scuffs around the lugs, chipped noses and
 fin edges.
 """
@@ -45,12 +48,12 @@ STENCIL = {
     "GBU-12": "BOMB GP 500 LB BLU-111A/B  THERMALLY PROTECTED", "GBU-16": "BOMB GP 1000 LB BLU-110  THERMALLY PROTECTED",
     "GBU-10": "BOMB GP 2000 LB BLU-117  THERMALLY PROTECTED", "GBU-24": "BOMB GP 2000 LB BLU-109",
     "GBU-38": "BOMB GP 500 LB BLU-111A/B", "GBU-32": "BOMB GP 1000 LB BLU-110", "GBU-31": "BOMB GP 2000 LB BLU-117",
-    "MK-82": "BOMB GP 500 LB BLU-111A/B  THERMALLY PROTECTED", "MK-82SE": "BOMB GP 500 LB MK 82 MOD 6",
-    "MK-83": "BOMB GP 1000 LB BLU-110A/B  THERMALLY PROTECTED", "MK-84": "BOMB GP 2000 LB BLU-117/B  THERMALLY PROTECTED",
+    "MK-82": "BOMB GP 500 LB  BLU-111A/B  PBXN-109  THERMALLY PROTECTED", "MK-82SE": "BOMB GP 500 LB MK 82 MOD 6",
+    "MK-83": "BOMB GP 1000 LB  BLU-110A/B  PBXN-109  THERMALLY PROTECTED", "MK-84": "BOMB GP 2000 LB  BLU-117/B  PBXN-109  THERMALLY PROTECTED",
     "MK-20": "DISPENSER MK 7 MOD 6  MK 20 ROCKEYE II", "MK-77": "FIRE BOMB MK 77 MOD 5",
     "LAU-61": "LAUNCHER ROCKET 2.75 IN LAU-61C/A", "LAU-68": "LAUNCHER ROCKET 2.75 IN LAU-68D/A",
     "LAU-10": "LAUNCHER ROCKET 5.0 IN LAU-10D/A", "B61": "TRAINING SHAPE", "B57": "TRAINING SHAPE",
-    "MK-76": "MK 76 PRACTICE", "TANK-330": "FUEL ONLY  JP-5  330 GAL", "AAS-38": "AN/AAS-38",
+    "MK-76": "INERT  MK 76 PRACTICE", "TANK-330": "FUEL ONLY  JP-5  330 GAL", "AAS-38": "AN/AAS-38",
     "LITENING": "AN/AAQ-28(V)", "ASQ-173": "AN/ASQ-173", "AWW-13": "AN/AWW-13", "ACMI": "TACTS / ACMI",
     "SUU-63": "NO STEP", "SUU-62": "NO STEP", "BRU-33": "BRU-33A/A", "LAU-115": "LAU-115", "LAU-7": "LAU-7",
     "LAU-117": "LAU-117", "LAU-118": "LAU-118",
@@ -91,6 +94,49 @@ def text_along(rect_xy, s, size, fill, angle=90):
     ImageDraw.Draw(im).text((2, 1), s, font=f, fill=fill + (235,))
     im = im.rotate(-angle, expand=True)
     base.paste(im, (int(rect_xy[0] - im.width / 2), int(rect_xy[1])), im)
+
+
+def text_block(cx, top, lines, fill, size, engrave=False):
+    """Several stencil lines running along the store (rotated 90 deg), centred
+    on cx across the body; lines are spaced across the body width."""
+    f = ImageFont.truetype(FONT, size)
+    meas = ImageDraw.Draw(Image.new("L", (1, 1)))
+    w = int(max(meas.textlength(t, font=f) for t in lines)) + 6
+    h = (size + 3) * len(lines) + 4
+    im = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+    d = ImageDraw.Draw(im)
+    for i, t in enumerate(lines):
+        d.text((3, 2 + i * (size + 3)), t, font=f, fill=fill + (235,))
+    im = im.rotate(-90, expand=True)
+    x, y = int(cx - im.width / 2), int(top)
+    base.paste(im, (x, y), im)
+    if engrave:
+        mask = im.split()[3].point(lambda v: 255 if v > 60 else 0)
+        height.paste(Image.new("L", im.size, 96), (x, y), mask)
+    return im.width, im.height
+
+
+def nameplate(cx, top, item, metal_plate=True, compact=False):
+    """Engraved maker's nameplate (MIL-STD-130 style), running along the body."""
+    lines = [SD.MAKER, "NOMEN " + item["id"], "P/N " + SD.part_number(item),
+             "SER " + SD.serial(item), "LOT " + SD.lot_number(item)]
+    if compact:                                   # slim bodies: maker and serial only
+        lines = [SD.MAKER, "SER " + SD.serial(item)]
+    size = 8 if not compact else 7
+    w = (size + 3) * len(lines) + 10                   # across the body after rotation
+    hgt_px = int(max(ImageDraw.Draw(Image.new("L", (1, 1))).textlength(t, font=ImageFont.truetype(FONT, size))
+                     for t in lines)) + 12
+    r = (int(cx - w / 2), int(top), int(cx + w / 2), int(top + hgt_px))
+    col = (176, 178, 172) if metal_plate else (36, 36, 34)
+    db.rectangle(r, fill=col, outline=(90, 90, 86))
+    dh.rectangle(r, fill=150)
+    dh.rectangle(r, outline=172, width=2)
+    dm.rectangle(r, fill=200 if metal_plate else 0)
+    dr.rectangle(r, fill=95)
+    for fx, fy in ((r[0] + 3, r[1] + 3), (r[2] - 3, r[1] + 3), (r[0] + 3, r[3] - 3), (r[2] - 3, r[3] - 3)):
+        db.ellipse((fx - 1.5, fy - 1.5, fx + 1.5, fy + 1.5), fill=(70, 70, 66))
+    text_block((r[0] + r[2]) / 2, r[1] + 5, lines, (28, 28, 26) if metal_plate else (200, 200, 190), size,
+               engrave=True)
 
 
 def paint_item(s, rect):
@@ -139,12 +185,33 @@ def paint_item(s, rect):
             ya = by + t * L * PPM
             db.rectangle((x0, ya, x0 + bw, ya + wid * PPM), fill=c)
             dh.rectangle((x0, ya, x0 + bw, ya + wid * PPM), fill=140)
-        # stencils on both sides (u = 0.25 and 0.75: right and left)
-        txt = STENCIL.get(s["id"], s["id"])
-        fill = (225, 190, 40) if s["body"] in (SD.OD, SD.OD_THERMAL) else (25, 25, 25)
+        # stencilled nomenclature on both sides (u = 0.25 and 0.75: right and left),
+        # maker's line and lot number, and an engraved nameplate on the right side
+        lines = [t for t in STENCIL.get(s["id"], s["id"]).split("  ") if t]
+        bomb_like = s["body"] in (SD.OD, SD.OD_THERMAL)
+        practice = s["body"] == SD.BLUE
+        fill = (225, 190, 40) if bomb_like else (240, 240, 235) if practice else (25, 25, 25)
         size = max(9, min(13, int(0.045 * PPM)))
+        aux = (232, 232, 226) if bomb_like or practice else (35, 35, 35)
+        slim = bw < 200
+        # slim bodies: one stencil line per side, so the two sides do not meet
+        side_lines = [" ".join(lines)] if slim else lines
         for fu in (0.25, 0.75):
-            text_along((x0 + 4 + fu * (bw - 8), by + 0.30 * L * PPM), txt, size, fill)
+            cx = x0 + 4 + fu * (bw - 8)
+            if L > 1.0:
+                # lot number stencilled at the forward end (white on bombs), then the
+                # nomenclature, then the maker's line, each placed after the last
+                y = by + 0.10 * L * PPM
+                _, hgt = text_block(cx, y, ["LOT " + SD.lot_number(s)], aux, max(8, size - 2))
+                y += hgt + 0.04 * PPM
+                _, hgt = text_block(cx, y, side_lines, fill, size)
+                y += hgt + 0.04 * PPM
+                text_block(cx, y, [SD.MAKER], aux, max(8, size - 1))
+            else:
+                text_block(cx, by + 0.1 * L * PPM, [lines[0], SD.MAKER], fill, 8)
+        if L > 1.0:
+            nameplate(x0 + 4 + 0.50 * (bw - 8) if slim else x0 + 4 + 0.55 * (bw - 8), by + 0.62 * L * PPM, s,
+                      metal_plate=not bomb_like, compact=slim)
         # lug area: handling scuffs and bare-metal sway-brace marks on top (u = 0.5)
         xa = 0.42 if s["cat"] in ("bomb", "guided_bomb", "cluster", "nuclear") else 0.48
         cx, cy = x0 + 4 + 0.5 * (bw - 8), by + xa * L * PPM
@@ -186,7 +253,8 @@ def paint_item(s, rect):
             py = rng.uniform(by + 0.25 * Lp, by + 0.75 * Lp)
             db.line((px, py, px + rng.uniform(-4, 4), py + rng.uniform(4, 16)), fill=(150, 150, 146))
             dm.point((px, py), fill=200)
-        text_along((x0 + 0.15 * bw, by + 0.2 * Lp), STENCIL.get(s["id"], s["id"]), 10, (40, 40, 40))
+        text_block(x0 + 0.15 * bw, by + 0.12 * Lp, [STENCIL.get(s["id"], s["id"]), SD.MAKER], (40, 40, 40), 10)
+        nameplate(x0 + 0.80 * bw, by + 0.40 * Lp, s)
     # grime streaking aft and general dirt
     region = np.asarray(base.crop((x0, y0, x1, y1)), np.float32)
     st = noise(w, h, 2, 3, seed=sum(map(ord, s["id"])) * 3)

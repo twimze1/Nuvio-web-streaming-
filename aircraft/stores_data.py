@@ -22,6 +22,39 @@ import math
 
 IN = 0.0254
 
+# --- maker's markings -----------------------------------------------------------------
+# Every store, pod, tank, pylon and launcher carries the maker's markings of
+# Julian Defense MFG, laid out the way US ordnance is marked:
+#   * bombs: nomenclature stencilled in yellow (high-explosive filler) on the body,
+#     lot number stencilled near the nose, die-stamped data plate on the body side;
+#   * missiles, pods, tanks, suspension equipment: stencilled nomenclature plus an
+#     engraved nameplate (manufacturer, part number, serial, lot) per MIL-STD-130;
+#   * lot numbers follow MIL-STD-1168C: maker symbol, 2-digit year, month letter,
+#     3-digit interfix, 3-digit sequence (e.g. JDM88J014-007).
+# Part numbers and serials are the maker's own; no CAGE codes are invented.
+MAKER = "JULIAN DEFENSE MFG"
+MAKER_SYMBOL = "JDM"
+
+
+def _stable(sid, k):
+    return sum((i + 1) * ord(c) for i, c in enumerate(sid)) * (k + 7)
+
+
+def lot_number(item):
+    """Deterministic MIL-STD-1168C-style lot number for an item."""
+    sid = item["id"]
+    year = "04" if item.get("era") == "A+" else "88"
+    month = "ABCDEFGHJKLM"[_stable(sid, 1) % 12]            # I is not used as a month letter
+    return "%s%s%s%03d-%03d" % (MAKER_SYMBOL, year, month, _stable(sid, 2) % 900 + 1, _stable(sid, 3) % 60 + 1)
+
+
+def part_number(item):
+    return "%s-%s-%03d" % (MAKER_SYMBOL, item["id"].replace(" ", ""), _stable(item["id"], 4) % 1000)
+
+
+def serial(item):
+    return "%05d" % (_stable(item["id"], 5) % 90000 + 10000)
+
 # --- body profiles: (t along length 0 nose .. 1 tail, radius as fraction of D/2)
 def ogive(nose=0.18, tail=0.97, tail_r=0.92, tip=0.02):
     """Missile body: tangent-ogive radome, cylinder, slight boat tail."""
@@ -367,7 +400,7 @@ def by_id(i):
 
 # --- texture atlas allocation --------------------------------------------------------
 ATLAS = 4096
-PPM = 260               # pixels per metre on the store skins
+PPM = 256               # pixels per metre on the store skins
 
 
 def skin_size(s):
