@@ -16,6 +16,7 @@ source) for an engine to attach a light component to.
 """
 import math
 
+import bmesh
 import bpy
 from mathutils import Matrix, Vector
 from mathutils.bvhtree import BVHTree
@@ -28,7 +29,10 @@ from fa18_hornet import (Builder, to_blender, X_REF, Z_REF, GROUND_Z, NOSE_GEAR_
 RGB = {"red": (1.0, 0.04, 0.02), "green": (0.05, 1.0, 0.2), "white": (1.0, 1.0, 0.95),
        "amber": (1.0, 0.5, 0.05), "formation": (0.55, 1.0, 0.25)}
 LADDER_TILT = 10.0          # extended ladder leans this far forward of vertical (deg)
-LADDER_WIDTH = 0.30
+LADDER_WIDTH = 0.24         # between rail centres
+LADDER_DEPTH = 0.028        # rail depth: the ladder stows inside a LEX only 5-11 cm thick
+LADDER_Y = -0.74            # centre line, inboard under the left LEX where the skin is thickest
+LADDER_X = 5.62             # hinge beam
 
 
 def from_blender(v):
@@ -291,59 +295,146 @@ class Exterior:
 
     # -- boarding ladder ----------------------------------------------------------
     def build_ladder(self):
-        """Stowed flat under the left LEX (the manual: it rotates down from the
-        forward beam under the LEX, and up and aft to stow).  Rest pose is
-        stowed; rotating by its 'extend' angle stands it on the ground,
-        leaning LADDER_TILT forward of vertical."""
+        """Stowed flush in a shallow well under the left LEX (the manual: it
+        rotates down from the forward beam under the LEX, and up and aft to
+        stow).  Rest pose is stowed; rotating by its 'extend' angle stands it
+        on the ground, leaning LADDER_TILT forward of vertical.
+
+        The LEX is only 5-11 cm thick here, so the ladder is slim (members
+        LADDER_DEPTH deep) and sits inboard, where the skin is thickest.  The
+        well itself is cut after the UV unwrap (cut_ladder_well), so the
+        fuselage keeps the UVs its baked textures were made for."""
         h = self.h
-        y = -0.80
-        x0 = 5.65
-        under = lambda x: self.hit("Fuselage", (x, y, -1.0), (0, 0, 1))[0].z
-        zp = under(x0) - 0.045
+        yc, hw = LADDER_Y, LADDER_WIDTH / 2
+        x0 = LADDER_X
+        half_d = LADDER_DEPTH / 2
+        under = lambda x, y: self.hit("Fuselage", (x, y, -1.0), (0, 0, 1))[0].z
+        top = lambda x, y: self.hit("Fuselage", (x, y, 4.0), (0, 0, -1))[0].z
         foot_z = GROUND_Z + 0.02
-        tilt = math.radians(LADDER_TILT)
-        length = (zp - foot_z) / math.cos(tilt)
-        # stowed slope: follow the LEX underside aft of the pivot
-        x1 = x0 + length
-        slope = math.atan2(zp - (under(x1 - 0.05) - 0.045), length)
-        if x1 > 8.15:
+        # the hinge axis follows the underside's slope across the ladder
+        xm = x0 + 1.2
+        s_lat = (under(xm, yc + hw) - under(xm, yc - hw)) / (2 * hw)
+        e_w = Vector((0, 1, s_lat)).normalized()
+        plane = lambda x: under(x, yc) + half_d + 0.002          # bottom face 2 mm inside the skin
+        length = 2.4
+        for _ in range(5):
+            p0 = Vector((x0, yc, plane(x0)))
+            x1 = x0 + length
+            p1 = Vector((x1, yc, plane(x1)))
+            d_s = (p1 - p0).normalized()
+            d_s = (d_s - e_w * d_s.dot(e_w)).normalized()
+            # extend: rotate about e_w until the ladder leans LADDER_TILT forward of vertical
+            best = None
+            for k in range(700, 1200):
+                a = k / 10.0
+                d = Matrix.Rotation(math.radians(a), 3, e_w) @ d_s
+                lean = math.degrees(math.atan2(-d.x, -d.z))
+                if best is None or abs(lean - LADDER_TILT) < abs(best[1] - LADDER_TILT):
+                    best = (a, lean, d)
+            extend, _, d_e = best
+            length = (foot_z - p0.z) / d_e.z
+        if x0 + length * d_s.x > 8.12:
             raise RuntimeError("ladder (%.2f m) does not fit under the LEX ahead of the intake" % length)
-        extend = 90.0 + LADDER_TILT - math.degrees(slope)
-        pivot = Vector((x0, y, zp))
-        d_e = Vector((-math.sin(tilt), 0, -math.cos(tilt)))      # extended: down, leaning forward
-        e_w = Vector((0, 1, 0))
-        e_t = d_e.cross(e_w)
+        e_n = d_s.cross(e_w).normalized()
+        if e_n.z < 0:
+            e_n = -e_n                                         # up, into the LEX
+        pivot = p0
         b = Builder()
 
-        def bar(p0, p1, w, t):
-            p0, p1 = Vector(p0), Vector(p1)
-            ax = (p1 - p0).normalized()
-            u = ax.cross(Vector((0, 1, 0)))
-            if u.length < 1e-6:
-                u = ax.cross(Vector((1, 0, 0)))
-            u.normalize()
-            v = ax.cross(u)
-            loop = lambda c: [tuple(c + u * su * t / 2 + v * sv * w / 2) for su, sv in ((-1, -1), (1, -1), (1, 1), (-1, 1))]
-            b.box(loop(p0) + loop(p1))
+        def bar(c0, c1, a_dir, a_size, b_size):
+            """Box from c0 to c1 with cross-section a_size along a_dir and
+            b_size along the ladder normal."""
+            c0, c1 = Vector(c0), Vector(c1)
+            loop = lambda c: [tuple(c + a_dir * (sa * a_size / 2) + e_n * (sb * b_size / 2))
+                              for sa, sb in ((-1, -1), (1, -1), (1, 1), (-1, 1))]
+            b.box(loop(c0) + loop(c1))
 
-        hw = LADDER_WIDTH / 2
-        for s in (-1, 1):
-            a = pivot + e_w * (s * hw)
-            bar(a + d_e * 0.02, a + d_e * length, 0.028, 0.04)
-            bar(a + d_e * (length - 0.01) + e_t * 0.03, a + d_e * (length - 0.01) - e_t * 0.06, 0.05, 0.02)   # foot
+        for sgn in (-1, 1):                                    # rails
+            a = pivot + e_w * (sgn * hw)
+            bar(a + d_s * 0.015, a + d_s * length, e_w, 0.024, LADDER_DEPTH)
         k = 0.30
-        while k < length - 0.12:
-            c = pivot + d_e * k
-            bar(c - e_w * hw, c + e_w * hw, 0.03, 0.022)
+        while k < length - 0.10:                               # rungs
+            c = pivot + d_s * k
+            bar(c - e_w * hw, c + e_w * hw, d_s, 0.03, LADDER_DEPTH * 0.65)
             k += 0.30
-        bar(pivot - e_w * (hw + 0.02), pivot + e_w * (hw + 0.02), 0.05, 0.05)    # hinge beam
-        # rotate the extended ladder up to its stowed rest pose about the hinge
-        R = Matrix.Rotation(math.radians(-extend), 3, Vector((0, 1, 0)))
-        b.verts = [tuple(pivot + R @ (Vector(v) - pivot)) for v in b.verts]
-        lad = h.add("BoardingLadder", b, mats=("Airframe",), origin=tuple(pivot), axis=(0, 1, 0), smooth=None,
+        c = pivot + d_s * (length - 0.03)                      # foot bar
+        bar(c - e_w * (hw + 0.012), c + e_w * (hw + 0.012), d_s, 0.06, LADDER_DEPTH)
+        bar(pivot - e_w * (hw + 0.012), pivot + e_w * (hw + 0.012), d_s, 0.03, LADDER_DEPTH)   # hinge beam
+        lad = h.add("BoardingLadder", b, mats=("Airframe",), origin=tuple(pivot), axis=tuple(e_w), smooth=None,
                     hinge="ladder swings down to the ground (extends)")
         lad["extend"] = extend
+        # the well: a box around the stowed ladder, from below the skin to
+        # 4 mm above the ladder; it must leave at least 8 mm of LEX top skin
+        mw, ma = hw + 0.012 + 0.008, 0.025
+        lo, hi = -0.08, half_d + 0.004
+        ends = (pivot - d_s * ma, pivot + d_s * (length + ma))
+        well = [tuple(c + e_w * sw + e_n * sn) for c in ends for sw, sn in
+                ((-mw, lo), (mw, lo), (mw, hi), (-mw, hi))]
+        for k in range(11):
+            c = ends[0] + (ends[1] - ends[0]) * (k / 10)
+            for sw in (-mw, 0.0, mw):
+                p = c + e_w * sw + e_n * hi
+                left = top(p.x, p.y) - p.z
+                if left < 0.008:
+                    raise RuntimeError("ladder well leaves %.1f mm of LEX skin at x %.2f y %.2f" % (left * 1000, p.x, p.y))
+        h.ladder_well = well
         return lad
+
+    def cut_ladder_well(self):
+        """Cut the ladder well into the fuselage after the UV unwrap: faces
+        that survive keep their UVs (so the baked atlas still fits), and the
+        well's own faces take the UV of the skin beside the ladder."""
+        h = self.h
+        well = getattr(h, "ladder_well", None)
+        if not well:
+            return
+        fus = h.objects[h.prefix + "Fuselage"]
+        me = fus.data
+        uvl = me.uv_layers.active
+        # UV of the LEX underside beside the ladder
+        c = sum((Vector(p) for p in well), Vector()) / len(well)
+        o = to_blender((c.x, LADDER_Y + LADDER_WIDTH / 2 + 0.06, -1.0))
+        m = h.world[fus.name]
+        tree = BVHTree.FromPolygons([m @ v.co for v in me.vertices], [list(p.vertices) for p in me.polygons])
+        _, _, fi, _ = tree.ray_cast(o, Vector((0, 0, 1)))
+        uv = Vector((0.0, 0.0))
+        if fi is not None and uvl is not None:
+            poly = me.polygons[fi]
+            for li in poly.loop_indices:
+                uv += uvl.data[li].uv
+            uv /= poly.loop_total
+        inv = m.inverted()
+        cm = bpy.data.meshes.new("ladder_well")
+        cm.from_pydata([tuple(inv @ to_blender(p)) for p in well], [],
+                       [(0, 1, 2, 3), (7, 6, 5, 4), (0, 4, 5, 1), (1, 5, 6, 2), (2, 6, 7, 3), (3, 7, 4, 0)])
+        bm = bmesh.new()
+        bm.from_mesh(cm)
+        bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+        bm.to_mesh(cm)
+        bm.free()
+        if uvl is not None:
+            lay = cm.uv_layers.new(name=uvl.name)
+            for d in lay.data:
+                d.uv = uv
+        cm.materials.append(me.materials[0])
+        cutter = bpy.data.objects.new("ladder_well", cm)
+        bpy.context.scene.collection.objects.link(cutter)
+        cutter.matrix_world = fus.matrix_world.copy()
+        mod = fus.modifiers.new("ladder_well", "BOOLEAN")
+        mod.operation = "DIFFERENCE"
+        mod.solver = "EXACT"
+        mod.material_mode = "TRANSFER"
+        mod.object = cutter
+        dg = bpy.context.evaluated_depsgraph_get()
+        dg.update()
+        new = bpy.data.meshes.new_from_object(fus.evaluated_get(dg))
+        fus.modifiers.remove(mod)
+        old = fus.data
+        fus.data = new
+        new.name = old.name
+        bpy.data.meshes.remove(old)
+        bpy.data.objects.remove(cutter)
+        bpy.data.meshes.remove(cm)
 
     # -- afterburner and turbine face ----------------------------------------------
     def build_afterburners(self):
@@ -405,3 +496,8 @@ class Exterior:
 
 def build(h):
     Exterior(h).build()
+
+
+def cut_ladder_well(h):
+    """Run after the UV unwrap (fa18_hornet.build does)."""
+    Exterior(h).cut_ladder_well()

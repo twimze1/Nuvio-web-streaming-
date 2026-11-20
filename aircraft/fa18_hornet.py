@@ -1475,6 +1475,9 @@ def build(variant, uv=True):
     h.build()
     if uv:
         unwrap(h)
+    # after the unwrap, so the fuselage keeps the UVs its atlas was baked on
+    import fa18_exterior
+    fa18_exterior.cut_ladder_well(h)
     return h
 
 
