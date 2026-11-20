@@ -91,7 +91,7 @@ that part's atlas: its automatic UV layout changes with the mesh.
   | `Flap_*`, `Aileron_*`, `Stabilator_*` | trailing edge down |
   | `LEFlap_Inner_*`, `LEFlap_Outer_*` | leading edge down |
   | `Rudder_*` | trailing edge to starboard |
-  | `Wing_Outer_*` | wing folds up (90° = folded) |
+  | `Wing_Outer_*` | wing folds up (93° = folded: the panels stand vertical) |
   | `Canopy` | opens (front edge up, hinged at the aft end) |
   | `SpeedBrake` | opens |
   | `ArrestingHook` | hook down |
@@ -101,7 +101,10 @@ that part's atlas: its automatic UV layout changes with the mesh.
   - `Cockpit`
   - `Pylons` (fitted, as usual in service)
   - `Station Sockets`
-  - `Optional` (extended refuelling probe, hidden)
+  - `Optional` (hidden): the extended refuelling probe, and `BoardingLadder_Extended`, the
+    boarding ladder down to the deck, for a parked or main-menu display. The ladder is left
+    out of the aircraft GLBs and exported on its own as `FA-18_BoardingLadder.glb`, in the
+    aircraft's coordinates, so it lines up when placed at the same origin.
   - `Loadouts` (hidden)
   - `Stores Library` (hidden, laid out beside the aircraft)
 
@@ -560,8 +563,8 @@ python3 tools/make_showreel.py /tmp/reel FA-18A_showreel.mp4                    
 | `Controls_Roll` | ailerons and differential stabilators |
 | `Controls_Pitch` | stabilators |
 | `Controls_Yaw` | rudders |
-| `Flaps_Down`, `Flaps_Up` | leading- and trailing-edge flaps |
-| `WingFold_Fold`, `WingFold_Unfold` | outer wing panels |
+| `Flaps_Down`, `Flaps_Up` | the NATOPS FULL-flap setting on deck: leading-edge flaps 12°, trailing-edge flaps 45°, ailerons drooped 42°, and both rudders toed in 30° (trailing edges inboard) |
+| `WingFold_Fold`, `WingFold_Unfold` | outer wing panels, folded to vertical (93°) |
 | `Hook_Down`, `Hook_Up` | arresting hook |
 
 Deflection angles are visual, not flight-control data. Edit them in `ANGLES` at the top
@@ -589,13 +592,73 @@ of the script.
 - **Pilot heads:** no pilot is modelled, only eye points. For the F/A-18B, the second crew
   member is missing as well. No geometry was added.
 
+## Checked against the NATOPS flight manual
+
+The model was compared with the F/A-18A/B/C/D NATOPS flight manual (A1-F18AC-NFM-000,
+change 6, 2000). The manual is a distribution-limited document and is not stored in this
+repository; only the facts used are summarised here.
+
+**Dimensions** (manual figures are approximate):
+
+| | Manual | Model |
+| --- | --- | --- |
+| Span without missiles | 37 ft 6 in (11.43 m) | 11.43 m (wing tips) |
+| Span with tip missiles | 40 ft 5 in (12.32 m) | about 12.33 m (launcher axis 5.94 m plus the AIM-9 fins) |
+| Span, wings folded | 27 ft 6 in (8.38 m) | 8.38 m |
+| Length | 56 ft (17.07 m) | 17.07 m |
+| Height to top of fins | 15 ft 3 in (4.65 m) | 4.67 m |
+| Fin cant | 20° outboard | 20° |
+| Height to top of closed canopy | A 10 ft 6 in (3.20 m), B 11 ft 3 in (3.43 m) | A 3.31 m, B 3.51 m (not changed, see Limits) |
+
+**Changed to match it:**
+- **Wingtip:** the structural tip now ends at the 11.43 m span. The LAU-7 tip launchers
+  are separate objects (`WingtipLauncher_*`) at station 1/9, outboard of it.
+- **Wing fold:** the panels fold to vertical (93° about the hinge, which allows for the
+  3° anhedral). The fold hinge moved to 4.14 m from the centreline, so the folded panels
+  stand 8.38 m apart.
+- **Flaps clip:** uses the manual's FULL ground setting (see Clips).
+
+**Added from it** (`fa18_exterior.py`; plain materials, outside the baked atlases):
+- **Exterior lights**, each an emissive lens plus a marker empty `Light_<kind>_<where>`
+  whose +Z axis points where the light shines, with custom properties `light`, `colour`,
+  `rgb` and `source`, for an engine to attach a light component:
+  - position lights: red (left) and green (right) at the wingtips, on the LEX forward of
+    the wing root, and under the wings at the aileron hinge; white below the tip of the
+    right fin;
+  - eight formation strips: wingtips, the outboard faces of the fins, the aft fuselage
+    below the fins, and the forward fuselage just ahead of the LEX;
+  - red anti-collision strobes on the outboard faces of the fins;
+  - the landing/taxi light and the three approach lights (green high AOA, amber on
+    speed, red low AOA) on the nose strut, on the sides of the strut because the launch
+    bar folds up against its front;
+  - a marker only for the refuelling-probe light, which the manual names without placing.
+- **Air-data probes:** the two pitot-static tubes under the nose, forward of the
+  nosewheel well; the two angle-of-attack probes on the nose sides; the total
+  temperature probe on the lower left fuselage, aft of the nosewheel.
+- **Fuel vent and dump masts** at the fin tips.
+- **Afterburner section:** the nozzles are now open, with a liner, a two-ring flame
+  holder and a bladed turbine face behind them.
+- **Boarding ladder:** a display piece only (see Collections). The manual has it stowed
+  under the left LEX, so it hangs from there to the deck.
+
+**Approximate positions:** the manual gives the side or area but not the station of the
+LEX, under-wing and wingtip position lights, the formation strips, the strobes, the AOA
+probes and the dump masts. These were placed where the text puts them.
+
+**Not modelled:**
+- the chaff/flare dispensers, the APU and ATS exhausts, and the ECS and heat-exchanger
+  intakes (the manual does not locate them);
+- the main gear's shrink and planing links (they would change the fitted retraction);
+- the arresting-hook floodlight (early aircraft only);
+- the ladder's drag and side braces.
+
 ## What was matched to the drawings
 
 All views were registered to the supplied F/A-18A and F/A-18B sheets and checked by
 overlaying the model's outline on each drawing (`tools/overlay_reference.py`):
 
 - **Top view:** nose and forward fuselage, the LEX curve, wing planform and hinge lines,
-  wing-fold line (model 4.19 m, drawing 4.12 m), stabilators and nozzles.
+  wing-fold line (model 4.14 m, drawing 4.12 m), stabilators and nozzles.
 - **Side view:** nose profile, canopy profile for each variant, spine, twin fins and
   rudders, nozzle end, intake face, antennae, wheel positions, and the landing-gear
   layout (struts, braces, launch bar and bay doors).
@@ -614,6 +677,10 @@ overlaying the model's outline on each drawing (`tools/overlay_reference.py`):
 
 ## Limits
 
+- **Canopy height:** the model's closed canopy stands about 0.1 m taller (A 3.31 m, B
+  3.51 m) than the manual's approximate figures (3.20 m and 3.43 m), while the fin height
+  matches. It follows the drawings. The manual alone cannot separate a shape error from
+  a difference in strut compression, so it was not changed.
 - **Drawing accuracy:**
   - The sheets are small line-art scans, so registration is good to about ±0.05–0.1 m.
     The sheets also disagree slightly, and published dimensions won where they
