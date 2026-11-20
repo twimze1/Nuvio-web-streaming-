@@ -33,12 +33,40 @@ MIP_OUTLINE = [
 DDI_BUTTON_PITCH = 28
 
 
-def ddi(name, cu):
-    """Digital display indicator centred at u=cu (bezel 210 x 237 mm)."""
+def ddi(name, cu, v0=65):
+    """Digital display indicator centred at u=cu, top at v0 (bezel 210 x 237 mm)."""
     return dict(kind="ddi", name=name,
-                rect=(cu - 105, 65, cu + 105, 302),
-                screen=(cu - 70, 110, cu + 70, 250),
-                knobs=[(cu - 10, 82, 9, "NIGHT/DAY"), (cu - 88, 284, 9, "BRT"), (cu + 88, 284, 9, "CONT")])
+                rect=(cu - 105, v0, cu + 105, v0 + 237),
+                screen=(cu - 70, v0 + 45, cu + 70, v0 + 185),
+                knobs=[(cu - 10, v0 + 17, 9, "NIGHT/DAY"), (cu - 88, v0 + 219, 9, "BRT"),
+                       (cu + 88, v0 + 219, 9, "CONT")])
+
+
+def bezel_buttons(e):
+    """Push-button centres (u, v) around a DDI or HSD bezel: 5 top, 5 bottom,
+    5 left, 5 right (shared by the model and the texture painter)."""
+    u0, v0, u1, v1 = e["rect"]
+    cu = (u0 + u1) / 2
+    t0, t1 = e["screen"][1], e["screen"][3]
+    if e["kind"] == "ddi":
+        return ([(cu - 56 + 28 * i, v0 + 23) for i in range(5)] + [(cu - 56 + 28 * i, v0 + 205) for i in range(5)] +
+                [(u0 + 17, v0 + 60 + 27.5 * i) for i in range(5)] + [(u1 - 17, v0 + 60 + 27.5 * i) for i in range(5)])
+    return ([(cu - 56 + 28 * i, (t0 + v0) / 2 + 4) for i in range(5)] +
+            [(cu - 56 + 28 * i, (t1 + v1) / 2) for i in range(5)] +
+            [(u0 + 17, t0 + 18 + 32 * i) for i in range(5)] + [(u1 - 17, t0 + 18 + 32 * i) for i in range(5)])
+
+
+def ufc(dv=0):
+    """Up-front control, shifted dv mm down the panel."""
+    return dict(kind="ufc", name="UFC", rect=(-110, 22 + dv, 110, 220 + dv), dv=dv,
+                scratchpad=(-82, 34 + dv, -12, 54 + dv),
+                keypad=dict(origin=(-80, 62 + dv), pitch=(25, 26), rows=["123", "456", "789", "C0E"]),
+                options=[(22, 62 + dv + 22 * i, 92, 80 + dv + 22 * i) for i in range(5)],
+                option_buttons=[(12, 71 + dv + 22 * i) for i in range(5)],
+                functions=["A/P", "IFF", "TCN", "ILS", "D/L", "BCN", "ON/OFF"],
+                function_row=(-88, 196 + dv, 88, 212 + dv),
+                knobs=[(-98, 70 + dv, 8, "ADF"), (-98, 110 + dv, 9, "VOL 1"), (98, 70 + dv, 8, "BRT"),
+                       (98, 110 + dv, 9, "VOL 2"), (-98, 160 + dv, 7, "COMM 1"), (98, 160 + dv, 7, "COMM 2")])
 
 
 WARNING_LIGHTS = [
@@ -75,15 +103,7 @@ HUD_CONTROLS = [
 ]
 DISPLAYS = [
     ddi("DDI_L", -220),
-    dict(kind="ufc", name="UFC", rect=(-110, 22, 110, 220),
-         scratchpad=(-82, 34, -12, 54),
-         keypad=dict(origin=(-80, 62), pitch=(25, 26), rows=["123", "456", "789", "C0E"]),
-         options=[(22, 62 + 22 * i, 92, 80 + 22 * i) for i in range(5)],
-         option_buttons=[(12, 71 + 22 * i) for i in range(5)],
-         functions=["A/P", "IFF", "TCN", "ILS", "D/L", "BCN", "ON/OFF"],
-         function_row=(-88, 196, 88, 212),
-         knobs=[(-98, 70, 8, "ADF"), (-98, 110, 9, "VOL 1"), (98, 70, 8, "BRT"),
-                (98, 110, 9, "VOL 2"), (-98, 160, 7, "COMM 1"), (98, 160, 7, "COMM 2")]),
+    ufc(0),
     ddi("DDI_R", 220),
     dict(kind="plate", name="RightCol", rect=(332, 150, 390, 312)),
     dict(kind="toggle", c=(361, 180), legend="IR COOL"),
@@ -130,44 +150,217 @@ LOWER_PANEL = [
 ]
 FRONT_MIP = WARNING_LIGHTS + MASTER_ARM + DISPLAYS + HUD_CONTROLS + LOWER_PANEL
 
-# The F/A-18B rear cockpit (NASA 845, photo ED08-0252-06): the same DDIs,
-# UFC and lower panel; no HUD or HUD control panel, and a row of caution /
-# A/A / A/G lights under the UFC instead of the master arm panel.
-REAR_MIP = DISPLAYS + LOWER_PANEL + [
-    dict(kind="plate", name="RearLights", rect=(-80, 226, 80, 262)),
-    dict(kind="button", rect=(-74, 230, -40, 258), legend="MASTER\nCAUTION", colour="amber"),
-    dict(kind="button", rect=(-34, 230, 0, 258), legend="FIRE", colour="red"),
-    dict(kind="button", rect=(6, 230, 40, 258), legend="A/A", colour="green"),
-    dict(kind="button", rect=(46, 230, 74, 258), legend="A/G", colour="green"),
-    dict(kind="plate", name="Placard", rect=(-390, 140, -334, 300)),
+# The F/A-18B rear cockpit, NATOPS figure FO-2: DDIs either side of the UFC
+# (moved 40 mm down), the warning / caution lights above the UFC with the
+# emergency jettison button to their left and the master mode lights to
+# their right, a third DDI in the centre where the front seat has the HSD,
+# gear and flap position lights and a display select switch at lower left,
+# the engine monitor, fuel quantity and clock, and the standby instruments.
+REAR_MIP = [
+    ddi("DDI_L", -220), ufc(40), ddi("DDI_R", 220),
+    dict(kind="plate", name="RearWarn", rect=(-110, 16, 110, 58)),
+    dict(kind="button", rect=(-105, 21, -78, 53), legend="FIRE", colour="red"),
+    dict(kind="button", rect=(-75, 21, -45, 53), legend="MASTER\nCAUTION", colour="amber"),
+    dict(kind="button", rect=(-42, 21, -14, 36), legend="L BLEED", colour="red"),
+    dict(kind="button", rect=(-42, 38, -14, 53), legend="R BLEED", colour="red"),
+    dict(kind="button", rect=(-11, 21, 17, 36), legend="SPD BRK", colour="green"),
+    dict(kind="button", rect=(-11, 38, 17, 53), legend="L BAR", colour="green"),
+    dict(kind="button", rect=(20, 21, 48, 53), legend="", colour="amber"),
+    dict(kind="button", rect=(51, 21, 77, 53), legend="APU\nFIRE", colour="red"),
+    dict(kind="button", rect=(80, 21, 105, 53), legend="FIRE", colour="red"),
+    dict(kind="button", rect=(-165, 12, -120, 58), legend="EMERG\nJETT", colour="stripe"),
+    dict(kind="plate", name="MasterMode", rect=(118, 10, 162, 62)),
+    dict(kind="button", rect=(122, 14, 158, 36), legend="A/A", colour="green"),
+    dict(kind="button", rect=(122, 38, 158, 58), legend="A/G", colour="green"),
+    # gear / flap position lights, display select
+    dict(kind="plate", name="GearFlaps", rect=(-390, 318, -334, 440)),
+    dict(kind="button", rect=(-380, 326, -344, 344), legend="NOSE", colour="green"),
+    dict(kind="button", rect=(-384, 348, -364, 366), legend="LEFT", colour="green"),
+    dict(kind="button", rect=(-361, 348, -341, 366), legend="RIGHT", colour="green"),
+    dict(kind="button", rect=(-384, 372, -364, 390), legend="HALF", colour="green"),
+    dict(kind="button", rect=(-361, 372, -341, 390), legend="FULL", colour="green"),
+    dict(kind="button", rect=(-380, 396, -344, 414), legend="FLAPS", colour="amber"),
+    dict(kind="plate", name="DisplaySel", rect=(-390, 448, -334, 508)),
+    dict(kind="toggle", c=(-362, 484), legend="DISPLAY"),
+] + [e for e in LOWER_PANEL
+     if e.get("name") not in ("JettSel", "HSD", "HdgCrs")
+     and e.get("legend") not in ("CTR", "LI", "RI", "LO", "RO", "NOSE\nLEFT RIGHT\nHALF FULL\nFLAPS", "HDG", "CRS")] + [
+    dict(kind="plate", name="Clock", rect=(-212, 466, -124, 540)),
+    dict(kind="gauge", c=(-168, 503), r=30, face="clock"),
+    ddi("DDI_C", 0, 330),
 ]
 
 # --- side consoles -----------------------------------------------------------
-# No direct photo of the A/B side consoles was available, so these follow the
-# general Hornet arrangement (throttle quadrant forward on the left console,
-# rows of 146 mm (5.75 in) DZUS-fastened panels) without claiming exact
-# switch positions.  Coordinates: s along the console from its forward end
-# (mm, aft positive), t across it from the cockpit wall (mm, inboard positive).
+# Panel order from the NATOPS foldouts: FO-1 sheet 2 (front cockpit, A/B) and
+# FO-2 sheet 2 (rear cockpit of the B).  Coordinates: s along the console
+# from its forward end (mm, aft positive), t across it from the cockpit wall
+# (mm, inboard positive).  Controls are (kind, fs, ft, legend[, extra]) with
+# fs / ft the fractions along the panel / across it from the pilot's left; kinds: toggle, knob, button,
+# gauge (extra = face), handle (striped pull handle).  Switch positions within a
+# panel follow the drawings' arrangement, not measured spacing.
 CONSOLE_LEN = 1080
 CONSOLE_WIDTH = 150
-LEFT_CONSOLE = [
-    dict(name="FUEL", s=(0, 120), switches=4, knobs=1),
-    dict(name="THROTTLE QUADRANT", s=(120, 400), throttle=True),
-    dict(name="EXT LT", s=(400, 520), switches=3, knobs=3),
-    dict(name="COMM", s=(520, 680), switches=2, knobs=4),
-    dict(name="OBOGS / ANTI-G", s=(680, 820), switches=3, knobs=1),
-    dict(name="GND PWR", s=(820, 940), switches=4, knobs=0),
-    dict(name="SEAT", s=(940, 1080), switches=1, knobs=1),
-]
-RIGHT_CONSOLE = [
-    dict(name="ELEC", s=(0, 140), switches=4, knobs=0),
-    dict(name="ECS", s=(140, 300), switches=3, knobs=3),
-    dict(name="INTR LT", s=(300, 440), switches=1, knobs=5),
-    dict(name="SNSR", s=(440, 600), switches=3, knobs=2),
-    dict(name="KY-58", s=(600, 740), switches=2, knobs=2),
-    dict(name="DEFOG", s=(740, 860), switches=2, knobs=1),
-    dict(name="AVIONICS", s=(860, 1080), switches=4, knobs=0),
-]
+CONSOLE_START = 0.30          # m aft of the instrument panel face: room for the knee panels
+
+
+def row(kind, legends, fs, t0=0.2, t1=0.8):
+    """Controls of one kind spread across a panel at fraction fs along it."""
+    n = len(legends)
+    return [(kind, fs, t0 + (t1 - t0) * (i / (n - 1) if n > 1 else 0.5), lg) for i, lg in enumerate(legends)]
+
+
+def blank(s, t=(0, CONSOLE_WIDTH), name=""):
+    return dict(name=name, s=s, t=t, blank=True, controls=[])
+
+
+CONSOLES = {
+    "Front": {
+        "L": [
+            dict(name="GND PWR", s=(0, 150), t=(0, 52),
+                 controls=row("toggle", ["1", "2"], 0.33, 0.25, 0.75) + row("toggle", ["3", "4"], 0.6, 0.25, 0.75)
+                 + row("toggle", ["EXT PWR"], 0.86)),
+            dict(name="FIRE TEST", s=(0, 60), t=(55, 150), controls=row("toggle", ["TEST"], 0.55)),
+            dict(name="THROTTLES", s=(60, 380), t=(55, 150), throttle=True, controls=[]),
+            dict(name="EXT LT", s=(150, 380), t=(0, 52),
+                 controls=row("knob", ["FORMATION"], 0.2) + row("knob", ["POSITION"], 0.47)
+                 + row("toggle", ["STROBE", "INTR WING"], 0.8, 0.25, 0.75)),
+            dict(name="FUEL", s=(380, 520),
+                 controls=row("toggle", ["PROBE"], 0.55, 0.15, 0.15) + row("knob", ["WING", "CTR"], 0.55, 0.42, 0.66)
+                 + row("toggle", ["DUMP"], 0.55, 0.88, 0.88)),
+            dict(name="APU", s=(520, 610), t=(0, 70), controls=row("toggle", ["APU", "ENG CRANK"], 0.55)),
+            dict(name="FCS", s=(520, 620), t=(72, 150),
+                 controls=row("knob", ["RUD TRIM"], 0.38, 0.3, 0.3) + row("button", ["T/O TRIM"], 0.38, 0.75, 0.75)
+                 + row("button", ["GAIN ORIDE", "RESET"], 0.8)),
+            dict(name="COMM", s=(620, 800),
+                 controls=row("knob", ["ICS", "RWR", "WPN", "AUX"], 0.3, 0.12, 0.88)
+                 + row("toggle", ["IFF", "ILS", "CRYPTO", "MODE 4"], 0.75, 0.12, 0.88)),
+            dict(name="OXY / ANTI-G", s=(800, 950),
+                 controls=[("gauge", 0.45, 0.62, "LOX", "lox")] + row("toggle", ["OXYGEN"], 0.3, 0.18, 0.18)
+                 + row("button", ["OXY TEST"], 0.78, 0.2, 0.2)),
+            dict(name="MC / HYD ISOL", s=(950, 1010), controls=row("toggle", ["MC", "HYD ISOL"], 0.55)),
+            dict(name="ANT SEL", s=(1010, 1080), controls=row("toggle", ["COMM 1", "IFF"], 0.55)),
+        ],
+        "R": [
+            dict(name="ELEC", s=(0, 125),
+                 controls=[("gauge", 0.3, 0.5, "VOLTS", "volt")] + row("toggle", ["L GEN", "BATT", "R GEN"], 0.78)),
+            dict(name="ECS", s=(125, 265),
+                 controls=row("knob", ["MODE", "TEMP"], 0.25, 0.25, 0.6) + row("toggle", ["CABIN PRESS"], 0.25, 0.88, 0.88)
+                 + row("toggle", ["PITOT", "ENG"], 0.72, 0.15, 0.45) + row("knob", ["BLEED AIR"], 0.72, 0.8, 0.8)),
+            dict(name="INTR LT", s=(265, 405),
+                 controls=row("knob", ["CONSOLES", "INST PNL", "FLOOD"], 0.28)
+                 + row("toggle", ["LT TEST"], 0.75, 0.2, 0.2) + row("knob", ["WARN/CAUTION", "CHART"], 0.75, 0.52, 0.85)),
+            dict(name="SNSR", s=(405, 535),
+                 controls=row("toggle", ["FLIR", "LTD/R", "LST/NFLR"], 0.28) + row("knob", ["RADAR", "INS"], 0.75, 0.3, 0.72)),
+            dict(name="KY-58", s=(535, 645),
+                 controls=row("knob", ["MODE", "FILL", "POWER"], 0.35) + row("knob", ["VOLUME"], 0.8, 0.25, 0.25)),
+            blank((645, 765)), blank((765, 885)),
+            dict(name="FAN TEST", s=(885, 950), controls=row("toggle", ["FAN TEST"], 0.55)),
+            dict(name="MAP & DATA CASE", s=(950, 1080), blank=True, controls=[]),
+        ],
+    },
+    "Rear": {
+        "L": [
+            blank((0, 150), (0, 52)),
+            blank((0, 60), (55, 150)),
+            dict(name="THROTTLES", s=(60, 380), t=(55, 150), throttle=True, controls=[]),
+            dict(name="VOL", s=(150, 380), t=(0, 52),
+                 controls=row("knob", ["TCN", "ICS"], 0.2, 0.25, 0.75) + row("knob", ["WPN", "AUX"], 0.45, 0.25, 0.75)
+                 + row("knob", ["RWR", "ECM"], 0.7, 0.25, 0.75) + row("toggle", ["RADIO ORIDE"], 0.9)),
+            blank((380, 420), (0, 52)),
+            dict(name="CANOPY JETT", s=(420, 620), t=(0, 70), controls=[("handle", 0.5, 0.5, "CANOPY JETT")]),
+            dict(name="AN/ARC-182 DATA LINK", s=(380, 620), t=(70, 150), blank=True, controls=[]),
+            dict(name="ALE-39", s=(620, 900), t=(0, 60), controls=[("button", f, 0.5, "") for f in (0.3, 0.42, 0.54, 0.66, 0.78)]),
+            dict(name="OXY / ANTI-G", s=(620, 900), t=(60, 150),
+                 controls=row("toggle", ["OXYGEN"], 0.2, 0.2, 0.2) + [("gauge", 0.25, 0.68, "LOX", "lox")]
+                 + row("button", ["OXY TEST"], 0.55, 0.3, 0.3) + row("button", ["ANTI-G"], 0.82, 0.5, 0.5)),
+            blank((900, 1080)),
+        ],
+        "R": [
+            blank((0, 100)),
+            dict(name="INTR LT", s=(100, 260),
+                 controls=row("knob", ["CONSOLES", "INST PNL", "FLOOD"], 0.3)
+                 + row("toggle", ["LT TEST"], 0.75, 0.2, 0.2) + row("knob", ["WARN/CAUTION"], 0.75, 0.6, 0.6)),
+            blank((260, 420)), blank((420, 560)),
+            blank((560, 820), (0, 105)), blank((820, 1080), (0, 105)),
+            dict(name="FAN TEST", s=(560, 660), t=(105, 150), controls=row("toggle", ["FAN TEST"], 0.55)),
+            dict(name="UTILITY LT", s=(660, 760), t=(105, 150), controls=[("knob", 0.5, 0.5, "")]),
+            dict(name="MAP CASE", s=(760, 1080), t=(105, 150), blank=True, controls=[]),
+        ],
+    },
+}
+CONSOLE_REGIONS = {"Front": ("console_l", "console_r"), "Rear": ("console_rl", "console_rr")}
+
+# --- knee panels and centre pedestal ---------------------------------------------
+# Below the main panel, in its plane (u, v in panel mm, as the MIP): the left
+# and right vertical panels and the pedestal under the HSD, from FO-1 / FO-2.
+# Kinds as the MIP, plus: wheel (landing-gear handle, wheel knob on a stem),
+# tee (striped T pull handle), hook (arresting-hook handle), fold (wing-fold
+# handle), lever (command selector), caution (grid of caution lights), placard
+# (flat plate with text).
+CAUTION_FRONT = ["CK SEAT", "APU ACC", "BATT SW", "", "GEN TIE", "", "", "FCES", "FCS HOT", "FUEL LO", "L GEN", "R GEN"]
+SUBPANELS = {
+    "Front": [
+        dict(name="KneeL", region="vpanel_fl", rect=(-393, 516, -150, 690), items=[
+            dict(kind="plate", name="LdgGear", rect=(-390, 520, -300, 686)),
+            dict(kind="wheel", c=(-345, 610), legend="LDG GEAR"),
+            dict(kind="button", rect=(-385, 530, -355, 546), legend="DN LOCK\nORIDE", colour="amber"),
+            dict(kind="button", rect=(-335, 530, -305, 546), legend="WARN\nTONE SIL", colour="amber"),
+            dict(kind="plate", name="LdgControls", rect=(-296, 520, -153, 600)),
+            dict(kind="toggle", c=(-276, 560), legend="LAUNCH\nBAR"),
+            dict(kind="toggle", c=(-238, 560), legend="FLAP"),
+            dict(kind="knob", c=(-185, 558), r=14, legend="SELECT JETT"),
+            dict(kind="plate", name="LdgLights", rect=(-296, 604, -153, 686)),
+            dict(kind="toggle", c=(-276, 640), legend="LDG/\nTAXI"),
+            dict(kind="toggle", c=(-238, 640), legend="ANTI\nSKID"),
+            dict(kind="toggle", c=(-200, 640), legend="HOOK\nBYPASS"),
+            dict(kind="tee", c=(-170, 664), legend="EMERG BRK"),
+        ]),
+        dict(name="KneeR", region="vpanel_fr", rect=(150, 516, 393, 690), items=[
+            dict(kind="plate", name="Gauges", rect=(153, 520, 300, 596)),
+            dict(kind="gauge", c=(190, 558), r=30, face="brake"),
+            dict(kind="gauge", c=(262, 558), r=30, face="hyd"),
+            dict(kind="caution", rect=(153, 600, 260, 686), legends=CAUTION_FRONT, cols=3),
+            dict(kind="plate", name="HookFold", rect=(264, 520, 390, 686)),
+            dict(kind="hook", c=(360, 548), legend="HOOK"),
+            dict(kind="button", rect=(326, 528, 344, 542), legend="HOOK", colour="red"),
+            dict(kind="fold", c=(330, 640), legend="WING FOLD"),
+            dict(kind="toggle", c=(284, 560), legend="FCS\nCOOL"),
+            dict(kind="placard", rect=(268, 600, 300, 682), text="LANDING\nWHEELS\nFLAPS\nHOOK\nANTISKID\nHARNESS"),
+        ]),
+        dict(name="Pedestal", region="pedestal_f", rect=(-85, 596, 85, 800), items=[
+            dict(kind="plate", name="Dispenser", rect=(-82, 600, 82, 690)),
+            dict(kind="knob", c=(-50, 635), r=14, legend="DISPENSER"),
+            dict(kind="toggle", c=(-5, 625), legend="CHAFF"),
+            dict(kind="toggle", c=(25, 625), legend="FLARE"),
+            dict(kind="knob", c=(58, 635), r=11, legend="ECM"),
+            dict(kind="button", rect=(-20, 660, 20, 680), legend="AUX REL", colour="amber"),
+            dict(kind="plate", name="Clock", rect=(-60, 696, 60, 768)),
+            dict(kind="gauge", c=(0, 732), r=32, face="clock"),
+            dict(kind="tee", c=(-45, 786), legend="RUD PED ADJ", small=True),
+        ]),
+    ],
+    "Rear": [
+        dict(name="KneeL", region="vpanel_rl", rect=(-393, 516, -150, 680), items=[
+            dict(kind="plate", name="Emerg", rect=(-390, 520, -153, 676)),
+            dict(kind="tee", c=(-330, 580), legend="EMERG\nLDG GEAR"),
+            dict(kind="tee", c=(-230, 640), legend="EMERG BRK"),
+        ]),
+        dict(name="KneeR", region="vpanel_rr", rect=(150, 516, 393, 680), items=[
+            dict(kind="plate", name="Command", rect=(153, 520, 300, 596)),
+            dict(kind="lever", c=(225, 560), legend="COMMAND\nSELECTOR"),
+            dict(kind="caution", rect=(153, 600, 260, 676), legends=CAUTION_FRONT, cols=3),
+            dict(kind="plate", name="Gauges", rect=(304, 520, 390, 676)),
+            dict(kind="gauge", c=(347, 560), r=30, face="hyd"),
+            dict(kind="gauge", c=(347, 636), r=30, face="cabalt"),
+        ]),
+        dict(name="Pedestal", region="pedestal_r", rect=(-85, 596, 85, 780), items=[
+            dict(kind="plate", name="PedAdj", rect=(-82, 600, 82, 690)),
+            dict(kind="tee", c=(-40, 645), legend="RUD PED ADJ", small=True),
+            dict(kind="placard", rect=(10, 620, 76, 650), text="BUNO"),
+            dict(kind="plate", name="Louver", rect=(-70, 700, 70, 770)),
+        ]),
+    ],
+}
 
 # --- texture atlas regions (pixels in a 4096 x 4096 atlas) ---------------------
 ATLAS = 4096
@@ -179,10 +372,21 @@ REGION = {
     "console_r": (3520, 0, 3840, 2200),
     "gauges": (0, 1220, 1600, 1420),          # 8 faces, 200 px each
     "rail": (0, 1420, 1600, 1620),            # perforated sill longeron strip
-    "labels": (0, 1620, 1600, 2560),          # seat and canopy placards
+    "gauges2": (0, 1620, 1600, 1820),         # 8 more faces
+    "pedestal_f": (0, 1820, 400, 2280),       # 200 x 230 mm
+    "pedestal_r": (400, 1820, 800, 2280),
+    "labels": (800, 1820, 1600, 2560),        # seat and canopy placards
+    "vpanel_fl": (1600, 1220, 2100, 1620),    # knee panels, 250 x 200 mm
+    "vpanel_fr": (2100, 1220, 2600, 1620),
+    "vpanel_rl": (2600, 1220, 3100, 1620),
+    "vpanel_rr": (1600, 1620, 2100, 2020),
+    "console_rl": (3840, 0, 4000, 1100),      # rear consoles, 1 px per mm
+    "console_rr": (3840, 1100, 4000, 2200),
     "cells": (0, 2560, 4096, 4096),           # 8 x 3 material tiles, 512 px = 1 m
 }
-GAUGE_ORDER = ["adi", "rwr", "asi", "alt", "vsi", "fuel", "noz", "clock"]
+REGION_PPM = {"console_rl": 1.0, "console_rr": 1.0}      # px per mm where not PX_PER_MM
+GAUGE_ORDER = ["adi", "rwr", "asi", "alt", "vsi", "fuel", "noz", "clock",
+               "brake", "hyd", "radalt", "cabalt", "lox", "volt"]
 # material tiles: worn finishes that any part can map onto (planar, 1 m per tile)
 CELLS = ["black", "panel", "darkgrey", "midgrey", "lightgrey", "metal", "rubber", "cushion",
          "leather", "strap", "yellow", "red", "white", "green", "amber", "glow",
@@ -244,4 +448,22 @@ def mip_uv(region, u, v):
     x0, y0, x1, y1 = REGION[region]
     px = (x0 + x1) / 2 + u * PX_PER_MM
     py = y0 + 10 + v * PX_PER_MM
+    return (px / ATLAS, 1.0 - py / ATLAS)
+
+
+def gauge_centre_px(face):
+    """Pixel centre of a gauge face: the first 8 in "gauges", the rest in "gauges2"."""
+    i = GAUGE_ORDER.index(face)
+    x0, y0, _, _ = REGION["gauges" if i < 8 else "gauges2"]
+    return x0 + 100 + 200 * (i % 8), y0 + 100
+
+
+def sub_px(region, rect, u, v):
+    """Pixel of panel point (u, v) mm in a sub-panel region whose top-left is rect[:2]."""
+    x0, y0, _, _ = REGION[region]
+    return x0 + 4 + (u - rect[0]) * PX_PER_MM, y0 + 4 + (v - rect[1]) * PX_PER_MM
+
+
+def sub_uv(region, rect, u, v):
+    px, py = sub_px(region, rect, u, v)
     return (px / ATLAS, 1.0 - py / ATLAS)

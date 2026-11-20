@@ -126,6 +126,13 @@ that part's atlas: its automatic UV layout changes with the mesh.
 The photos are searchable at images.nasa.gov. NASA additions seen in them (cameras,
 video panels, the large test display) were left out.
 
+- **The NATOPS flight manual's cockpit foldouts** (see *Checked against the NATOPS
+  flight manual*):
+  - FO-1, the front cockpit of the A/B: side consoles, knee panels, centre pedestal,
+    AOA indexer and standby compass;
+  - FO-2, the rear cockpit of the B: rear instrument panel, knee panels and consoles;
+  - FO-9, the SJU-5/6 seat: canopy breakers and the SAFE/ARMED handle.
+
 **What is modelled:**
 
 - **Main instrument panel, laid out as in the drawing:**
@@ -140,14 +147,43 @@ video panels, the large test display) were left out.
   - the horizontal situation display;
   - standby attitude, airspeed, altimeter and vertical-speed instruments, and the RWR
     (radar warning receiver) azimuth indicator.
+- **Rear instrument panel of the B (FO-2):**
+  - the warning and caution lights above the UFC, with the emergency jettison button to
+    their left and the A/A–A/G master mode lights to their right;
+  - a third DDI in the centre where the front seat has the HSD;
+  - gear and flap position lights, a display select switch and a clock.
+- **Knee panels and centre pedestal (FO-1, FO-2),** below the main panel:
+  - front left: the landing-gear handle (wheel knob) with its DN LOCK ORIDE and WARN TONE
+    SIL buttons, the launch-bar and flap switches, the select-jettison knob, the
+    landing/taxi light, anti-skid and hook-bypass switches, and the emergency/parking
+    brake handle;
+  - front right: the brake-accumulator and HYD 1/2 pressure gauges, the caution-light
+    panel, the arresting-hook handle and its light, the wing-fold handle, the FCS cool
+    switch and the landing checklist;
+  - front pedestal: the dispenser/ECM controls, the clock and the rudder-pedal adjust
+    handle;
+  - rear: the emergency landing-gear and brake handles, the ejection command selector,
+    a caution panel, a HYD gauge and the cockpit altimeter; on the pedestal, the
+    rudder-pedal adjust handle and the BUNO plate.
+- **Side consoles (FO-1, FO-2),** panel by panel in the manual's order:
+  - front left: ground power, fire test, the throttle quadrant, exterior lights, fuel,
+    APU, FCS, comm, oxygen and anti-G with the LOX gauge, MC/hydraulic isolate and
+    antenna select;
+  - front right: electrical power with its voltmeter, ECS, interior lights, sensors,
+    KY-58, two blank panels, fan test and the map case;
+  - rear: the throttles, volume controls, the internal canopy-jettison handle, the
+    chaff/flare programmer, oxygen and anti-G on the left; interior lights, fan test, the
+    utility light and the map case on the right; the rest blank, as in the manual.
 - **Glareshield coaming and HUD:** the HUD has its projector body, side posts and a tilted
   combiner.
 - **Canopy bow:** three rear-view mirrors and the AIM-7 LOCK/SHOOT lights.
+- **Coaming:** the AOA indexer left of the HUD (green high, amber on speed, red low) and
+  the standby magnetic compass at the right end (both cockpits).
 - **Ejection seats:** Martin-Baker SJU-5/A (front) and SJU-6/A (rear), with headbox,
-  parachute container, side beams, gas-generator tubes, survival-kit cushion, harness and
-  the yellow-and-black firing handle.
+  parachute container, side beams, gas-generator tubes, survival-kit cushion, harness,
+  the yellow-and-black firing handle, the canopy breakers on the headbox and the
+  SAFE/ARMED handle.
 - **Controls:** the control stick, throttle quadrant with HOTAS grips, and rudder pedals.
-- **Side consoles.**
 - **Tub:** walls and a floor cut into the fuselage, the perforated canopy-sill
   longerons, and a foot well under the panel.
 - **Canopy and windscreen:** separate thin transparencies (1.4 cm), so you can sit inside.
@@ -155,7 +191,7 @@ video panels, the large test display) were left out.
 **Displays for a game.** Every screen is its own object, with 0–1 UVs and its own
 material:
 
-- `DDI_L_*`, `DDI_R_*`, `HSD_*`
+- `DDI_L_*`, `DDI_R_*`, `HSD_Front`, `DDI_C_Rear` (the B's centre DDI)
 - `UFC_*` (scratchpad plus the five option windows)
 - `HUD_Combiner_*` (alpha)
 
@@ -174,10 +210,16 @@ representative Hornet-style formats, not recordings.
   below horizontal. The eye sits 1.34 m above the nose-tip waterline.
 
 **Cockpit limits:**
-- **Side consoles:** no photo of the A/B side consoles was available. They follow the
-  general Hornet arrangement (throttle quadrant forward-left, rows of 5.75 in DZUS
-  panels) with generic switch placement. Replace them with exact panels if you have
-  references.
+- **Side consoles and knee panels:**
+  - Panel order and contents follow the manual's foldouts. Switch spacing within each
+    panel follows the drawings' arrangement and was not measured, and only the main
+    legends are painted.
+  - The consoles start 0.30 m behind the panel face and stand 0.16 m above the seat
+    reference point, so the knee panels show over their front ends from the design eye.
+  - The rear consoles' texture is half the density of the front ones (1 px/mm), as they
+    are mostly blank panels.
+  - Handles are fixed in their normal positions (gear down, hook up, wings spread); they
+    do not move with the animation clips.
 - **Legends:** panel legends were painted from the layout, not copied from the drawing,
   and are slightly larger than life so they stay legible on screen.
 - **Not modelled:** the pilot.

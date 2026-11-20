@@ -94,6 +94,17 @@ def dzus(x, y, r=5):
     dr.ellipse((x - r, y - r, x + r, y + r), fill=110)
 
 
+def hatch(rect, period=14, width=7, c0=(205, 165, 30), c1=(20, 20, 20)):
+    """Yellow / black hazard stripes clipped to rect."""
+    x0, y0, x1, y1 = [int(round(v)) for v in rect]
+    w, hh = max(1, x1 - x0), max(1, y1 - y0)
+    tile = Image.new("RGB", (w, hh), c0)
+    d = ImageDraw.Draw(tile)
+    for t in range(-hh, w + hh, max(2, int(period))):
+        d.polygon([(t, hh), (t + width, hh), (t + width + hh, 0), (t + hh, 0)], fill=c1)
+    base.paste(tile, (x0, y0))
+
+
 def bevel_rect(rect, fill, edge_hi=(70, 70, 72), h_in=150, h_edge=175):
     x0, y0, x1, y1 = rect
     db.rectangle(rect, fill=fill)
@@ -180,49 +191,57 @@ DDI_LEGENDS_R = ["RWS", "TWS", "VS", "ACM", "BIT", "", "", "", "", "MENU",
                  "PRF", "SCAN", "BARS", "AZ", "DCLTR", "", "", "", "", "SIL"]
 
 
-def paint_mip(region, layout):
-    outline = [P(region, u, v) for u, v in L.MIP_OUTLINE]
-    db.polygon(outline, fill=GULL)
-    dh.polygon(outline, fill=128)
-    dr.polygon(outline, fill=175)
-    x0, y0, x1, y1 = L.REGION[region]
-    grime((x0, y0, x1, y1), strength=0.18, scale=5)
-    for e in layout:
+def paint_items(items, Pf, Rf):
+    """Paint panel items; Pf maps (u, v) mm to a pixel, Rf a rect."""
+    for e in items:
         k = e["kind"]
-        if k == "plate":
-            r = R(region, e["rect"])
+        if k in ("plate", "placard"):
+            r = Rf(e["rect"])
             bevel_rect(r, BLACK)
-            for fx, fy in ((r[0] + 9, r[1] + 9), (r[2] - 9, r[1] + 9), (r[0] + 9, r[3] - 9), (r[2] - 9, r[3] - 9)):
-                dzus(fx, fy)
+            if k == "plate":
+                for fx, fy in ((r[0] + 9, r[1] + 9), (r[2] - 9, r[1] + 9), (r[0] + 9, r[3] - 9), (r[2] - 9, r[3] - 9)):
+                    dzus(fx, fy)
+            else:
+                db.rectangle((r[0] + 3, r[1] + 3, r[2] - 3, r[3] - 3), outline=(150, 150, 140), width=1)
+                text_c(db, ((r[0] + r[2]) / 2, (r[1] + r[3]) / 2), e["text"], 11, LEGEND, spacing=3)
             edge_wear(r, width=2.5, prob=0.18)
             scratches(r, 8, (150, 150, 145), (3, 14))
-            if e["name"] == "Placard":
-                text_c(db, ((r[0] + r[2]) / 2, (r[1] + r[3]) / 2), "G LIMIT\n-3.0/+7.5\n\nAIRSPEED\n750 KCAS\n\nAOA\nLIMITS", 13,
-                       (200, 60, 50))
         elif k == "button":
-            r = R(region, e["rect"])
+            r = Rf(e["rect"])
             col = e.get("colour", "green")
             if col == "stripe":
-                db.rectangle(r, fill=(205, 165, 30))
-                for t in range(int(r[0]) - 60, int(r[2]), 14):
-                    db.polygon([(t, r[3]), (t + 7, r[3]), (t + 7 + (r[3] - r[1]), r[1]), (t + (r[3] - r[1]), r[1])],
-                               fill=(20, 20, 20))
+                hatch(r)
                 db.rectangle((r[0] + 6, r[1] + 6, r[2] - 6, r[3] - 6), fill=(25, 25, 25))
                 text_c(db, ((r[0] + r[2]) / 2, (r[1] + r[3]) / 2), e["legend"], 13, LEGEND)
             else:
                 db.rectangle(r, fill=(16, 16, 17), outline=(60, 60, 60))
                 lc = tuple(int(c * 0.75) for c in LIGHT[col])
-                size = 12 if (r[3] - r[1]) < 40 else 15
+                size = 10 if (r[3] - r[1]) < 34 else 12 if (r[3] - r[1]) < 40 else 15
                 text_c(db, ((r[0] + r[2]) / 2, (r[1] + r[3]) / 2), e["legend"], size, lc)
             dh.rectangle(r, outline=176, width=2)
             dr.rectangle(r, fill=90)                         # lens faces are glossy
+        elif k == "caution":
+            r = Rf(e["rect"])
+            db.rectangle(r, fill=(20, 20, 21), outline=(80, 80, 80), width=2)
+            cols = e["cols"]
+            rows = (len(e["legends"]) + cols - 1) // cols
+            w, hgt = (r[2] - r[0] - 8) / cols, (r[3] - r[1] - 8) / rows
+            for n, lg in enumerate(e["legends"]):
+                cx0 = r[0] + 4 + (n % cols) * w
+                cy0 = r[1] + 4 + (n // cols) * hgt
+                cell = (cx0 + 2, cy0 + 2, cx0 + w - 2, cy0 + hgt - 2)
+                db.rectangle(cell, fill=(12, 12, 12), outline=(55, 55, 55))
+                if lg:
+                    text_c(db, ((cell[0] + cell[2]) / 2, (cell[1] + cell[3]) / 2), lg, 10,
+                           tuple(int(c * 0.75) for c in LIGHT["amber"]))
+            dr.rectangle(r, fill=90)
         elif k == "toggle":
-            x, y = P(region, *e["c"])
+            x, y = Pf(*e["c"])
             db.ellipse((x - 13, y - 13, x + 13, y + 13), fill=(48, 48, 48), outline=(95, 95, 92))
             dm.ellipse((x - 13, y - 13, x + 13, y + 13), fill=170)
-            text_c(db, (x, y - 34), e["legend"], 13, LEGEND)
+            text_c(db, (x, y - 34), e["legend"], 13 if "\n" not in e["legend"] else 11, LEGEND)
         elif k == "knob":
-            x, y = P(region, *e["c"])
+            x, y = Pf(*e["c"])
             r = e["r"] * 2
             for a in range(-135, 136, 45):                    # detent marks
                 t = math.radians(a - 90)
@@ -230,35 +249,58 @@ def paint_mip(region, layout):
                          x + (r + 11) * math.cos(t), y + (r + 11) * math.sin(t)), fill=LEGEND, width=2)
             text_c(db, (x, y + r + 20), e["legend"], 12, LEGEND)
         elif k == "lcd":
-            r = R(region, e["rect"])
+            r = Rf(e["rect"])
             db.rectangle(r, fill=(96, 104, 86), outline=(30, 30, 30), width=3)
             text_c(db, ((r[0] + r[2]) / 2, (r[1] + r[3]) / 2), e["text"], 26, (28, 32, 24), "m")
             dr.rectangle(r, fill=60)
         elif k == "gauge":
-            x, y = P(region, *e["c"])
+            x, y = Pf(*e["c"])
             r = e["r"] * 2 + 8
             db.ellipse((x - r, y - r, x + r, y + r), fill=(14, 14, 14))
+        elif k == "wheel":                                     # gear handle slot, UP above, DN below
+            x, y = Pf(*e["c"])
+            db.rounded_rectangle((x - 12, y - 140, x + 12, y + 22), 10, fill=(8, 8, 8), outline=(90, 90, 88))
+            dh.rounded_rectangle((x - 12, y - 140, x + 12, y + 22), 10, fill=60)
+            text_c(db, (x + 34, y - 125), "UP", 13, LEGEND)
+            text_c(db, (x + 34, y + 2), "DN", 13, LEGEND)
+            text_c(db, (x - 46, y + 30), e["legend"], 11, LEGEND)
+        elif k == "tee":                                       # yellow/black striped plate behind a pull handle
+            x, y = Pf(*e["c"])
+            w = 34 if e.get("small") else 54
+            rr = (x - w, y - 22, x + w, y + 22)
+            hatch(rr)
+            text_c(db, (x, y - 46), e["legend"], 11, LEGEND)
+        elif k == "hook":
+            x, y = Pf(*e["c"])
+            db.rounded_rectangle((x - 10, y - 18, x + 10, y + 180), 9, fill=(8, 8, 8), outline=(90, 90, 88))
+            text_c(db, (x - 34, y - 6), "UP", 12, LEGEND)
+            text_c(db, (x - 34, y + 160), "DN", 12, LEGEND)
+            text_c(db, (x, y - 40), e["legend"], 13, LEGEND)
+        elif k == "fold":
+            x, y = Pf(*e["c"])
+            for lab, dy in (("SPREAD", -60), ("HOLD", 0), ("FOLD", 60)):
+                text_c(db, (x + 68, y + dy), lab, 11, LEGEND)
+                db.line((x + 30, y + dy, x + 42, y + dy), fill=LEGEND, width=2)
+            text_c(db, (x, y - 92), e["legend"] + "\nPULL TO UNLOCK", 11, LEGEND)
+        elif k == "lever":
+            x, y = Pf(*e["c"])
+            for lab, a in (("NORM", -40), ("SOLO", 0), ("AFT\nINITIATE", 40)):
+                t = math.radians(a - 90)
+                text_c(db, (x + 70 * math.cos(t), y + 70 * math.sin(t)), lab, 10, LEGEND)
+            rr = (x - 30, y + 26, x + 30, y + 44)
+            db.rectangle(rr, fill=(205, 165, 30))
+            text_c(db, (x, y + 64), e["legend"], 11, LEGEND)
         elif k in ("ddi", "hsd"):
-            r = R(region, e["rect"])
+            r = Rf(e["rect"])
             bevel_rect(r, BLACK)
-            s = R(region, e["screen"])
-            db.rectangle(s, fill=(6, 8, 6))
+            sc = Rf(e["screen"])
+            db.rectangle(sc, fill=(6, 8, 6))
             for fx, fy in ((r[0] + 12, r[1] + 12), (r[2] - 12, r[1] + 12), (r[0] + 12, r[3] - 12), (r[2] - 12, r[3] - 12)):
                 dzus(fx, fy, 6)
             cu = (e["rect"][0] + e["rect"][2]) / 2
-            u0, v0, u1, v1 = e["rect"]
-            t0, t1 = e["screen"][1], e["screen"][3]
-            if k == "ddi":
-                pos = ([(cu - 56 + 28 * i, 88) for i in range(5)] + [(cu - 56 + 28 * i, 270) for i in range(5)] +
-                       [(u0 + 17, 125 + 27.5 * i) for i in range(5)] + [(u1 - 17, 125 + 27.5 * i) for i in range(5)])
-                legends = DDI_LEGENDS_L if cu < 0 else DDI_LEGENDS_R
-            else:
-                pos = ([(cu - 56 + 28 * i, (t0 + v0) / 2 + 4) for i in range(5)] +
-                       [(cu - 56 + 28 * i, (t1 + v1) / 2) for i in range(5)] +
-                       [(u0 + 17, t0 + 18 + 32 * i) for i in range(5)] + [(u1 - 17, t0 + 18 + 32 * i) for i in range(5)])
-                legends = [""] * 20
-            for (u, v), lg in zip(pos, legends):
-                x, y = P(region, u, v)
+            legends = (DDI_LEGENDS_L if cu < 0 else DDI_LEGENDS_R) if k == "ddi" else [""] * 20
+            for (u, v), lg in zip(L.bezel_buttons(e), legends):
+                x, y = Pf(u, v)
                 db.rectangle((x - 14, y - 14, x + 14, y + 14), fill=(58, 60, 60), outline=(90, 90, 90))
                 db.rectangle((x - 9, y - 2, x + 9, y + 2), fill=(150, 150, 140))      # finger groove
                 dh.rectangle((x - 9, y - 2, x + 9, y + 2), fill=112)
@@ -266,12 +308,12 @@ def paint_mip(region, layout):
                 if rng.random() < 0.5:
                     db.ellipse((x - 8, y - 8, x + 8, y + 8), outline=(95, 97, 96))
             for u, v, rr, lg in e.get("knobs", []):
-                x, y = P(region, u, v)
+                x, y = Pf(u, v)
                 text_c(db, (x, y - rr * 2 - 14), lg, 11, LEGEND)
             edge_wear(r, width=3, prob=0.22, primer=True)
             scratches(r, 14, (140, 140, 136), (3, 16))
         elif k == "ufc":
-            r = R(region, e["rect"])
+            r = Rf(e["rect"])
             bevel_rect(r, BLACK)
             o = e["keypad"]["origin"]
             pu, pv = e["keypad"]["pitch"]
@@ -280,7 +322,7 @@ def paint_mip(region, layout):
                 for ci, ch in enumerate(row):
                     u = o[0] + ci * pu + 9
                     v = o[1] + ri * pv + 9
-                    x, y = P(region, u, v)
+                    x, y = Pf(u, v)
                     db.rectangle((x - 18, y - 18, x + 18, y + 18), fill=(40, 41, 41), outline=(100, 100, 98))
                     lbl = {"C": "CLR", "E": "ENT"}.get(ch, ch)
                     if ch in letters:
@@ -290,38 +332,61 @@ def paint_mip(region, layout):
                         text_c(db, (x, y), lbl, 16 if len(lbl) == 1 else 12, LEGEND)
                     db.ellipse((x - 10, y - 10, x + 10, y + 10), outline=(70, 72, 72))   # finger wear
             for u0, v0, u1, v1 in [e["scratchpad"]] + e["options"]:
-                rr = R(region, (u0, v0, u1, v1))
+                rr = Rf((u0, v0, u1, v1))
                 db.rectangle(rr, fill=(5, 7, 5), outline=(70, 70, 70))
             for u, v in e["option_buttons"]:
-                x, y = P(region, u, v)
+                x, y = Pf(u, v)
                 db.ellipse((x - 12, y - 12, x + 12, y + 12), fill=(45, 45, 45), outline=(110, 110, 105))
             fu0, fv0, fu1, fv1 = e["function_row"]
             n = len(e["functions"])
             w = (fu1 - fu0) / n
             for i, lg in enumerate(e["functions"]):
-                rr = R(region, (fu0 + i * w + 2, fv0, fu0 + (i + 1) * w - 2, fv1))
+                rr = Rf((fu0 + i * w + 2, fv0, fu0 + (i + 1) * w - 2, fv1))
                 db.rectangle(rr, fill=(40, 41, 41), outline=(100, 100, 98))
                 text_c(db, ((rr[0] + rr[2]) / 2, (rr[1] + rr[3]) / 2), lg, 11, LEGEND)
             for u, v, rr, lg in e["knobs"]:
-                x, y = P(region, u, v)
+                x, y = Pf(u, v)
                 text_c(db, (x, y + rr * 2 + 12), lg, 11, LEGEND)
-            x, y = P(region, 98, 135)
+            x, y = Pf(98, 135 + e.get("dv", 0))
             text_c(db, (x, y), "EMCON", 11, LEGEND)
             edge_wear(r, width=3, prob=0.25, primer=True)
             scratches(r, 16, (140, 140, 136), (3, 14))
+
+
+def paint_mip(region, layout):
+    outline = [P(region, u, v) for u, v in L.MIP_OUTLINE]
+    db.polygon(outline, fill=GULL)
+    dh.polygon(outline, fill=128)
+    dr.polygon(outline, fill=175)
+    x0, y0, x1, y1 = L.REGION[region]
+    grime((x0, y0, x1, y1), strength=0.18, scale=5)
+    paint_items(layout, lambda u, v: P(region, u, v), lambda r: R(region, r))
     # boots and knees scuff the lower edge, gloves the area round the UFC
     lo = (x0, y0 + 900, x1, y0 + 1200)
     scratches(lo, 90, (150, 150, 146), (4, 28), width=1, alpha=55)
     grime((x0, y0, x1, y1), strength=0.12, scale=12, mask_edges=False)
 
 
+def paint_sub(sp):
+    """A knee panel or pedestal: its backing plate and items."""
+    region, rect = sp["region"], sp["rect"]
+    Pf = lambda u, v: L.sub_px(region, rect, u, v)
+    Rf = lambda r: Pf(r[0], r[1]) + Pf(r[2], r[3])
+    x0, y0, x1, y1 = L.REGION[region]
+    db.rectangle((x0, y0, x1, y1), fill=GULL)
+    dh.rectangle((x0, y0, x1, y1), fill=128)
+    dr.rectangle((x0, y0, x1, y1), fill=175)
+    grime((x0, y0, x1, y1), strength=0.18, scale=5)
+    paint_items(sp["items"], Pf, Rf)
+    scratches((x0, y0, x1, y1), 50, (150, 150, 146), (4, 24), width=1, alpha=55)   # knees and boots
+    grime((x0, y0, x1, y1), strength=0.14, scale=10, mask_edges=False)
+
+
 # ----------------------------------------------------------------------------
 # gauges
 # ----------------------------------------------------------------------------
 def gauge_centre(face):
-    i = L.GAUGE_ORDER.index(face)
-    x0, y0, _, _ = L.REGION["gauges"]
-    return x0 + 100 + 200 * i, y0 + 100
+    return L.gauge_centre_px(face)
 
 
 def dial(cx, cy, r, a0, a1, majors, minors, labels=None, lsize=14):
@@ -416,52 +481,113 @@ def paint_gauges():
     dial(cx, cy, R_, 0, 330, 12, 60, ["12", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11"], 14)
     needle(cx, cy, 55, 300)
     needle(cx, cy, 80, 60, w=3)
+    # second row (gauges2): knee-panel and console gauges
+    x0b, y0b, x1b, y1b = L.REGION["gauges2"]
+    db.rectangle((x0b, y0b, x1b, y1b), fill=(12, 12, 12))
+    cx, cy = gauge_centre("brake")                      # brake accumulator pressure
+    db.ellipse((cx - R_, cy - R_, cx + R_, cy + R_), fill=(16, 16, 16))
+    dial(cx, cy, R_, -120, 120, 4, 20, ["0", "1", "2", "3", "4"], 16)
+    text_c(db, (cx, cy + 40), "BRAKE\nPSI x1000", 11, LEGEND)
+    needle(cx, cy, 78, 55)
+    cx, cy = gauge_centre("hyd")                        # HYD 1 and 2 pressure, two needles
+    db.ellipse((cx - R_, cy - R_, cx + R_, cy + R_), fill=(16, 16, 16))
+    dial(cx, cy, R_, -130, 130, 5, 25, ["0", "1", "2", "3", "4", "5"], 15)
+    text_c(db, (cx, cy + 42), "HYD\nPSI x1000", 11, LEGEND)
+    needle(cx, cy, 76, 78)
+    needle(cx, cy, 64, 82, colour=(230, 230, 120), w=4)
+    text_c(db, (cx - 22, cy - 26), "1", 14, LEGEND)
+    text_c(db, (cx + 22, cy - 26), "2", 14, (230, 230, 120))
+    cx, cy = gauge_centre("radalt")                     # radar altimeter
+    db.ellipse((cx - R_, cy - R_, cx + R_, cy + R_), fill=(16, 16, 16))
+    dial(cx, cy, R_, 0, 330, 6, 30, ["0", "1", "2", "3", "4", "5"], 15)
+    db.ellipse((cx - 70, cy - 82, cx - 54, cy - 66), fill=(150, 30, 25))      # low-altitude warning light
+    text_c(db, (cx, cy + 40), "RADAR\nALT x1000", 11, LEGEND)
+    needle(cx, cy, 78, 20)
+    cx, cy = gauge_centre("cabalt")                     # cockpit altimeter
+    db.ellipse((cx - R_, cy - R_, cx + R_, cy + R_), fill=(16, 16, 16))
+    dial(cx, cy, R_, 0, 300, 5, 25, ["0", "10", "20", "30", "40", "50"], 14)
+    text_c(db, (cx, cy + 40), "CABIN ALT\nx1000 FT", 11, LEGEND)
+    needle(cx, cy, 78, 40)
+    cx, cy = gauge_centre("lox")                        # liquid oxygen quantity
+    db.ellipse((cx - R_, cy - R_, cx + R_, cy + R_), fill=(16, 16, 16))
+    dial(cx, cy, R_, -135, 135, 5, 20, ["0", "2", "4", "6", "8", "10"], 15)
+    text_c(db, (cx, cy + 40), "LIQUID OXYGEN\nLITERS", 10, LEGEND)
+    needle(cx, cy, 78, 70)
+    cx, cy = gauge_centre("volt")                       # DC voltmeter
+    db.ellipse((cx - R_, cy - R_, cx + R_, cy + R_), fill=(16, 16, 16))
+    dial(cx, cy, R_, -120, 120, 4, 16, ["16", "20", "24", "28", "32"], 15)
+    text_c(db, (cx, cy + 40), "VOLTS", 12, LEGEND)
+    needle(cx, cy, 78, 70)
     # glass sheen and dust
     for face in L.GAUGE_ORDER:
         cx, cy = gauge_centre(face)
         dr.ellipse((cx - R_, cy - R_, cx + R_, cy + R_), fill=40)
     grime((x0, y0, x1, y1), strength=0.15, scale=20, mask_edges=False)
+    grime((x0b, y0b, x1b, y1b), strength=0.15, scale=20, mask_edges=False)
 
 
 # ----------------------------------------------------------------------------
 # consoles, rails, labels, material tiles
 # ----------------------------------------------------------------------------
 def paint_console(region, panels, side):
+    """One side console: panels from cockpit_layout.CONSOLES, controls at the
+    same places the model puts them.  t runs from the cockpit wall."""
     x0, y0, x1, y1 = L.REGION[region]
+    k = L.REGION_PPM.get(region, L.PX_PER_MM)
+    f = k / L.PX_PER_MM                                   # text and mark scale
+    sz = lambda n: max(6, int(round(n * f)))
     db.rectangle((x0, y0, x1, y1), fill=GULL)
+    X = lambda t: (x0 + t * k) if side < 0 else (x1 - t * k)
     for p in panels:
         s0, s1 = p["s"]
-        r = (x0 + 4, y0 + s0 * 2 + 3, x1 - 4, y0 + s1 * 2 - 3)
+        t0, t1 = p.get("t", (0, L.CONSOLE_WIDTH))
+        xa, xb = sorted((X(t0), X(t1)))
+        r = (xa + 2, y0 + s0 * k + 2, xb - 2, y0 + s1 * k - 2)
         bevel_rect(r, BLACK)
-        for fx, fy in ((r[0] + 10, r[1] + 10), (r[2] - 10, r[1] + 10), (r[0] + 10, r[3] - 10), (r[2] - 10, r[3] - 10)):
-            dzus(fx, fy)
-        text_c(db, ((r[0] + r[2]) / 2, r[1] + 26), p["name"], 15, LEGEND)
+        m = 10 * f
+        for fx, fy in ((r[0] + m, r[1] + m), (r[2] - m, r[1] + m), (r[0] + m, r[3] - m), (r[2] - m, r[3] - m)):
+            dzus(fx, fy, max(3, 5 * f))
+        if p.get("name"):
+            text_c(db, ((r[0] + r[2]) / 2, r[1] + 22 * f), p["name"], sz(13), LEGEND)
         if p.get("throttle"):
-            db.rectangle((r[0] + 40, r[1] + 60, r[0] + 220, r[3] - 40), fill=(10, 10, 10))
-            for i in range(9):
-                yy = r[1] + 70 + i * (r[3] - r[1] - 120) / 8
-                db.line((r[0] + 20, yy, r[0] + 36, yy), fill=LEGEND, width=2)
-            text_c(db, (r[0] + 130, r[3] - 22), "OFF  IDLE  MIL  MAX", 12, LEGEND)
+            db.rectangle((r[0] + 14 * f, r[1] + 50 * f, r[2] - 14 * f, r[3] - 40 * f), fill=(10, 10, 10))
+            for n in range(9):
+                yy = r[1] + 60 * f + n * (r[3] - r[1] - 110 * f) / 8
+                db.line((r[0] + 4 * f, yy, r[0] + 12 * f, yy), fill=LEGEND, width=2)
+            for lab, fy in (("MAX", 0.12), ("MIL", 0.35), ("IDLE", 0.72), ("OFF", 0.9)):
+                text_c(db, (r[2] - 2 * f, r[1] + fy * (r[3] - r[1])), "", sz(10), LEGEND)
+                text_c(db, (r[0] + 30 * f, r[1] + fy * (r[3] - r[1])), lab, sz(10), LEGEND)
             continue
-        n_sw, n_kn = p.get("switches", 0), p.get("knobs", 0)
-        for kind, n, f in (("sw", n_sw, 0.35), ("kn", n_kn, 0.72)):
-            for i in range(n):
-                t = 30 + (100 * i / max(n - 1, 1) if n > 1 else 50)
-                px = (x0 + t * 2) if side < 0 else (x1 - t * 2)
-                py = y0 + (s0 + (s1 - s0) * f) * 2
-                if kind == "sw":
-                    db.ellipse((px - 11, py - 11, px + 11, py + 11), fill=(48, 48, 48), outline=(95, 95, 92))
-                    text_c(db, (px, py - 26), ["ON", "AUTO", "NORM", "ARM", "OPEN"][i % 5], 10, LEGEND)
-                    text_c(db, (px, py + 26), "OFF", 10, LEGEND)
-                else:
-                    for a in range(-120, 121, 40):
-                        tt = math.radians(a - 90)
-                        db.line((px + 22 * math.cos(tt), py + 22 * math.sin(tt), px + 30 * math.cos(tt),
-                                 py + 30 * math.sin(tt)), fill=LEGEND, width=2)
+        for c in p.get("controls", []):
+            kind, fs, ft, lg = c[:4]
+            ft = ft if side < 0 else 1.0 - ft                # across: from the pilot's left on both consoles
+            px, py = X(t0 + ft * (t1 - t0)), y0 + (s0 + fs * (s1 - s0)) * k
+            if kind == "toggle":
+                rr = 11 * f
+                db.ellipse((px - rr, py - rr, px + rr, py + rr), fill=(48, 48, 48), outline=(95, 95, 92))
+                text_c(db, (px, py - 25 * f), lg, sz(10), LEGEND)
+            elif kind == "knob":
+                for a in range(-120, 121, 40):
+                    tt = math.radians(a - 90)
+                    db.line((px + 22 * f * math.cos(tt), py + 22 * f * math.sin(tt), px + 30 * f * math.cos(tt),
+                             py + 30 * f * math.sin(tt)), fill=LEGEND, width=2)
+                text_c(db, (px, py + 40 * f), lg, sz(10), LEGEND)
+            elif kind == "button":
+                rr = 9 * f
+                db.rectangle((px - rr, py - rr, px + rr, py + rr), fill=(40, 41, 41), outline=(100, 100, 98))
+                text_c(db, (px, py + 22 * f), lg, sz(9), LEGEND)
+            elif kind == "gauge":
+                rr = 50 * f
+                db.ellipse((px - rr, py - rr, px + rr, py + rr), fill=(14, 14, 14))
+            elif kind == "handle":
+                rr = (px - 40 * f, py - 70 * f, px + 40 * f, py + 70 * f)
+                hatch(rr, period=16 * f, width=8 * f)
+                db.rectangle(rr, outline=(20, 20, 20), width=2)
+                text_c(db, (px, rr[1] - 14 * f), lg, sz(10), LEGEND)
         edge_wear(r, 3, 0.25, primer=True)
-        scratches(r, 14, (150, 150, 145), (3, 18))
+        scratches(r, 10, (150, 150, 145), (3, 18))
     # arm and elbow wear along the outboard edge
-    scratches((x0, y0, x1, y1), 110, (150, 150, 146), (4, 30), width=1, alpha=55)
+    scratches((x0, y0, x1, y1), int(110 * f), (150, 150, 146), (4, 30), width=1, alpha=55)
     grime((x0, y0, x1, y1), strength=0.25, scale=8)
 
 
@@ -734,9 +860,13 @@ def main():
     paint_tiles()
     paint_mip("front_mip", L.FRONT_MIP)
     paint_mip("rear_mip", L.REAR_MIP)
+    for st in ("Front", "Rear"):
+        for sp in L.SUBPANELS[st]:
+            paint_sub(sp)
+        rl, rr = L.CONSOLE_REGIONS[st]
+        paint_console(rl, L.CONSOLES[st]["L"], -1)
+        paint_console(rr, L.CONSOLES[st]["R"], 1)
     paint_gauges()
-    paint_console("console_l", L.LEFT_CONSOLE, -1)
-    paint_console("console_r", L.RIGHT_CONSOLE, 1)
     paint_rail()
     paint_labels()
     base.save(os.path.join(OUT, "cockpit_basecolor.png"), optimize=True)
@@ -747,6 +877,7 @@ def main():
     disp_stores().save(os.path.join(OUT, "display_DDI_L.png"))
     disp_radar().save(os.path.join(OUT, "display_DDI_R.png"))
     disp_hsd().save(os.path.join(OUT, "display_HSD.png"))
+    disp_hsd().save(os.path.join(OUT, "display_DDI_C.png"))         # rear centre DDI, HSI format
     disp_ufc().save(os.path.join(OUT, "display_UFC.png"))
     disp_hud().save(os.path.join(OUT, "display_HUD.png"))
     print("wrote", OUT)

@@ -47,7 +47,7 @@ class PanelSpace:
         return tuple(self.o + self.U * (u / 1000.0) + self.D * (v / 1000.0) + self.N * d)
 
 
-def pbox(b, ps, rect, d0, d1, region=None, front="black", side="black", mat=0):
+def pbox(b, ps, rect, d0, d1, region=None, front="black", side="black", mat=0, uvf=None):
     """Box on the panel: rect (u0, v0, u1, v1) mm, depth d0..d1 m.
 
     The front face is mapped planar into the MIP texture region (so painted
@@ -63,7 +63,10 @@ def pbox(b, ps, rect, d0, d1, region=None, front="black", side="black", mat=0):
     b.bridge(r0, r1, mat)
     b.cap(r0[::-1], mat)
     b.paint(m, SW(side))
-    uv = [L.mip_uv(region, u, v) for u, v in q] if region else SW(front)
+    if uvf is not None:
+        uv = [uvf(u, v) for u, v in q]
+    else:
+        uv = [L.mip_uv(region, u, v) for u, v in q] if region else SW(front)
     b.face(r1, mat, uv)
 
 
@@ -87,10 +90,7 @@ def pdisc(b, ps, c, r, d, uv_centre, uv_radius, n=32, mat=0):
 
 def gauge_uv(face):
     """Centre and radius (UV units) of a gauge face in the atlas."""
-    i = L.GAUGE_ORDER.index(face)
-    x0, y0, x1, y1 = L.REGION["gauges"]
-    cx = x0 + 100 + 200 * (i % 8)
-    cy = y0 + 100 + 200 * (i // 8)
+    cx, cy = L.gauge_centre_px(face)
     return (cx / L.ATLAS, 1 - cy / L.ATLAS), 96 / L.ATLAS
 
 
@@ -194,13 +194,24 @@ class Cockpit:
         b.face(rb[::-1], 0, SW("black"))
 
         displays = []
+        self.items(b, ps, layout, lambda u, v: L.mip_uv(region, u, v), displays)
+        self.add("Panel_" + tag, b)
+        self.displays(st, displays)
+
+    def items(self, b, ps, layout, uvf, displays):
+        """Panel items on the face of PanelSpace ps; uvf maps (u, v) mm to the
+        atlas for faces that carry painted legends."""
         for e in layout:
             k = e["kind"]
             if k == "plate":
-                pbox(b, ps, e["rect"], -0.005, 0.004, region)
+                pbox(b, ps, e["rect"], -0.005, 0.004, uvf=uvf)
+            elif k == "placard":
+                pbox(b, ps, e["rect"], -0.003, 0.003, uvf=uvf)
+            elif k == "caution":
+                pbox(b, ps, e["rect"], -0.003, 0.008, uvf=uvf)
             elif k == "button":
                 u0, v0, u1, v1 = e["rect"]
-                pbox(b, ps, (u0 + 1, v0 + 1, u1 - 1, v1 - 1), 0.0, 0.010, region)
+                pbox(b, ps, (u0 + 1, v0 + 1, u1 - 1, v1 - 1), 0.0, 0.010, uvf=uvf)
             elif k == "toggle":
                 u, v = e["c"]
                 pcyl(b, ps, (u, v), 6, 0.0, 0.006, SW("metal"), n=10)
@@ -213,30 +224,72 @@ class Cockpit:
                 pcyl(b, ps, (u, v), r, 0.0, 0.012, SW("black"), n=16, taper=0.85)
                 pbox(b, ps, (u - 1, v - r * 0.8, u + 1, v - r * 0.2), 0.012, 0.0125, front="white")
             elif k == "lcd":
-                pbox(b, ps, e["rect"], -0.004, 0.001, region)
+                pbox(b, ps, e["rect"], -0.004, 0.001, uvf=uvf)
             elif k == "gauge":
                 u, v = e["c"]
                 r = e["r"]
-                # case rim with the face 6 mm inside
-                m = b.mark()
                 # case rim proud of the sub-panel plate (front at d = 4 mm), face 4 mm inside the rim
+                m = b.mark()
                 b.revolve(ps.p(u, v, 0.0), ps.p(u, v, 0.014),
                           [(0, (r + 4) / 1000), (0.6, (r + 4) / 1000), (1, (r + 1) / 1000)], n=32,
                           caps=(True, False))                  # open at the front: the dial shows
                 b.paint(m, SW("black"))
                 uc, ur = gauge_uv(e["face"])
                 pdisc(b, ps, (u, v), r, 0.0095, uc, ur)
+            elif k == "wheel":                                   # landing-gear handle, down
+                u, v = e["c"]
+                m = b.mark()
+                b.revolve(ps.p(u, v, 0.002), ps.p(u, v, 0.075), [(0, 0.007), (1, 0.006)], n=10)
+                b.paint(m, SW("metal"))
+                m = b.mark()
+                b.revolve(ps.p(u - 10, v, 0.082), ps.p(u + 10, v, 0.082),
+                          [(0, 0.012), (0.2, 0.022), (0.8, 0.022), (1, 0.012)], n=18)
+                b.paint(m, SW("white"))
+            elif k in ("tee", "fold"):                           # pull handles: stem and a T bar
+                u, v = e["c"]
+                w = 18 if (k == "fold" or e.get("small")) else 30
+                L_ = 0.045 if k == "tee" else 0.06
+                m = b.mark()
+                b.revolve(ps.p(u, v, 0.002), ps.p(u, v, L_), [(0, 0.005), (1, 0.0045)], n=8)
+                b.paint(m, SW("metal"))
+                m = b.mark()
+                b.revolve(ps.p(u - w, v, L_ + 0.008), ps.p(u + w, v, L_ + 0.008),
+                          [(0, 0.006), (0.12, 0.009), (0.88, 0.009), (1, 0.006)], n=10)
+                b.paint(m, SW("stripe" if k == "tee" else "black"))
+            elif k == "hook":                                    # arresting-hook handle, up
+                u, v = e["c"]
+                m = b.mark()
+                b.revolve(ps.p(u, v, 0.002), ps.p(u, v, 0.05), [(0, 0.006), (1, 0.005)], n=8)
+                b.paint(m, SW("metal"))
+                m = b.mark()
+                b.revolve(ps.p(u, v - 6, 0.056), ps.p(u, v + 34, 0.056), [(0, 0.010), (0.7, 0.011), (1, 0.006)], n=10)
+                b.paint(m, SW("yellow"))
+            elif k == "lever":                                   # command selector valve
+                u, v = e["c"]
+                pcyl(b, ps, (u, v), 16, 0.0, 0.008, SW("black"), n=16)
+                m = b.mark()
+                b.revolve(ps.p(u, v, 0.008), ps.p(u, v - 34, 0.018), [(0, 0.006), (1, 0.005)], n=8)
+                b.paint(m, SW("yellow"))
             elif k == "ddi":
-                self.bezel(b, ps, e, region, depth=0.032, buttons="ddi")
+                self.bezel(b, ps, e, uvf, depth=0.032)
                 displays.append((e["name"], e["screen"], 0.022))
             elif k == "hsd":
-                self.bezel(b, ps, e, region, depth=0.030, buttons="hsd")
+                self.bezel(b, ps, e, uvf, depth=0.030)
                 displays.append((e["name"], e["screen"], 0.020))
             elif k == "ufc":
-                self.ufc(b, ps, e, region)
+                self.ufc(b, ps, e, uvf)
                 displays.append(("UFC", None, 0.0))
-        self.add("Panel_" + tag, b)
-        self.displays(st, displays)
+
+    def subpanels(self, st):
+        """Knee panels and the centre pedestal below the instrument panel."""
+        ps = st["ps"]
+        b = self.Builder()
+        for sp in L.SUBPANELS[st["name"]]:
+            region, rect = sp["region"], sp["rect"]
+            uvf = (lambda rg, rc: (lambda u, v: L.sub_uv(rg, rc, u, v)))(region, rect)
+            pbox(b, ps, rect, -0.015, 0.0, uvf=uvf)
+            self.items(b, ps, sp["items"], uvf, [])
+        self.add("LowerPanels_" + st["name"], b)
 
     def clipped_outline(self, st):
         """MIP outline with any point outside the canopy's inner arch (bow
@@ -257,7 +310,7 @@ class Cockpit:
             out.append((u, v))
         return out
 
-    def bezel(self, b, ps, e, region, depth, buttons):
+    def bezel(self, b, ps, e, uvf, depth):
         """Display bezel with a recessed screen opening and push buttons."""
         u0, v0, u1, v1 = e["rect"]
         s0, t0, s1, t1 = e["screen"]
@@ -274,47 +327,39 @@ class Cockpit:
         for i in range(4):
             j = (i + 1) % 4
             pts = [q[i], q[j], inner[j], inner[i]]
-            b.poly([ps.p(u, v, d) for u, v in pts], 0, [L.mip_uv(region, u, v) for u, v in pts])
+            b.poly([ps.p(u, v, d) for u, v in pts], 0, [uvf(u, v) for u, v in pts])
         # screen well
         wi = b.ring([ps.p(u, v, d) for u, v in inner])
         wo = b.ring([ps.p(u, v, d - 0.012) for u, v in inner])
         m = b.mark()
         b.bridge(wi, wo)
         b.paint(m, SW("black"))
-        # push buttons
-        cu = (u0 + u1) / 2
-        if buttons == "ddi":
-            pos = ([(cu - 56 + 28 * i, 88) for i in range(5)] + [(cu - 56 + 28 * i, 270) for i in range(5)] +
-                   [(u0 + 17, 125 + 27.5 * i) for i in range(5)] + [(u1 - 17, 125 + 27.5 * i) for i in range(5)])
-        else:
-            pos = ([(cu - 56 + 28 * i, (t0 + v0) / 2 + 4) for i in range(5)] +
-                   [(cu - 56 + 28 * i, (t1 + v1) / 2) for i in range(5)] +
-                   [(u0 + 17, t0 + 18 + 32 * i) for i in range(5)] + [(u1 - 17, t0 + 18 + 32 * i) for i in range(5)])
+        pos = L.bezel_buttons(e)
         for u, v in pos:
-            pbox(b, ps, (u - 7, v - 7, u + 7, v + 7), d, d + 0.007, region, side="darkgrey")
+            pbox(b, ps, (u - 7, v - 7, u + 7, v + 7), d, d + 0.007, side="darkgrey", uvf=uvf)
         for u, v, r, _ in e.get("knobs", []):
             pcyl(b, ps, (u, v), r, d, d + 0.012, SW("black"), n=14, taper=0.85)
             pbox(b, ps, (u - 1, v - r * 0.8, u + 1, v - r * 0.2), d + 0.012, d + 0.0125, front="white")
 
-    def ufc(self, b, ps, e, region):
+    def ufc(self, b, ps, e, uvf):
         """Up-front control panel: raised box, keypad, option buttons, knobs."""
         D = 0.045
-        pbox(b, ps, e["rect"], 0.0, D, region)
+        pbox(b, ps, e["rect"], 0.0, D, uvf=uvf)
         o = e["keypad"]["origin"]
         pu, pv = e["keypad"]["pitch"]
         for r, row in enumerate(e["keypad"]["rows"]):
             for c, _ in enumerate(row):
                 u = o[0] + c * pu + 9
                 v = o[1] + r * pv + 9
-                pbox(b, ps, (u - 9, v - 9, u + 9, v + 9), D, D + 0.008, region, side="darkgrey")
+                pbox(b, ps, (u - 9, v - 9, u + 9, v + 9), D, D + 0.008, side="darkgrey", uvf=uvf)
         for u, v in e["option_buttons"]:
             pcyl(b, ps, (u, v), 6, D, D + 0.006, SW("darkgrey"), n=12)
         fu0, fv0, fu1, fv1 = e["function_row"]
         n = len(e["functions"])
         w = (fu1 - fu0) / n
         for i in range(n):
-            pbox(b, ps, (fu0 + i * w + 2, fv0, fu0 + (i + 1) * w - 2, fv1), D, D + 0.006, region,
-                 side="darkgrey")
+            pbox(b, ps, (fu0 + i * w + 2, fv0, fu0 + (i + 1) * w - 2, fv1), D, D + 0.006,
+                 side="darkgrey", uvf=uvf)
         for u, v, r, _ in e["knobs"]:
             pcyl(b, ps, (u, v), r, D, D + 0.012, SW("black"), n=14, taper=0.85)
 
@@ -357,8 +402,9 @@ class Cockpit:
         x_fwd = st["coaming_fwd"]
         rings = []
         lip = []
+        hud_ref = [Vector(ps.p(u, v - 4, 0.045)) for u, v in outline]   # HUD and indexer placement
         for u, v in outline:
-            p = Vector(ps.p(u, v - 4, 0.045))              # lip overhangs the panel
+            p = Vector(ps.p(u, v - 4, 0.028))              # lip overhangs the panel, clear of the top light rows
             lip.append(p)
         top, bot = [], []
         for p in lip:
@@ -379,12 +425,26 @@ class Cockpit:
         b.paint(m, SW("black"))
         self.add("Glareshield_" + tag, b)
 
+        # standby magnetic compass at the right end of the coaming (FO-1 item 19,
+        # FO-2 item 7): a small case with its card window facing aft
+        b = self.Builder()
+        q = lip[9] + Vector((-0.06, 0.0, 0.012))
+        m = b.mark()
+        b.box([tuple(q + Vector(v)) for v in ((-0.03, -0.025, 0), (0.0, -0.025, 0), (0.0, 0.025, 0), (-0.03, 0.025, 0),
+                                              (-0.03, -0.025, 0.05), (0.0, -0.025, 0.05), (0.0, 0.025, 0.05),
+                                              (-0.03, 0.025, 0.05))])
+        b.paint(m, SW("black"))
+        m = b.mark()
+        b.revolve(tuple(q + Vector((0.0, 0, 0.026))), tuple(q + Vector((0.006, 0, 0.026))), [(0, 0.017), (1, 0.017)], n=16)
+        b.paint(m, SW("glass"))
+        self.add("StandbyCompass_" + tag, b)
+
         if not st["hud"]:
             return
         # HUD: body on the coaming, two side posts, tilted combiner glass
         b = self.Builder()
-        zc = lip[7].z + 0.012
-        xl = lip[7].x
+        zc = hud_ref[7].z + 0.012
+        xl = hud_ref[7].x
         m = b.mark()
         b.box([(xl - 0.30, -0.085, zc - 0.02), (xl - 0.02, -0.085, zc - 0.02),
                (xl - 0.02, 0.085, zc - 0.02), (xl - 0.30, 0.085, zc - 0.02),
@@ -417,18 +477,40 @@ class Cockpit:
         o = self.add("HUD_Combiner_" + tag, b, mats=("Display_HUD",), smooth=None)
         o["display"] = "HUD"
 
+        # angle-of-attack indexer left of the HUD (FO-1 item 3: green high AOA,
+        # amber on speed, red low AOA); the lock / shoot lights are on the canopy bow
+        b = self.Builder()
+        for yc, lights in ((-0.118, ("green", "amber", "red")),):
+            n = len(lights)
+            hgt = 0.019 * n + 0.008
+            z0 = zc - 0.02
+            m = b.mark()
+            b.box([(xl - 0.05, yc - 0.018, z0), (xl - 0.012, yc - 0.018, z0), (xl - 0.012, yc + 0.018, z0),
+                   (xl - 0.05, yc + 0.018, z0), (xl - 0.05, yc - 0.018, z0 + hgt), (xl - 0.012, yc - 0.018, z0 + hgt),
+                   (xl - 0.012, yc + 0.018, z0 + hgt), (xl - 0.05, yc + 0.018, z0 + hgt)])
+            b.paint(m, SW("black"))
+            for k, col in enumerate(lights):
+                zl = z0 + hgt - 0.006 - 0.019 * (k + 1)
+                xf = xl - 0.0115
+                b.poly([(xf, yc - 0.012, zl), (xf, yc + 0.012, zl), (xf, yc + 0.012, zl + 0.014), (xf, yc - 0.012, zl + 0.014)],
+                       0, SW(col))
+        self.add("AOAIndexer_" + tag, b)
+
     # -- consoles and controls ---------------------------------------------------
     def consoles(self, st):
+        """Left and right consoles, panel by panel from cockpit_layout.CONSOLES
+        (NATOPS FO-1 / FO-2 sheet 2), with the throttles on the left."""
         h = self.h
         tag = st["name"]
         x0, x1 = st["console_x"]
         zt = st["console_z"]
+        L_ = x1 - x0
         b = self.Builder()
-        for side, region, panels in ((-1, "console_l", L.LEFT_CONSOLE), (1, "console_r", L.RIGHT_CONSOLE)):
-            wall = h.cockpit_halfwidth(x0 + 0.05)
+        wall = h.cockpit_halfwidth(x0 + 0.05)
+        regions = L.CONSOLE_REGIONS[tag]
+        for side, region, panels in ((-1, regions[0], L.CONSOLES[tag]["L"]), (1, regions[1], L.CONSOLES[tag]["R"])):
             yo, yi = side * (wall + 0.01), side * (wall - L.CONSOLE_WIDTH / 1000)
             fl = h.floor_z(x0)
-            L_ = x1 - x0
             # body (top face mapped to the console texture)
             pts_top = [(x0, yo, zt), (x1, yo, zt + 0.02), (x1, yi, zt + 0.02), (x0, yi, zt)]
             uv_top = [L.region_uv(region, 0 if side < 0 else 1, 0), L.region_uv(region, 0 if side < 0 else 1, L_ / 1.1),
@@ -436,38 +518,73 @@ class Cockpit:
             b.poly(pts_top, 0, uv_top)
             for a, c in ((pts_top[3], pts_top[2]), (pts_top[0], pts_top[3]), (pts_top[2], pts_top[1])):
                 b.poly([a, c, (c[0], c[1], fl), (a[0], a[1], fl)], 0, SW("darkgrey"))
-            # switches and knobs on each panel
+
+            def at(s_mm, t_mm):
+                return Vector((x0 + s_mm / 1000, yo - side * t_mm / 1000, zt + 0.02 * s_mm / 1000 / L_))
+
             for pnl in panels:
                 s0, s1 = pnl["s"]
-                if pnl.get("throttle"):
-                    continue
-                n_sw, n_kn = pnl.get("switches", 0), pnl.get("knobs", 0)
-                for i in range(n_sw):
-                    t = 30 + (100 * i / max(n_sw - 1, 1) if n_sw > 1 else 50)
-                    s = s0 + (s1 - s0) * 0.35
-                    x = x0 + s / 1000
-                    y = yo - side * t / 1000
-                    z = zt + 0.02 * s / 1000 / L_
-                    m = b.mark()
-                    b.revolve((x, y, z), (x - 0.006, y, z + 0.024), [(0, 0.0022), (1, 0.0018)], n=8)
-                    b.paint(m, SW("metal"))
-                for i in range(n_kn):
-                    t = 30 + (100 * i / max(n_kn - 1, 1) if n_kn > 1 else 50)
-                    s = s0 + (s1 - s0) * 0.72
-                    x = x0 + s / 1000
-                    y = yo - side * t / 1000
-                    z = zt + 0.02 * s / 1000 / L_
-                    m = b.mark()
-                    b.revolve((x, y, z), (x, y, z + 0.014), [(0, 0.009), (1, 0.0075)], n=12)
-                    b.paint(m, SW("black"))
+                t0, t1 = pnl.get("t", (0, L.CONSOLE_WIDTH))
+                for c in pnl.get("controls", []):
+                    kind, fs, ft = c[:3]
+                    ft = ft if side < 0 else 1.0 - ft          # across: from the pilot's left on both consoles
+                    p = at(s0 + fs * (s1 - s0), t0 + ft * (t1 - t0))
+                    up = Vector((0, 0, 1))
+                    if kind == "toggle":
+                        m = b.mark()
+                        b.revolve(tuple(p), tuple(p + up * 0.006), [(0, 0.006), (1, 0.0055)], n=10)
+                        b.paint(m, SW("metal"))
+                        m = b.mark()
+                        b.revolve(tuple(p + up * 0.004), tuple(p + Vector((0.006, 0, 0.026))), [(0, 0.0022), (1, 0.0018)], n=8)
+                        b.paint(m, SW("metal"))
+                    elif kind == "knob":
+                        m = b.mark()
+                        b.revolve(tuple(p), tuple(p + up * 0.014), [(0, 0.009), (1, 0.0075)], n=12)
+                        b.paint(m, SW("black"))
+                        m = b.mark()                                   # pointer line
+                        b.box([tuple(p + Vector(v)) for v in ((-0.007, -0.001, 0.014), (-0.002, -0.001, 0.014),
+                                                              (-0.002, 0.001, 0.014), (-0.007, 0.001, 0.014),
+                                                              (-0.007, -0.001, 0.0145), (-0.002, -0.001, 0.0145),
+                                                              (-0.002, 0.001, 0.0145), (-0.007, 0.001, 0.0145))])
+                        b.paint(m, SW("white"))
+                    elif kind == "button":
+                        m = b.mark()
+                        b.box([tuple(p + Vector(v)) for v in ((-0.007, -0.007, 0), (0.007, -0.007, 0), (0.007, 0.007, 0),
+                                                              (-0.007, 0.007, 0), (-0.006, -0.006, 0.007), (0.006, -0.006, 0.007),
+                                                              (0.006, 0.006, 0.007), (-0.006, 0.006, 0.007))])
+                        b.paint(m, SW("darkgrey"))
+                    elif kind == "gauge":
+                        r = 0.024
+                        m = b.mark()
+                        b.revolve(tuple(p), tuple(p + up * 0.012), [(0, r + 0.004), (0.6, r + 0.004), (1, r + 0.001)],
+                                  n=28, caps=(True, False))
+                        b.paint(m, SW("black"))
+                        uc, ur = gauge_uv(c[4])
+                        pts, uvs = [], []
+                        for k in range(28):
+                            a = 2 * math.pi * k / 28
+                            pts.append(tuple(p + Vector((-r * math.sin(a), r * math.cos(a), 0.008))))
+                            uvs.append((uc[0] + ur * math.cos(a), uc[1] + ur * math.sin(a)))
+                        b.face(b.ring(pts), 0, uvs)
+                    elif kind == "handle":                              # striped pull handle on two posts
+                        m = b.mark()
+                        for ds in (-0.04, 0.04):
+                            q = p + Vector((ds, 0, 0))
+                            b.revolve(tuple(q), tuple(q + up * 0.03), [(0, 0.005), (1, 0.005)], n=8)
+                        b.paint(m, SW("metal"))
+                        m = b.mark()
+                        b.revolve(tuple(p + Vector((-0.055, 0, 0.034))), tuple(p + Vector((0.055, 0, 0.034))),
+                                  [(0, 0.008), (0.1, 0.011), (0.9, 0.011), (1, 0.008)], n=10)
+                        b.paint(m, SW("stripe"))
         self.add("Consoles_" + tag, b)
 
         # throttle quadrant (left console): two grips on short levers
-        thr = next(p for p in L.LEFT_CONSOLE if p.get("throttle"))
+        thr = next(p for p in L.CONSOLES[tag]["L"] if p.get("throttle"))
         s0, s1 = thr["s"]
-        wall = h.cockpit_halfwidth(x0 + 0.2)
+        t0, t1 = thr["t"]
+        yo = -(wall + 0.01)
         b = self.Builder()
-        ys = [-(wall - 0.045), -(wall - 0.095)]
+        ys = [yo + (t0 + 0.28 * (t1 - t0)) / 1000, yo + (t0 + 0.74 * (t1 - t0)) / 1000]
         for i, y in enumerate(ys):
             xb = x0 + (s0 + s1) / 2000
             m = b.mark()
@@ -476,7 +593,7 @@ class Cockpit:
                    (xb - 0.01, y + 0.010, zt + 0.10), (xb - 0.05, y + 0.010, zt + 0.10)])
             b.paint(m, SW("darkgrey"))
             m = b.mark()                                # grip
-            gw = 0.026 if i == 0 else 0.022
+            gw = 0.022 if i == 0 else 0.019
             b.box([(xb - 0.075, y - gw, zt + 0.095), (xb + 0.005, y - gw, zt + 0.095),
                    (xb + 0.005, y + gw, zt + 0.095), (xb - 0.075, y + gw, zt + 0.095),
                    (xb - 0.07, y - gw, zt + 0.15), (xb - 0.005, y - gw, zt + 0.16),
@@ -490,10 +607,9 @@ class Cockpit:
         # quadrant slot plate
         m = b.mark()
         xb0, xb1 = x0 + s0 / 1000, x0 + s1 / 1000
-        b.box([(xb0, -(wall + 0.005), zt + 0.003), (xb1, -(wall + 0.005), zt + 0.003),
-               (xb1, -(wall - 0.12), zt + 0.003), (xb0, -(wall - 0.12), zt + 0.003),
-               (xb0, -(wall + 0.005), zt + 0.012), (xb1, -(wall + 0.005), zt + 0.012),
-               (xb1, -(wall - 0.12), zt + 0.012), (xb0, -(wall - 0.12), zt + 0.012)])
+        ya, yb = yo + t0 / 1000 + 0.004, yo + t1 / 1000 - 0.004
+        b.box([(xb0, ya, zt + 0.003), (xb1, ya, zt + 0.003), (xb1, yb, zt + 0.003), (xb0, yb, zt + 0.003),
+               (xb0, ya, zt + 0.012), (xb1, ya, zt + 0.012), (xb1, yb, zt + 0.012), (xb0, yb, zt + 0.012)])
         b.paint(m, SW("black"))
         self.add("Throttles_" + tag, b)
 
@@ -592,6 +708,15 @@ class Cockpit:
                    Q(-0.05, s * 0.20, -0.02), Q(-0.05, s * 0.23, 0.12), Q(0.30, s * 0.23, 0.07),
                    Q(0.30, s * 0.20, 0.07), Q(-0.05, s * 0.20, 0.12)])
             b.paint(m, SW("darkgrey"))
+        # canopy breakers on top of the headbox (NATOPS FO-9)
+        for s in (-1, 1):
+            m = b.mark()
+            b.revolve(P(0.925, s * 0.07, -0.10), P(0.985, s * 0.07, -0.10), [(0, 0.012), (0.6, 0.008), (1, 0.003)], n=8)
+            b.paint(m, SW("metal"))
+        # SAFE / ARMED handle at the front left of the seat bucket (FO-9)
+        m = b.mark()
+        b.revolve(Q(0.30, -0.24, 0.07), Q(0.37, -0.255, 0.115), [(0, 0.009), (1, 0.009)], n=8)
+        b.paint(m, SW("stripe"))
         self.add("Seat_" + st["name"], b)
 
         # harness (lies on the empty seat) and the firing handle
@@ -762,8 +887,8 @@ class Cockpit:
             st["srp"] = (ex - 0.127, 0.0, ez - 0.779)
             sx, sz = st["srp"][0], st["srp"][2]
             st["coaming_fwd"] = 3.95 if st["name"] == "Front" else px - 0.25
-            st["console_x"] = (px + 0.12, px + 0.12 + L.CONSOLE_LEN / 1000)
-            st["console_z"] = sz + 0.22
+            st["console_x"] = (px + L.CONSOLE_START, px + L.CONSOLE_START + L.CONSOLE_LEN / 1000)
+            st["console_z"] = sz + 0.16          # low enough that the knee panels show over the console fronts
             st["stick"] = (sx - 0.30, sz + 0.24)
             st["pedal_x"] = sx - 0.72
             if st["name"] != "Front":
@@ -771,6 +896,7 @@ class Cockpit:
             else:
                 self.floor_plate(st)
             self.panel(st)
+            self.subpanels(st)
             self.glareshield(st)
             self.consoles(st)
             self.seat(st)

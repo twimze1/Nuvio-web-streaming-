@@ -158,7 +158,7 @@ def apply_cockpit(tex):
     orm = image(os.path.join(tex, "cockpit_orm.png"), "Non-Color")
     nrm = image(os.path.join(tex, "cockpit_normal.png"), "Non-Color")
     image_material(material("Cockpit"), base, orm, nrm)
-    for name in ("DDI_L", "DDI_R", "HSD", "UFC"):
+    for name in ("DDI_L", "DDI_R", "DDI_C", "HSD", "UFC"):
         img = image(os.path.join(tex, "display_%s.png" % name))
         m = image_material(material("Display_" + name), img, emission=img, emission_strength=1.6)
         m.node_tree.nodes["Principled BSDF"].inputs["Roughness"].default_value = 0.15
