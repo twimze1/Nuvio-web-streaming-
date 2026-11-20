@@ -63,7 +63,6 @@ ANGLES = {                      # degrees, visual only
 # ailerons drooped 42 deg, and both rudders toed in 30 deg (maximum toe-in
 # with weight on wheels).
 FLAPS_FULL = {"le_flap": 12.0, "te_flap": 45.0, "aileron": 42.0, "rudder_toe_in": 30.0}
-LADDER_FRAMES = 72
 
 # role keywords (lower-case, matched against object names)
 ROLE_WORDS = [
@@ -76,7 +75,6 @@ ROLE_WORDS = [
     ("stabilator", r"stabilator|elevator|(^|_)stab(_|$)"),
     ("wing_fold", r"wing_outer|wingfold|wing_fold"),
     ("hook", r"hook"),
-    ("ladder", r"ladder"),
     ("launch_bar", r"launch_?bar"),
     ("gear_door", r"door"),
     ("gear_brace", r"brace"),
@@ -141,7 +139,7 @@ def inspect(scene):
         if obj.type == "EMPTY":
             continue                                 # hinge empties are found through their mesh child
         if role in ("canopy", "airbrake", "rudder", "aileron", "le_flap", "te_flap", "stabilator", "wing_fold",
-                    "hook", "gear_door", "gear_brace", "launch_bar", "ladder"):
+                    "hook", "gear_door", "gear_brace", "launch_bar"):
             if "hinge" not in obj.keys():
                 skipped.append((obj.name, role, "no 'hinge' property / pivot: rotation axis unknown"))
                 continue
@@ -656,14 +654,6 @@ def build_clips(parts):
             fo.key(o, [(1, 0), (110, ANGLES["wing_fold"]), (120, ANGLES["wing_fold"])])
             un.key(o, [(1, ANGLES["wing_fold"]), (110, 0), (120, 0)])
         made += [fo, un]
-    if by("ladder"):
-        o = by("ladder")[0]
-        a = float(o.get("extend", 95.0))
-        le = Clip("Ladder_Extend", LADDER_FRAMES)
-        le.key(o, [(1, 0), (LADDER_FRAMES - 8, a), (LADDER_FRAMES, a)])
-        lr = Clip("Ladder_Retract", LADDER_FRAMES)
-        lr.key(o, [(1, a), (LADDER_FRAMES - 8, 0), (LADDER_FRAMES, 0)])
-        made += [le, lr]
     if by("hook"):
         o = by("hook")[0]
         hd = Clip("Hook_Down", 36)

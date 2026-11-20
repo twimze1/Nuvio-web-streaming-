@@ -1475,9 +1475,6 @@ def build(variant, uv=True):
     h.build()
     if uv:
         unwrap(h)
-    # after the unwrap, so the fuselage keeps the UVs its atlas was baked on
-    import fa18_exterior
-    fa18_exterior.cut_ladder_well(h)
     return h
 
 
@@ -1576,6 +1573,21 @@ def main(argv):
                 lib_glb = os.path.join(args.out, "FA-18_Stores.glb")
                 fa18_stores.export_library_glb(lib_glb)
                 print("saved", lib_glb)
+                # the extended boarding ladder on its own, in the aircraft's
+                # coordinates (same in both variants): a parked / menu prop
+                lad = h.objects.get(h.prefix + "BoardingLadder_Extended")
+                if lad is not None:
+                    lad_glb = os.path.join(args.out, "FA-18_BoardingLadder.glb")
+                    was = lad.hide_viewport, lad.hide_render, lad.hide_get()
+                    lad.hide_viewport = lad.hide_render = False
+                    lad.hide_set(False)
+                    bpy.ops.object.select_all(action="DESELECT")
+                    lad.select_set(True)
+                    bpy.ops.export_scene.gltf(filepath=lad_glb, export_format="GLB", export_apply=True,
+                                              use_selection=True, export_extras=True)
+                    lad.hide_viewport, lad.hide_render = was[0], was[1]
+                    lad.hide_set(was[2])
+                    print("saved", lad_glb)
 
 
 if __name__ == "__main__":
