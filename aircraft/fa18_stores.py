@@ -404,7 +404,7 @@ def build_equipment(e, col, mat, top_profile=None):
 def pylon_geometry(h, station):
     """Front x, length and a top-profile function (z of the wing underside
     along the pylon) for a wing pylon at a station."""
-    from fa18_hornet import SEMI_SPAN
+    from fa18_hornet import SEMI_SPAN, TIP_RAIL_REF_Y
     y = SD.STATION_Y[station]
     side = 1 if y > 0 else -1
     w = h.wing[side]
@@ -458,12 +458,12 @@ def build_pylons_and_sockets(h, mat, library):
     ob.location = to_blender((9.65, 0.0, 0.0))
     sockets[5] = socket("STA_5", (9.65 + 0.48 * e["L"], 0.0, zc - e["H"]), kind="BRU-32 hooks (SUU-62)")
     # wingtip rails (station 1/9): store suspension point on top of the missile body
-    from fa18_hornet import SEMI_SPAN
+    from fa18_hornet import SEMI_SPAN, TIP_RAIL_REF_Y
     aim9 = SD.by_id("AIM-9L")
     for st in (1, 9):
         y = SD.STATION_Y[st]
         side = 1 if y > 0 else -1
-        zt = h.wing_z(SEMI_SPAN - 0.10) - 0.054        # 2 mm under the LAU-7 launcher
+        zt = h.wing_z(TIP_RAIL_REF_Y) - 0.054          # 2 mm under the LAU-7 launcher
         outer = h.objects[h.prefix + "Wing_Outer_" + ("R" if side > 0 else "L")]
         sockets[st] = socket("STA_%d" % st, (9.62 + attach_x(aim9), y, zt), kind="LAU-7 wingtip rail")
         sockets[st]["follows"] = outer.name

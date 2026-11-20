@@ -27,7 +27,8 @@ TPS_LIGHT = (0.250, 0.268, 0.285)     # FS 36375, linear
 GROUPS = {
     "fuselage": ["Fuselage", "WindscreenFrame", "CanopyFrames", "Antennae", "GunPort_Vents", "SpeedBrake"],
     "wings": ["Wing_Inner_L", "Wing_Inner_R", "Wing_Outer_L", "Wing_Outer_R", "LEFlap_Inner_L", "LEFlap_Inner_R",
-              "LEFlap_Outer_L", "LEFlap_Outer_R", "Flap_L", "Flap_R", "Aileron_L", "Aileron_R"],
+              "LEFlap_Outer_L", "LEFlap_Outer_R", "Flap_L", "Flap_R", "Aileron_L", "Aileron_R",
+              "WingtipLauncher_L", "WingtipLauncher_R"],
     "tail": ["Fin_L", "Fin_R", "Rudder_L", "Rudder_R", "Stabilator_L", "Stabilator_R"],
     "gear": ["NoseGear", "LaunchBar", "NoseGearBrace", "NoseGearDoorFwd_L", "NoseGearDoorFwd_R", "NoseGearDoorAft_L",
              "NoseGearDoorAft_R", "NoseGearDoorBrace_L", "NoseGearDoorBrace_R", "MainGear_L", "MainGear_R", "MainGearDoor_L", "MainGearDoor_R", "MainGearDoorSide_L", "MainGearDoorSide_R",

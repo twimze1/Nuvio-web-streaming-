@@ -185,9 +185,10 @@ const GROUPS = [
   { id: "canopy", name: "Canopy", rest: "Closed", clips: [["Canopy_Open", "Open", "Open"], ["Canopy_Close", "Close", "Closed"]] },
   { id: "brake", name: "Speed brake", rest: "In", clips: [["Airbrake_Extend", "Extend", "Out"], ["Airbrake_Retract", "Retract", "In"]] },
   { id: "controls", name: "Flight controls", rest: "Neutral", clips: [["Controls_Roll", "Roll", "Neutral"], ["Controls_Pitch", "Pitch", "Neutral"], ["Controls_Yaw", "Yaw", "Neutral"]] },
-  { id: "flaps", name: "Flaps", rest: "Up", clips: [["Flaps_Down", "Down", "Down"], ["Flaps_Up", "Up", "Up"]] },
+  { id: "flaps", name: "Flaps (full, on deck)", rest: "Up", clips: [["Flaps_Down", "Down", "Full"], ["Flaps_Up", "Up", "Up"]] },
   { id: "fold", name: "Wing fold", rest: "Spread", clips: [["WingFold_Fold", "Fold", "Folded"], ["WingFold_Unfold", "Unfold", "Spread"]] },
   { id: "hook", name: "Arresting hook", rest: "Up", clips: [["Hook_Down", "Down", "Down"], ["Hook_Up", "Up", "Up"]] },
+  { id: "ladder", name: "Boarding ladder", rest: "Stowed", clips: [["Ladder_Extend", "Extend", "Down"], ["Ladder_Retract", "Stow", "Stowed"]] },
 ];
 const ORDER = GROUPS.flatMap(g => g.clips.map(c => c[0]));
 const $ = id => document.getElementById(id);

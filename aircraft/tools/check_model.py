@@ -102,12 +102,17 @@ def part(name):
 
 ATTACHED_TO_FUSELAGE = ("Wing_Inner", "Fin_", "Stabilator", "Canopy", "Seats", "Antennae",
                         "GunPort", "MainGear", "NoseGear", "Nozzle", "ArrestingHook",
-                        "SpeedBrake", "RefuelProbe", "Windscreen", "Pylon_STA5")
+                        "SpeedBrake", "RefuelProbe", "Windscreen", "Pylon_STA5",
+                        "ExtLights_Fuselage", "Probe_", "BoardingLadder", "Afterburner")
 EXPECTED = [
     ("Fin_", "Wing_Inner"),          # both roots buried inside the nacelle
     ("Canopy", "CanopyFrames"), ("Windscreen", "WindscreenFrame"),
     ("NoseGearBrace", "NoseGear"),   # the brace pins to the strut
     ("LaunchBar", "NoseGear"),       # the launch bar pivots in the strut's yoke
+    ("WingtipLauncher", "Wing_Outer"),                       # launcher adapter on the wingtip
+    ("ExtLights_Wing", "Wing_Outer"), ("ExtLights_Wing", "WingtipLauncher"),   # lenses sit on their skin
+    ("ExtLights_Fin", "Fin_"), ("ExtLights_Strut", "NoseGear"), ("FuelDumpMast", "Fin_"),
+    ("Afterburner", "Nozzle"),       # the liner continues the nozzle's inner wall
 ]
 clashes = []
 

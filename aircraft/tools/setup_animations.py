@@ -53,9 +53,17 @@ ANGLES = {                      # degrees, visual only
     "rudder": 20.0,
     "le_flap": 20.0,
     "te_flap": 30.0,
-    "wing_fold": 90.0,
+    # the outer panels fold to vertical (NATOPS 2.11): 90 deg past the panel's
+    # own plane plus the wing's 3 deg anhedral
+    "wing_fold": 93.0,
     "hook": 30.0,
 }
+# Flaps_Down is the NATOPS ground setting with the flap switch in FULL
+# (2.8.4): leading-edge flaps 12 deg, trailing-edge flaps 45 deg (43-45),
+# ailerons drooped 42 deg, and both rudders toed in 30 deg (maximum toe-in
+# with weight on wheels).
+FLAPS_FULL = {"le_flap": 12.0, "te_flap": 45.0, "aileron": 42.0, "rudder_toe_in": 30.0}
+LADDER_FRAMES = 72
 
 # role keywords (lower-case, matched against object names)
 ROLE_WORDS = [
@@ -68,6 +76,7 @@ ROLE_WORDS = [
     ("stabilator", r"stabilator|elevator|(^|_)stab(_|$)"),
     ("wing_fold", r"wing_outer|wingfold|wing_fold"),
     ("hook", r"hook"),
+    ("ladder", r"ladder"),
     ("launch_bar", r"launch_?bar"),
     ("gear_door", r"door"),
     ("gear_brace", r"brace"),
@@ -132,7 +141,7 @@ def inspect(scene):
         if obj.type == "EMPTY":
             continue                                 # hinge empties are found through their mesh child
         if role in ("canopy", "airbrake", "rudder", "aileron", "le_flap", "te_flap", "stabilator", "wing_fold",
-                    "hook", "gear_door", "gear_brace", "launch_bar"):
+                    "hook", "gear_door", "gear_brace", "launch_bar", "ladder"):
             if "hinge" not in obj.keys():
                 skipped.append((obj.name, role, "no 'hinge' property / pivot: rotation axis unknown"))
                 continue
@@ -630,12 +639,14 @@ def build_clips(parts):
     if lef or tef:
         fd = Clip("Flaps_Down", 72)
         fu = Clip("Flaps_Up", 72)
-        for o in lef:
-            fd.key(o, [(1, 0), (64, ANGLES["le_flap"]), (72, ANGLES["le_flap"])])
-            fu.key(o, [(1, ANGLES["le_flap"]), (64, 0), (72, 0)])
-        for o in tef:
-            fd.key(o, [(1, 0), (64, ANGLES["te_flap"]), (72, ANGLES["te_flap"])])
-            fu.key(o, [(1, ANGLES["te_flap"]), (64, 0), (72, 0)])
+        drooped = [(o, FLAPS_FULL["le_flap"]) for o in lef] + [(o, FLAPS_FULL["te_flap"]) for o in tef] + \
+                  [(o, FLAPS_FULL["aileron"]) for o in ail.values()]
+        # toe-in: both rudder trailing edges swing inboard (port rudder to
+        # starboard, the positive sense of the rudder hinges, and vice versa)
+        drooped += [(o, FLAPS_FULL["rudder_toe_in"] * (1.0 if side == "L" else -1.0)) for side, o in rud.items()]
+        for o, a in drooped:
+            fd.key(o, [(1, 0), (64, a), (72, a)])
+            fu.key(o, [(1, a), (64, 0), (72, 0)])
         made += [fd, fu]
     # extras that exist on these models
     if by("wing_fold"):
@@ -645,6 +656,14 @@ def build_clips(parts):
             fo.key(o, [(1, 0), (110, ANGLES["wing_fold"]), (120, ANGLES["wing_fold"])])
             un.key(o, [(1, ANGLES["wing_fold"]), (110, 0), (120, 0)])
         made += [fo, un]
+    if by("ladder"):
+        o = by("ladder")[0]
+        a = float(o.get("extend", 95.0))
+        le = Clip("Ladder_Extend", LADDER_FRAMES)
+        le.key(o, [(1, 0), (LADDER_FRAMES - 8, a), (LADDER_FRAMES, a)])
+        lr = Clip("Ladder_Retract", LADDER_FRAMES)
+        lr.key(o, [(1, a), (LADDER_FRAMES - 8, 0), (LADDER_FRAMES, 0)])
+        made += [le, lr]
     if by("hook"):
         o = by("hook")[0]
         hd = Clip("Hook_Down", 36)

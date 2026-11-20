@@ -82,8 +82,9 @@ WING_LE_TAN = math.tan(SWEEP_QC) + (C_ROOT - C_TIP) / 4 / SEMI_SPAN   # LE sweep
 WING_APEX_X = 7.90                   # wing leading edge projected to the centreline
 WING_Z_AT_ROOT = 0.50                # wing mid-plane at y = 1.42 (LEX junction), from the front views
 WING_ANHEDRAL = math.radians(3.0)
-FOLD_Y = 4.19                        # half the 8.38 m folded width
+FOLD_Y = 4.14                        # fold hinge: the folded panels' skins stand 8.38 m (27 ft 6 in) apart
 TIP_RAIL_Y = 5.94                    # wingtip LAU-7 launcher axis = station 1/9 (NATOPS)
+TIP_RAIL_REF_Y = SEMI_SPAN - 0.10    # the tip launcher's height and fore-aft place follow the wing here
 FIN_CANT = math.radians(20.0)
 FIN_TIP_Y = 1.80
 FIN_TOP_Z = 2.96
@@ -372,6 +373,25 @@ MATERIALS = {
     "Cockpit":       ((0.05, 0.05, 0.055), 0.00, 0.70, 1.0),
     "CockpitWall":   ((0.04, 0.04, 0.045), 0.00, 0.75, 1.0),
     "Mirror":        ((0.80, 0.80, 0.80), 1.00, 0.04, 1.0),
+    "Metal":         ((0.55, 0.55, 0.56), 1.00, 0.32, 1.0),     # pitot / AOA / temperature probes
+    "Liner":         ((0.42, 0.34, 0.26), 0.90, 0.50, 1.0),     # afterburner liner, heat-stained
+    "Turbine":       ((0.22, 0.22, 0.23), 0.85, 0.40, 1.0),     # turbine face and flame holder
+    # exterior light lenses and formation strips (fa18_exterior.py)
+    "LensRed":       ((0.45, 0.02, 0.02), 0.00, 0.12, 1.0),
+    "LensGreen":     ((0.02, 0.40, 0.08), 0.00, 0.12, 1.0),
+    "LensWhite":     ((0.75, 0.75, 0.72), 0.00, 0.12, 1.0),
+    "LensAmber":     ((0.60, 0.30, 0.02), 0.00, 0.12, 1.0),
+    "Strobe":        ((0.45, 0.02, 0.02), 0.00, 0.12, 1.0),
+    "Formation":     ((0.30, 0.36, 0.20), 0.00, 0.45, 1.0),     # electroluminescent strip
+}
+# emissive materials: colour (linear RGB) and strength, shown lit
+EMISSION = {
+    "LensRed": ((1.0, 0.04, 0.02), 3.0),
+    "LensGreen": ((0.05, 1.0, 0.2), 3.0),
+    "LensWhite": ((1.0, 1.0, 0.95), 3.0),
+    "LensAmber": ((1.0, 0.5, 0.05), 3.0),
+    "Strobe": ((1.0, 0.04, 0.02), 3.0),
+    "Formation": ((0.55, 1.0, 0.25), 1.2),
 }
 
 
@@ -396,6 +416,10 @@ def material(name):
         bsdf.inputs["Metallic"].default_value = metal
         bsdf.inputs["Roughness"].default_value = rough
         bsdf.inputs["Alpha"].default_value = alpha
+        if name in EMISSION:
+            ecol, strength = EMISSION[name]
+            bsdf.inputs["Emission Color"].default_value = (*ecol, 1.0)
+            bsdf.inputs["Emission Strength"].default_value = strength
     if alpha < 1.0:
         for attr, val in (("blend_method", "BLEND"), ("surface_render_method", "BLENDED")):
             try:
@@ -799,14 +823,19 @@ class Hornet:
     def build_nozzles(self):
         for side, tag in ((+1, "R"), (-1, "L")):
             b = Builder()
+            # open shell: the afterburner liner, flame holder and turbine face
+            # (fa18_exterior) continue forward from its inner end
             b.revolve((15.75, side * 0.48, 0.08), (16.65, side * 0.48, 0.12),
                       [(0.0, 0.46), (0.28, 0.455), (0.62, 0.41), (1.0, 0.30),
-                       (1.0, 0.27), (0.45, 0.37)], n=24, mat=0, cap_mats=(0, 1))
-            self.add("Nozzle_" + tag, b, mats=("Nozzle", "Dark"), smooth=50.0)
+                       (1.0, 0.27), (0.45, 0.37)], n=24, mat=0, caps=(False, False))
+            self.add("Nozzle_" + tag, b, mats=("Nozzle",), smooth=50.0)
 
     # -- wings ----------------------------------------------------------------
     def build_wings(self):
-        y_tip = SEMI_SPAN - 0.10          # structural tip; the launcher rail takes the rest
+        # structural tip at the 11.43 m (37 ft 6 in) span the NATOPS manual gives
+        # without missiles; the tip launchers (a separate object) stand outboard
+        # of it, and with AIM-9s on them the span is about 12.3 m (40 ft 5 in)
+        y_tip = SEMI_SPAN
         for side, tag in ((+1, "R"), (-1, "L")):
             w = self.wing[side]
             s = lambda y: y / SEMI_SPAN
@@ -846,11 +875,17 @@ class Hornet:
             # outer panel, hinged at the wing fold
             b = Builder()
             w.shell(b, s(FOLD_Y + GAP / 2), s(y_tip), f_le, f_te)
+            fold_o = (w.point(s(FOLD_Y), 0.45).x, side * FOLD_Y, self.wing_z(FOLD_Y))
+            outer = self.add("Wing_Outer_" + tag, b, origin=fold_o, axis=(side, 0, 0),
+                             hinge="wing folds up (90 deg = folded)")
+
             # wingtip LAU-7 launcher: station 1/9 lies 5.94 m from the centreline
             # (NATOPS), outboard of the structural tip, so the launcher sits on
-            # a tip adapter and the missile hangs beneath it
-            zt = self.wing_z(y_tip)
-            xt = WING_APEX_X + WING_LE_TAN * y_tip
+            # a tip adapter and the missile hangs beneath it.  A separate object
+            # on the outer panel, so it can be removed for the bare-wing look.
+            b = Builder()
+            zt = self.wing_z(TIP_RAIL_REF_Y)
+            xt = WING_APEX_X + WING_LE_TAN * TIP_RAIL_REF_Y
             yr = TIP_RAIL_Y
             b.revolve((xt - 0.42, side * yr, zt), (xt + 2.00, side * yr, zt),
                       [(0.0, 0.012), (0.05, 0.042), (0.12, 0.052), (0.93, 0.052), (1.0, 0.03)], n=12)
@@ -862,9 +897,7 @@ class Hornet:
                    (xb, side * yb, zt - 0.02), (xa, side * yb, zt - 0.02),
                    (xa + 0.10, side * ya, zt + 0.02), (xb - 0.05, side * ya, zt + 0.02),
                    (xb - 0.05, side * yb, zt + 0.02), (xa + 0.10, side * yb, zt + 0.02)])
-            fold_o = (w.point(s(FOLD_Y), 0.45).x, side * FOLD_Y, self.wing_z(FOLD_Y))
-            outer = self.add("Wing_Outer_" + tag, b, origin=fold_o, axis=(side, 0, 0),
-                             hinge="wing folds up (90 deg = folded)")
+            self.add("WingtipLauncher_" + tag, b, parent=outer)
 
             b = Builder()
             w.shell(b, s(FOLD_Y + GAP / 2), s(y_tip - GAP), 0.0, f_le_fwd)
@@ -1426,6 +1459,8 @@ class Hornet:
         self.gear_kinematics()
         self.build_bay_doors()
         self.cut_bays()
+        import fa18_exterior
+        fa18_exterior.build(self)
         self.root["length_m"] = LENGTH
         self.root["span_m"] = 2 * SEMI_SPAN
         self.root["ground_z"] = GROUND_Z - Z_REF
