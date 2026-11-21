@@ -133,12 +133,20 @@ def paint_panel(path):
                 text((cx + R * 0.5 * math.cos(a), cy + R * 0.5 * math.sin(a)), lab, max(8, int(R * 0.11)))
                 a = math.radians(a0 + 12)
                 d.line((cx + R * 0.2 * math.cos(a), cy + R * 0.2 * math.sin(a), cx + R * 0.8 * math.cos(a), cy + R * 0.8 * math.sin(a)), fill=white, width=3)
-        elif face == "compass":
-            d.ellipse((cx - R, cy - R, cx + R, cy + R), fill=(8, 8, 8))
-            d.rectangle((cx - R * 0.8, cy - R * 0.28, cx + R * 0.8, cy + R * 0.28), fill=(18, 18, 16), outline=(90, 90, 90))
-            for i, lab in enumerate(("30", "N", "3")):
-                text((cx - R * 0.5 + i * R * 0.5, cy), lab, int(R * 0.3))
-            d.line((cx, cy - R * 0.4, cx, cy + R * 0.4), fill=white, width=2)
+        elif face == "compass":                                  # window-type magnetic compass
+            d.ellipse((cx - R, cy - R, cx + R, cy + R), fill=(14, 14, 14))
+            d.rounded_rectangle((cx - R * 0.78, cy - R * 0.42, cx + R * 0.78, cy + R * 0.30), int(R * 0.12), fill=(36, 34, 26), outline=(120, 118, 110), width=3)
+            for i, lab in enumerate(("33", "N", "3")):
+                text((cx - R * 0.5 + i * R * 0.5, cy - R * 0.12), lab, int(R * 0.30))
+            for i in range(9):
+                x = cx - R * 0.7 + i * R * 0.175
+                d.line((x, cy + R * 0.12, x, cy + R * 0.26), fill=white, width=2)
+            d.line((cx, cy - R * 0.42, cx, cy + R * 0.30), fill=(230, 200, 120), width=2)
+        elif face == "selector":                                 # fuel selector: red plate, white pointer
+            d.ellipse((cx - R, cy - R, cx + R, cy + R), fill=(150, 26, 22), outline=white, width=3)
+            d.polygon([(cx - R * 0.16, cy + R * 0.3), (cx + R * 0.16, cy + R * 0.3), (cx, cy - R * 0.8)], fill=white)
+            d.ellipse((cx - R * 0.28, cy - R * 0.28, cx + R * 0.28, cy + R * 0.28), fill=(20, 20, 20))
+            text((cx, cy + R * 1.45), "FUEL", 12)
         elif face == "turn":
             d.ellipse((cx - R, cy - R, cx + R, cy + R), fill=(8, 8, 8))
             d.line((cx, cy - R * 0.75, cx, cy - R * 0.2), fill=white, width=int(R * 0.09))
@@ -150,13 +158,12 @@ def paint_panel(path):
             sx, sy = cx + (R + 9) * math.cos(math.radians(a)), cy + (R + 9) * math.sin(math.radians(a))
             d.ellipse((sx - 4, sy - 4, sx + 4, sy + 4), fill=(60, 60, 60), outline=(110, 110, 105))
     # switches and placards at lower left; data plate at lower right
-    for i, lab in enumerate(("IGN", "GEN", "LTS")):
-        cx, cy = px(-0.37 + 0.045 * i, 0.215)
-        d.ellipse((cx - 9, cy - 9, cx + 9, cy + 9), fill=(120, 120, 115))
-        text((cx, cy + 22), lab, 12)
-    cx, cy = px(0.33, 0.185)
-    d.rectangle((cx - 60, cy - 18, cx + 60, cy + 18), outline=white, width=2)
-    text((cx, cy), "DO NOT EXCEED 250 M.P.H.", 9)
+    cx, cy = px(-0.300, 0.272)                                   # ignition switch under the small gauge
+    d.rounded_rectangle((cx - 22, cy - 13, cx + 22, cy + 13), 4, fill=(120, 24, 20), outline=white, width=2)
+    d.line((cx, cy, cx + 12, cy - 9), fill=white, width=4)
+    for dy, lab in ((-0.060, "PRIMER"), (0.005, "OFF  L  R  BOTH")):
+        cx, cy = px(dy, 0.158 if lab == "PRIMER" else -0.035)
+        text((cx, cy), lab, 10)
     # wear: scratches round the lower edge
     for _ in range(220):
         x, y = rng.integers(0, W), rng.integers(int(H * 0.2), H)
@@ -577,7 +584,8 @@ def texture(h, tex, bake=False, samples=8):
     stems = {g: os.path.join(tex, "p26a_%s_" % g) for g in groups}
     if bake:
         for g, (size, objs) in groups.items():
-            bake_group(g, objs, size, tex, samples)
+            if bake is True or g in bake:
+                bake_group(g, objs, size, tex, samples)
     if all(os.path.exists(stems[g] + "basecolor.jpg") for g in groups) and (bake or os.environ.get("P26_PROCEDURAL") != "1"):
         for g, (size, objs) in groups.items():
             m = image_material("P26_" + g.capitalize(), stems[g])

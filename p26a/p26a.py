@@ -1,6 +1,6 @@
 """Boeing P-26A "Peashooter" for Blender: geometry generator.
 
-    blender -b -P p26a.py -- [--out DIR] [--glb] [--bake] [--samples N]
+    blender -b -P p26a.py -- [--out DIR] [--glb] [--bake [ext] [parts]] [--samples N]
 
 Design coordinates (metres): x aft from the front of the propeller hub,
 y to starboard, z up from the thrust line.  Blender: nose along -Y, +Z up,
@@ -795,7 +795,7 @@ def main(argv):
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", default=HERE)
     ap.add_argument("--glb", action="store_true")
-    ap.add_argument("--bake", action="store_true")
+    ap.add_argument("--bake", nargs="*", default=None, help="bake the textures: all groups, or those named (ext, parts)")
     ap.add_argument("--samples", type=int, default=8)
     args = ap.parse_args(argv)
     sys.path.insert(0, HERE)
@@ -803,7 +803,8 @@ def main(argv):
     h = Peashooter()
     h.build()
     import p26a_materials
-    p26a_materials.texture(h, os.path.join(HERE, "textures"), bake=args.bake, samples=args.samples)
+    bake = False if args.bake is None else (args.bake or True)
+    p26a_materials.texture(h, os.path.join(HERE, "textures"), bake=bake, samples=args.samples)
     path = os.path.join(args.out, "P-26A_Peashooter.blend")
     if os.path.exists(path):
         os.remove(path)

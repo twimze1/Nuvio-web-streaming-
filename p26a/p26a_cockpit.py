@@ -2,11 +2,16 @@
 throttle, padded rim, structure on the bare-metal walls, and the pilot's
 eye point with a camera.
 
-The layout follows the general arrangement of the type (curved black panel
-with the flight instruments in two rows, engine instruments to the right, a
-small electrical panel at lower left, fuel and oil gauges on a centre
-pedestal).  PANEL lists every instrument; the panel texture is painted from
-the same list (p26a_materials.paint_panel), so faces and bezels line up.
+The layout follows a photograph of a real P-26A cockpit (the museum
+aircraft): a black crescent-shaped panel whose lower edge rises towards the
+sides; airspeed, a window-type compass, tachometer and a small clock in the
+top row; altimeter, turn-and-bank, the three-in-one engine gauge and one
+more gauge below; a small gauge and the ignition switch at the far left; a
+black pedestal under the centre with the red fuel selector and a gauge; a
+tall stick with a black grip; bare aluminium walls and floor; a hand crank
+on the right wall.  Positions were read from the photograph by eye.  PANEL
+lists every instrument; the panel texture is painted from the same list
+(p26a_materials.paint_panel), so faces and bezels line up.
 """
 import math
 
@@ -23,10 +28,16 @@ PANEL = [
     ("airspeed", -0.175, 0.455, 0.050, "asi"), ("compass", 0.0, 0.480, 0.043, "compass"),
     ("tachometer", 0.175, 0.455, 0.050, "tach"), ("clock", 0.305, 0.395, 0.031, "clock"),
     ("altimeter", -0.170, 0.320, 0.044, "alt"), ("turn and bank", 0.0, 0.335, 0.044, "turn"),
-    ("engine gauge unit", 0.150, 0.305, 0.044, "engine"), ("manifold pressure", 0.280, 0.270, 0.038, "map"),
-    ("ammeter", -0.300, 0.330, 0.028, "amp"),
-    ("fuel quantity", -0.048, 0.025, 0.034, "fuel"), ("oil temperature", 0.048, 0.025, 0.034, "oil"),
+    ("engine gauge unit", 0.150, 0.305, 0.044, "engine"), ("manifold pressure", 0.278, 0.298, 0.038, "map"),
+    ("ammeter", -0.300, 0.335, 0.028, "amp"),
+    ("fuel selector", -0.050, 0.112, 0.030, "selector"), ("fuel quantity", 0.050, 0.030, 0.034, "fuel"),
 ]
+PEDESTAL = (0.115, -0.06)        # half-width and bottom of the pedestal under the panel
+
+
+def panel_low(y):
+    """Lower edge of the crescent panel: lowest at the centre, rising to the sides."""
+    return 0.19 + 0.16 * (abs(y) / 0.5) ** 2
 EYE = (2.52, 0.0, 0.84)
 
 
@@ -52,10 +63,13 @@ def build(h):
     # ---- instrument panel: follows the wall above z = 0.14, with a centre pedestal
     b = B()
     X = PANEL_X
-    arc = [inner(X, math.radians(a), 0.034) for a in range(8, 173, 6)]
-    arc = [p for p in arc if p.z >= 0.14]
-    out = [(arc[0].y, 0.14)] + [(p.y, p.z) for p in arc] + [(arc[-1].y, 0.14), (-0.105, 0.14), (-0.105, -0.085),
-                                                             (0.105, -0.085), (0.105, 0.14)]
+    arc = [inner(X, math.radians(a), 0.034) for a in range(8, 173, 4)]
+    arc = [p for p in arc if p.z >= panel_low(p.y) + 0.01]
+    pw, pz = PEDESTAL
+    ys = [arc[-1].y + (-pw - arc[-1].y) * k / 6 for k in range(7)]             # port end in to the pedestal
+    low = [(y, panel_low(y)) for y in ys] + [(-pw, pz), (pw, pz)]
+    low += [(-y, panel_low(y)) for y in reversed(ys)]
+    out = [(p.y, p.z) for p in arc] + low
     b.face(b.ring([(X, y, z) for y, z in out]), 0, [panel_uv(y, z) for y, z in out])
     b.face(b.ring([(X - 0.012, y, z) for y, z in reversed(out)]), 1)
     n = len(out)
@@ -115,9 +129,9 @@ def build(h):
     # ---- control stick, rudder pedals, throttle quadrant
     b = B()
     b.revolve((2.25, 0, P.FLOOR_Z), (2.25, 0, P.FLOOR_Z + 0.06), [(0, 0.05), (1, 0.03)], n=12, mat=1)
-    b.revolve((2.25, 0, P.FLOOR_Z + 0.05), (2.20, 0, 0.26), [(0, 0.012), (1, 0.011)], n=8, mat=0)
-    b.revolve((2.20, 0, 0.25), (2.185, 0, 0.375), [(0, 0.016), (0.2, 0.019), (0.85, 0.019), (1, 0.014)], n=10, mat=1)
-    b.tube((2.185, -0.02, 0.365), (2.165, -0.02, 0.385), 0.006, n=6, mat=1)                                       # trigger
+    b.revolve((2.25, 0, P.FLOOR_Z + 0.05), (2.205, 0, 0.34), [(0, 0.012), (1, 0.011)], n=8, mat=1)
+    b.revolve((2.205, 0, 0.33), (2.185, 0, 0.485), [(0, 0.016), (0.2, 0.020), (0.85, 0.020), (1, 0.015)], n=10, mat=1)
+    b.tube((2.185, -0.02, 0.47), (2.165, -0.02, 0.49), 0.006, n=6, mat=1)                                         # trigger
     h.add("Stick", b, mats=("Interior", "Black"), collection=col, origin=(2.25, 0, P.FLOOR_Z + 0.03), axis=(0, 1, 0),
           hinge="stick forward (nose down)")
     b = B()
@@ -134,6 +148,14 @@ def build(h):
         p0, p1 = Vector((2.27 + dx, yw + 0.02 + 0.012 * k, 0.30)), Vector((2.22 + dx, yw + 0.02 + 0.012 * k, 0.41))
         b.tube(p0, p1, 0.005, n=6)
         b.revolve(p1, p1 + (p1 - p0).normalized() * 0.03, [(0, 0.008), (0.5, 0.016), (1, 0.008)], n=10, mat=mat)
+    # hand crank and a lever on the right wall
+    yr = P.fus_side(2.30, 0.12) - 0.045
+    b.tube((2.30, yr + 0.02, 0.12), (2.30, yr - 0.03, 0.12), 0.012, n=8)
+    b.tube((2.30, yr - 0.03, 0.12), (2.36, yr - 0.03, 0.05), 0.006, n=6)
+    b.revolve((2.36, yr - 0.03, 0.05), (2.36, yr - 0.075, 0.05), [(0, 0.011), (1, 0.011)], n=10, mat=1)
+    p0, p1 = Vector((2.12, yr - 0.01, -0.02)), Vector((2.05, yr - 0.02, 0.16))
+    b.tube(p0, p1, 0.006, n=6)
+    b.revolve(p1, p1 + (p1 - p0).normalized() * 0.03, [(0, 0.008), (0.5, 0.015), (1, 0.008)], n=10, mat=1)
     h.add("Throttle", b, mats=("Interior", "Black", "LensRed"), collection=col)
 
     # ---- padded leather roll round the cockpit opening
