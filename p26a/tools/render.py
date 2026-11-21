@@ -86,7 +86,7 @@ def ground(sc, z):
 
 
 def main(argv):
-    opts = {"size": (1600, 900), "samples": 48, "clay": False, "level": False, "sun": (40.0, 150.0)}
+    opts = {"size": (1600, 900), "samples": 48, "clay": False, "level": False, "sun": (40.0, 150.0), "scale": 1.0}
     pos, i = [], 0
     while i < len(argv):
         a = argv[i]
@@ -96,6 +96,8 @@ def main(argv):
             opts["samples"] = int(argv[i + 1]); i += 2
         elif a == "--sun":
             opts["sun"] = (float(argv[i + 1]), float(argv[i + 2])); i += 3
+        elif a == "--scale":                     # camera distances, for a larger or smaller aircraft
+            opts["scale"] = float(argv[i + 1]); i += 2
         elif a in ("--clay", "--level"):
             opts[a[2:]] = True; i += 1
         else:
@@ -103,7 +105,9 @@ def main(argv):
     bpy.ops.wm.open_mainfile(filepath=pos[0])
     prefix, views = pos[1], pos[2:] or ["hero"]
     sc = bpy.context.scene
-    root = bpy.data.objects["P-26A_Peashooter"]
+    root = next(o for o in bpy.data.objects if o.type == "EMPTY" and "ground_pitch_deg" in o.keys())
+    x_ref = root.get("x_ref", P.X_REF)
+    tb = lambda p: Vector((-p[1], p[0] - x_ref, p[2]))
     # The aircraft stays level at the origin (the procedural paint is laid
     # out in world coordinates); the ground, cameras and sky are tilted
     # round it instead, which gives the same picture as a tail-down aircraft.
@@ -120,9 +124,9 @@ def main(argv):
         b.inputs["Base Color"].default_value = (0.55, 0.55, 0.55, 1)
         b.inputs["Roughness"].default_value = 0.6
         for o in bpy.data.objects:
-            if o.type == "MESH" and o.name.startswith("P26_"):
+            if o.type == "MESH" and o.name != "Ground":
                 for s in o.material_slots:
-                    if s.material and s.material.name != "P26_Glass":
+                    if s.material and not s.material.name.endswith("_Glass"):
                         s.material = clay
     sc.render.engine = "CYCLES"
     sc.cycles.device = "CPU"
@@ -144,10 +148,11 @@ def main(argv):
     cam.data.clip_start = 0.02
     for v in views:
         if v == "pilot":
-            sc.camera = bpy.data.objects["P26_Cam"]
+            sc.camera = next(o for o in bpy.data.objects if o.type == "CAMERA" and o.name.endswith("_Cam"))
         else:
             az, el, d, lens, tgt = VIEWS[v]
-            t = pose @ P.to_blender(tgt)
+            t = pose @ tb(tuple(c * (opts["scale"] if k == 0 else 1.0) for k, c in enumerate(tgt)))
+            d *= opts["scale"]
             az, el = math.radians(az), math.radians(el)
             loc = t + Vector((math.sin(az) * math.cos(el), -math.cos(az) * math.cos(el), math.sin(el))) * d
             m = Matrix.Translation(loc) @ (t - loc).to_track_quat("-Z", "Y").to_matrix().to_4x4()

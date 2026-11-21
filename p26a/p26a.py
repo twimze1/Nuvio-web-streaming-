@@ -298,6 +298,14 @@ def material(name):
 # ----------------------------------------------------------------------------
 class Peashooter:
     prefix = "P26_"
+    x_ref = X_REF
+
+    def tb(self, p):
+        """Design coordinates -> Blender (other models built on this class set x_ref)."""
+        return Vector((-p[1], p[0] - self.x_ref, p[2]))
+
+    def material(self, name):
+        return material(name)
 
     def __init__(self):
         self.objects, self.world = {}, {}
@@ -320,7 +328,7 @@ class Peashooter:
         if origin is None:
             frame = Matrix.Identity(4)
         else:
-            o = to_blender(origin)
+            o = self.tb(origin)
             if axis is None:
                 frame = Matrix.Translation(o)
             else:
@@ -331,9 +339,9 @@ class Peashooter:
                 frame = Matrix(((ax.x, yv.x, zv.x, o.x), (ax.y, yv.y, zv.y, o.y), (ax.z, yv.z, zv.z, o.z), (0, 0, 0, 1)))
         inv = frame.inverted()
         mesh = bpy.data.meshes.new(name)
-        mesh.from_pydata([tuple(inv @ to_blender(p)) for p in b.verts], [], b.faces)
+        mesh.from_pydata([tuple(inv @ self.tb(p)) for p in b.verts], [], b.faces)
         for m in mats:
-            mesh.materials.append(material(m))
+            mesh.materials.append(self.material(m))
         mesh.polygons.foreach_set("material_index", b.mats)
         uvs = b.uvs + [None] * (len(b.faces) - len(b.uvs))
         if any(u is not None for u in uvs):

@@ -487,7 +487,7 @@ def unwrap(objs):
     bpy.ops.object.mode_set(mode="OBJECT")
 
 
-def bake_group(group, objs, size, tex, samples):
+def bake_group(group, objs, size, tex, samples, prefix="p26a"):
     """Bake one atlas.  With P26_KEEP_AO=1 and an existing ORM map, the
     occlusion channel (geometry only, the slowest pass) is reused."""
     from PIL import Image
@@ -507,7 +507,7 @@ def bake_group(group, objs, size, tex, samples):
         uv0[o.name] = (lay, arr)
     res, cover = {}, None
     try:
-        old_orm = os.path.join(tex, "p26a_%s_orm.jpg" % group)
+        old_orm = os.path.join(tex, "%s_%s_orm.jpg" % (prefix, group))
         keep_ao = os.environ.get("P26_KEEP_AO") == "1" and os.path.exists(old_orm)
         for channel in ("basecolor", "roughness", "metallic", "normal", "ao"):
             if channel == "ao" and keep_ao:
@@ -556,7 +556,7 @@ def bake_group(group, objs, size, tex, samples):
         for lay, arr in uv0.values():
             lay.data.foreach_set("uv", arr)
     _dilate(list(res.values()), cover, 12)
-    stem = os.path.join(tex, "p26a_%s_" % group)
+    stem = os.path.join(tex, "%s_%s_" % (prefix, group))
     Image.fromarray(res["basecolor"][::-1]).save(stem + "basecolor.jpg", quality=93, subsampling=0)
     Image.fromarray(np.stack([res["ao"], res["roughness"], res["metallic"]], -1)[::-1]).save(stem + "orm.jpg", quality=94, subsampling=0)
     Image.fromarray(res["normal"][::-1]).save(stem + "normal.jpg", quality=95, subsampling=0)
