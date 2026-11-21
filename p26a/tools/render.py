@@ -86,7 +86,7 @@ def ground(sc, z):
 
 
 def main(argv):
-    opts = {"size": (1600, 900), "samples": 48, "clay": False, "level": False, "sun": (40.0, 150.0), "scale": 1.0, "exposure": 0.0}
+    opts = {"size": (1600, 900), "samples": 48, "clay": False, "level": False, "sun": (40.0, 150.0), "scale": 1.0, "exposure": 0.0, "hide": []}
     pos, i = [], 0
     while i < len(argv):
         a = argv[i]
@@ -98,6 +98,11 @@ def main(argv):
             opts["sun"] = (float(argv[i + 1]), float(argv[i + 2])); i += 3
         elif a == "--scale":                     # camera distances, for a larger or smaller aircraft
             opts["scale"] = float(argv[i + 1]); i += 2
+        elif a == "--view":                      # a one-off view: name, azimuth, elevation, distance, lens, target x y z
+            VIEWS[argv[i + 1]] = (float(argv[i + 2]), float(argv[i + 3]), float(argv[i + 4]), float(argv[i + 5]),
+                                  tuple(float(v) for v in argv[i + 6:i + 9])); i += 9
+        elif a == "--hide":                      # leave out objects whose name contains this (to look inside)
+            opts["hide"].append(argv[i + 1]); i += 2
         elif a == "--exposure":                  # stops; negative for a pale aircraft
             opts["exposure"] = float(argv[i + 1]); i += 2
         elif a in ("--clay", "--level"):
@@ -107,6 +112,9 @@ def main(argv):
     bpy.ops.wm.open_mainfile(filepath=pos[0])
     prefix, views = pos[1], pos[2:] or ["hero"]
     sc = bpy.context.scene
+    for o in bpy.data.objects:
+        if any(h in o.name for h in opts["hide"]):
+            o.hide_render = True
     root = next(o for o in bpy.data.objects if o.type == "EMPTY" and "ground_pitch_deg" in o.keys())
     x_ref = root.get("x_ref", P.X_REF)
     tb = lambda p: Vector((-p[1], p[0] - x_ref, p[2]))

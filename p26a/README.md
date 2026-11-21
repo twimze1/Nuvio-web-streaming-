@@ -63,8 +63,16 @@ blender -b -P tools/render.py -- P-26A_Peashooter.blend /tmp/p26_ hero side fron
   faired tailwheel.
 - **Bracing:** doubled front and single rear wires above and below each wing, the
   jury struts, cross and drag wires at the gear legs, all with end fittings.
-- **Details:** gun blast tubes on the fuselage sides, radio mast and aerial wires, pitot
-  head, wingtip and tail lights.
+- **Guns:** two Browning .30 calibre M2 aircraft guns low in the fuselage sides. Each
+  has its perforated barrel jacket, receiver with top cover, belt feedway, back plate,
+  buffer and charging handle, and fires through a blast tube that runs forward past the
+  engine. The breech and its charging handle sit in a well in the cockpit floor beside
+  the pilot's leg; the rest is hidden by the skin (`previews/p26a_guns.jpg` shows them
+  with the skin hidden).
+- **Muzzle markers:** `P26_Muzzle_L` and `P26_Muzzle_R` are empties at the blast tube
+  mouths, for tracers and muzzle flash. The bore points along the aircraft's nose
+  (−Y in Blender).
+- **Details:** radio mast and aerial wires, pitot head, wingtip and tail lights.
 - **Cockpit,** laid out from a photograph of a real P-26A cockpit (the museum
   aircraft):
   - a black crescent-shaped panel: airspeed, a window-type compass, tachometer and a
@@ -78,7 +86,7 @@ blender -b -P tools/render.py -- P-26A_Peashooter.blend /tmp/p26_ hero side fron
 - **First person:** `P26_Eye` is an empty at the pilot's eye; its child camera `P26_Cam`
   has an 80° field of view.
 
-About 50,000 triangles.
+About 52,000 triangles.
 
 ## Moving parts
 
@@ -112,7 +120,7 @@ the main-wheel contact point.
     walkway, the cockpit rim and some rivet heads;
   - exhaust soot behind the stubs, oil streaks along the belly, grime in the seams.
 - **Atlases:** `p26a_ext_*` (4096 px: airframe, ring, gear) and `p26a_parts_*` (2048 px:
-  engine, propeller, wires, cockpit parts). ORM is occlusion, roughness and metallic in
+  engine, propeller, guns, wires, cockpit parts). ORM is occlusion, roughness and metallic in
   the red, green and blue channels. `p26a_panel.png` is the instrument panel.
 - The windscreen glass, the light lenses and the panel bezels use plain materials.
 
@@ -128,7 +136,11 @@ the main-wheel contact point.
   this model, not copies of the real ones.
 - **Rivets and seams** are texture, at regular spacings; they are not copied from the
   aircraft's real panel layout.
-- **Not modelled:** the pilot, the guns themselves (only their blast tubes), bomb racks,
-  wheel brakes and spokes.
+- **Guns:** the type carried two .30 calibre guns, or one .30 and one .50; this model
+  has two .30s. The gun's length (about 1.0 m) and barrel length (0.61 m) are the
+  published figures. No installation drawing was found, so the position in the fuselage
+  and the floor wells are approximate.
+- **Not modelled:** the pilot, ammunition boxes and belts, the synchroniser gear, bomb
+  racks, wheel brakes and spokes.
 - **Deflection angles** in the clips are for show, not the type's rigging limits.
 - No flight model or performance data is included.

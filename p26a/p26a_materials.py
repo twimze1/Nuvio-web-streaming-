@@ -33,7 +33,7 @@ GROUPS = {
     "ext": (4096, ["Fuselage", "Headrest", "Wing", "Aileron_L", "Aileron_R", "Flap_L", "Flap_R", "Tailplane",
                    "Elevator_L", "Elevator_R", "Fin", "Rudder", "TownendRing", "MainGear_L", "MainGear_R", "Tailwheel"]),
     "parts": (2048, ["Engine", "Propeller", "Wires", "Masts", "WindscreenFrame", "BlastTubes", "CockpitStructure",
-                     "Seat", "Stick", "RudderPedals", "Throttle", "CockpitRim"]),
+                     "Seat", "Stick", "RudderPedals", "Throttle", "CockpitRim", "Guns"]),
 }
 WING_PARTS = ("Wing", "Aileron", "Flap", "Tailplane", "Elevator")
 FIN_PARTS = ("Fin", "Rudder")
@@ -417,6 +417,7 @@ def procedural(h, tex):
     worn(P.material("Interior"), (0.56, 0.57, 0.58), 0.9, 0.42, grime=0.3, scale=90.0)
     worn(P.material("Belt"), (0.40, 0.36, 0.25), 0.0, 0.85, grime=0.3, bump=0.0008, scale=300.0)
     worn(P.material("Black"), (0.015, 0.015, 0.015), 0.0, 0.5, grime=0.15, dark=(0.10, 0.10, 0.10))
+    worn(P.material("GunMetal"), (0.035, 0.037, 0.042), 0.85, 0.40, grime=0.2, dark=(0.02, 0.018, 0.015))
     panel = P.material("Panel")
     nt = NT(panel)
     out = nt.node("ShaderNodeOutputMaterial")

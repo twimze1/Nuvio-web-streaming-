@@ -37,7 +37,7 @@ GROUPS = {
     "ext": (4096, ["Fuselage", "UpperWing", "Aileron_L", "Aileron_R", "LowerWing", "Tailplane", "Elevator_L", "Elevator_R",
                    "Fin", "Rudder", "MainGear_L", "MainGear_R", "Radiator"]),
     "parts": (2048, ["Propeller", "Exhausts", "WindscreenFrame", "Mast", "Struts", "Wires", "TailSkid", "CockpitPadding",
-                     "CockpitStructure", "Seat", "Stick", "RudderPedals", "Levers"]),
+                     "CockpitStructure", "Seat", "Stick", "RudderPedals", "Levers", "Guns"]),
 }
 
 
@@ -285,6 +285,7 @@ def procedural(h, tex):
     worn(H.material("Steel"), (0.32, 0.32, 0.33), 1.0, 0.42, grime=0.2)
     worn(H.material("Strut"), (0.09, 0.10, 0.115), 0.2, 0.42, grime=0.15, dark=(0.25, 0.25, 0.24))
     worn(H.material("Black"), (0.015, 0.015, 0.015), 0.0, 0.5, grime=0.15, dark=(0.10, 0.10, 0.10))
+    worn(H.material("GunMetal"), (0.035, 0.037, 0.042), 0.85, 0.40, grime=0.2, dark=(0.02, 0.018, 0.015))
     worn(H.material("Exhaust"), (0.065, 0.045, 0.035), 0.6, 0.75, grime=0.6, bump=0.002, scale=140.0)
     worn(H.material("Tyre"), (0.02, 0.02, 0.02), 0.0, 0.85, grime=0.5, dark=(0.10, 0.09, 0.07), bump=0.001)
     worn(H.material("LeatherBrown"), (0.10, 0.04, 0.02), 0.0, 0.5, grime=0.3, bump=0.0015, scale=160.0)

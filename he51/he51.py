@@ -41,6 +41,7 @@ UPPER = dict(le=1.74, chord=1.68, z=1.18, dih=math.radians(1.5), span=11.0, tc=0
 LOWER = dict(le=2.30, chord=1.18, z=-0.375, dih=math.radians(3.0), span=8.2, tc=0.11, tip=0.60)
 AILERON = (2.16, 4.86, 0.80)       # upper wing only: inboard, outboard |y|, hinge chord fraction
 CUTOUT = (0.44, 0.833)             # upper centre-section trailing-edge cut-out: half-width, chord fraction
+GUN = dict(y=0.125, z=0.43, muzzle=1.85, trough=(0.30, 0.62))   # bore line each side; gun muzzle x; trough in the nose
 EXHAUST = (0.86, 1.76, 0.16, 0.45)  # exhaust trough on each side of the nose: x front, x rear, z bottom, z top
 
 # fuselage: x, half-width, z top, z bottom, section exponent
@@ -97,6 +98,24 @@ def sweep(b, pts, r, n=8, mat=0, closed=False):
     b.loft(rings, mat=mat, caps=(not closed, not closed))
 
 
+def mg17(b, x0, y, z, s):
+    """Rheinmetall MG 17 (7.92 mm): 1.175 m long, 0.60 m barrel in a slotted jacket.
+    x0 = muzzle, (y, z) = bore line, s = +1 starboard / -1 port.  Material 0 = gun metal."""
+    b.revolve((x0, y, z), (x0 + 0.045, y, z), [(0, 0.012), (0.4, 0.0185), (1, 0.0185)], n=12, mat=0)       # muzzle booster
+    b.revolve((x0 + 0.045, y, z), (x0 + 0.60, y, z), [(0, 0.0165), (1, 0.0165)], n=12, mat=0)              # barrel jacket
+    for k in range(7):                                                                                  # bands between the cooling slots
+        xa = x0 + 0.085 + 0.07 * k
+        b.revolve((xa, y, z), (xa + 0.012, y, z), [(0, 0.0185), (1, 0.0185)], n=12, mat=0)
+    r0, r1 = x0 + 0.60, x0 + 1.09                                                                       # receiver
+    b.block(r0, r1, y - 0.023, y + 0.023, z - 0.058, z + 0.034, 0)
+    b.block(r0 + 0.05, r1 - 0.10, y - 0.019, y + 0.019, z + 0.034, z + 0.046, 0)                         # top cover
+    b.block(r0 + 0.10, r0 + 0.21, y + s * 0.023, y + s * 0.062, z - 0.012, z + 0.030, 0)                 # belt feed, outboard
+    b.block(r0 + 0.12, r0 + 0.19, y - 0.015, y + 0.015, z - 0.13, z - 0.058, 0)                          # case and link chute
+    b.revolve((r1, y, z - 0.005), (x0 + 1.175, y, z - 0.005), [(0, 0.020), (0.6, 0.020), (1, 0.013)], n=12, mat=0)   # buffer
+    for xmnt in (r0 + 0.04, r1 - 0.07):                                                                 # mounting lugs
+        b.block(xmnt, xmnt + 0.03, y - 0.03, y + 0.03, z - 0.075, z - 0.058, 0)
+
+
 def wing_geo(w, y):
     """Leading edge x, chord and z of the chord line at span station y (rounded tips)."""
     hs, rt = w["span"] / 2, w["tip"]
@@ -128,6 +147,7 @@ MATERIALS = {
     "Steel":       ((0.30, 0.30, 0.31), 1.0, 0.40, 1.0),
     "Strut":       ((0.10, 0.11, 0.12), 0.3, 0.45, 1.0),      # dark blue-grey struts
     "Black":       ((0.015, 0.015, 0.015), 0.0, 0.5, 1.0),
+    "GunMetal":    ((0.035, 0.037, 0.042), 0.85, 0.42, 1.0),  # blued steel
     "Bezel":       ((0.012, 0.012, 0.012), 0.0, 0.45, 1.0),   # instrument rims (plain, not baked)
     "Exhaust":     ((0.10, 0.07, 0.05), 0.7, 0.7, 1.0),
     "Tyre":        ((0.02, 0.02, 0.02), 0.0, 0.85, 1.0),
@@ -266,6 +286,18 @@ class He51(P.Peashooter):
             c = Builder()
             c.loft([[(x, s * (fus_side(x, z) - 0.03), z) for z in zs] + [(x, s * 0.7, z) for z in reversed(zs)] for x in np.linspace(ex0, ex1, 9)])
             self.boolean(fus, c, "Black")
+        # gun troughs: a short channel in the front of the cowl each side, the blast tube mouth at its rear end
+        gy, gz = GUN["y"], GUN["z"]
+        tx0, tx1 = GUN["trough"]
+        for s in (1, -1):
+            y = s * gy
+            prof = [(y - 0.025, 0.9)] + [(y + 0.025 * math.cos(a), gz + 0.025 * math.sin(a)) for a in np.linspace(math.pi, 2 * math.pi, 9)] + [(y + 0.025, 0.9)]
+            c = Builder()
+            c.loft([[(x, yy, zz) for yy, zz in prof] for x in (tx0, tx1)])
+            self.boolean(fus, c, "Black")
+            c = Builder()
+            c.revolve((tx1 - 0.02, y, gz), (1.00, y, gz), [(0, 0.0245), (1, 0.0245)], n=16)
+            self.boolean(fus, c, "Black")
         b = Builder()
         m = 14
         for s in (1, -1):
@@ -281,9 +313,7 @@ class He51(P.Peashooter):
                     return pts
                 b.loft([oval(1.0, -0.032, 0.0), oval(1.0, 0.014, 0.012)], mat=0, caps=(False, False))
                 b.loft([oval(1.0, 0.014, 0.012), oval(0.78, 0.014, 0.012), oval(0.78, -0.02, 0.0)], mat=1, caps=(False, True))
-            ya = s * 0.15
-            b.revolve((0.66, ya, fus_top(0.66, 0.15) - 0.005), (2.80, ya, fus_top(2.80, 0.15) + 0.012), [(0, 0.012), (0.02, 0.02), (1, 0.02)], n=8, mat=2)
-        self.add("Exhausts", b, mats=("Exhaust", "Black", "Skin"), smooth=35.0)
+        self.add("Exhausts", b, mats=("Exhaust", "Black"), smooth=35.0)
         b = Builder()
         r0, r1 = 1.80, 2.52
         zt = lambda x: -0.36
@@ -324,6 +354,23 @@ class He51(P.Peashooter):
             f.tube((2.86, 0.035 * math.sin(a0), zr + 0.035 * math.cos(a0)), (2.86, 0.035 * math.sin(a1), zr + 0.035 * math.cos(a1)), 0.003, n=4, mat=1)
         f.revolve((2.05, 0, fus_top(2.05) - 0.01), (2.05, 0, zr + 0.004), [(0, 0.005), (0.9, 0.004), (1, 0.008)], n=6, mat=1)
         self.add("WindscreenFrame", f, mats=("Strut", "Black"))
+
+    def build_guns(self):
+        """Two MG 17 under the cowl, each firing through a blast tube to its trough in the nose."""
+        gy, gz, xm, tx1 = GUN["y"], GUN["z"], GUN["muzzle"], GUN["trough"][1]
+        b = Builder()
+        for s in (1, -1):
+            y = s * gy
+            mg17(b, xm, y, gz, s)
+            # blast tube: one connected shell (outside, lip, bore) so the bore faces inwards
+            circ = lambda x, r: [(x, y + r * math.cos(2 * math.pi * k / 14), gz + r * math.sin(2 * math.pi * k / 14)) for k in range(14)]
+            idx = [b.ring(q) for q in (circ(xm + 0.03, 0.024), circ(tx1, 0.024), circ(tx1, 0.0195), circ(xm + 0.03, 0.0195))]
+            b.bridge(idx[0], idx[1], 1)
+            b.bridge(idx[1], idx[2], 1)
+            b.bridge(idx[2], idx[3], 2)
+        self.add("Guns", b, mats=("GunMetal", "Steel", "Black"), smooth=40.0)
+        for s, tag in ((1, "R"), (-1, "L")):
+            self.marker("Muzzle_" + tag, (tx1, s * gy, gz), gun="7.92 mm MG 17", bore_axis="-Y (forward)")
 
     # -- wings, struts, wires ------------------------------------------------------
     def build_wings(self):
@@ -470,6 +517,7 @@ class He51(P.Peashooter):
     def build(self):
         self.build_fuselage()
         self.build_windscreen()
+        self.build_guns()
         self.build_wings()
         self.build_struts()
         self.build_tail()

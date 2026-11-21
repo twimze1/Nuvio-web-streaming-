@@ -36,6 +36,7 @@ WHEEL = (1.45, 0.78, -1.25, 0.29)     # main wheel centre x, |y|, z and tyre rad
 TAILWHEEL = (6.38, 0.0, -0.355, 0.11)
 FLOOR_Z = -0.12                   # cockpit floor, just above the wing centre section
 COCKPIT = (2.14, 2.72, 0.29)      # opening: front, rear, half-width
+GUN = dict(y=0.49, z=-0.16, muzzle=1.42, tube=0.90)   # bore line each side; gun muzzle x; blast tube mouth x
 HINGE_AIL = ((1.51, 3.00), (3.62, 2.745))     # aileron hinge line (|y|, x) at each end
 GAP = 0.008
 
@@ -162,6 +163,10 @@ class Builder:
     def box(self, corners, mat=0):
         self.loft([corners[:4], corners[4:]], mat)
 
+    def block(self, x0, x1, y0, y1, z0, z1, mat=0):
+        """Axis-aligned box."""
+        self.box([(x0, y0, z0), (x1, y0, z0), (x1, y1, z0), (x0, y1, z0), (x0, y0, z1), (x1, y0, z1), (x1, y1, z1), (x0, y1, z1)], mat)
+
     def revolve(self, p0, p1, profile, n=12, mat=0, caps=(True, True), cap_mats=None):
         """Body of revolution about p0->p1; profile = [(t along the axis, radius)]."""
         p0, p1 = Vector(p0), Vector(p1)
@@ -265,11 +270,37 @@ MATERIALS = {
     "Interior":    ((0.55, 0.56, 0.57), 0.9, 0.42, 1.0),        # aluminium lacquer
     "Panel":       ((0.02, 0.02, 0.02), 0.0, 0.5, 1.0),
     "Black":       ((0.015, 0.015, 0.015), 0.0, 0.5, 1.0),
+    "GunMetal":    ((0.035, 0.037, 0.042), 0.85, 0.42, 1.0),    # blued steel
     "Belt":        ((0.42, 0.38, 0.27), 0.0, 0.8, 1.0),
     "LensRed":     ((0.5, 0.02, 0.02), 0.0, 0.1, 1.0),
     "LensGreen":   ((0.02, 0.4, 0.1), 0.0, 0.1, 1.0),
     "LensWhite":   ((0.8, 0.8, 0.75), 0.0, 0.1, 1.0),
 }
+
+
+def browning(b, x0, y, z, s):
+    """Browning .30 calibre M2 aircraft gun, about 1.0 m long with a 0.61 m barrel in a
+    perforated jacket.  x0 = muzzle, (y, z) = bore line, s = +1 starboard / -1 port.
+    Materials: 0 gun metal, 1 steel."""
+    b.revolve((x0, y, z), (x0 + 0.61, y, z), [(0, 0.0105), (0.03, 0.0145), (1, 0.0145)], n=12, mat=0)       # barrel jacket
+    for k in range(8):                                                                                   # bands between the cooling holes
+        xa = x0 + 0.05 + 0.068 * k
+        b.revolve((xa, y, z), (xa + 0.010, y, z), [(0, 0.0158), (1, 0.0158)], n=12, mat=0)
+    r0, r1 = x0 + 0.61, x0 + 0.955                                                                       # receiver
+    b.block(r0, r1, y - 0.0225, y + 0.0225, z - 0.060, z + 0.038, 0)
+    b.block(r0 + 0.02, r1 - 0.015, y - 0.020, y + 0.020, z + 0.038, z + 0.047, 0)                         # top cover
+    b.block(r0 + 0.015, r0 + 0.04, y - 0.012, y + 0.012, z + 0.047, z + 0.058, 1)                         # cover latch
+    b.block(r0 + 0.05, r0 + 0.13, y - s * 0.0225, y - s * 0.050, z - 0.004, z + 0.030, 1)                 # belt feedway, inboard
+    b.block(r1, r1 + 0.012, y - 0.026, y + 0.026, z - 0.064, z + 0.042, 0)                                # back plate
+    b.revolve((r1 + 0.012, y, z - 0.012), (x0 + 1.0, y, z - 0.012), [(0, 0.016), (1, 0.014)], n=10, mat=0)   # buffer
+    # charging handle: the bolt handle on the inboard side and a lever up to the pilot's hand
+    p0 = (r0 + 0.20, y - s * 0.0225, z + 0.012)
+    p1 = (r0 + 0.20, y - s * 0.050, z + 0.012)
+    b.tube(p0, p1, 0.006, n=8, mat=1)
+    b.tube(p1, (r0 + 0.17, y - s * 0.056, z + 0.14), 0.005, n=8, mat=1)
+    b.revolve((r0 + 0.17, y - s * 0.056, z + 0.14), (r0 + 0.163, y - s * 0.057, z + 0.175), [(0, 0.007), (0.5, 0.013), (1, 0.007)], n=10, mat=0)
+    for xmnt in (r0 + 0.03, r1 - 0.07):                                                                  # mounting lugs
+        b.block(xmnt, xmnt + 0.03, y - 0.028, y + 0.028, z - 0.074, z - 0.060, 1)
 
 
 def material(name):
@@ -461,6 +492,10 @@ class Peashooter:
         self.cockpit_outline = out
         b.loft([[(x, y, 0.30) for x, y in out], [(x, y, 1.2) for x, y in out]])
         boolean(b, "Leather")
+        for s in (1, -1):                                   # a well in the floor each side for the gun breech
+            b = Builder()
+            b.block(1.98, 2.47, s * 0.452, s * 0.520, -0.228, -0.10)
+            boolean(b, "Interior")
 
     # -- windscreen, sight, mast ------------------------------------------------
     def build_windscreen(self):
@@ -774,13 +809,39 @@ class Peashooter:
         self.add("Wires", b, mats=("Steel",), smooth=None)
 
     # -- guns ------------------------------------------------------------------------
+    def marker(self, name, pos, **props):
+        """An empty at a point of interest (a gun muzzle), for the game to read."""
+        e = bpy.data.objects.new(self.prefix + name, None)
+        e.empty_display_type, e.empty_display_size = "PLAIN_AXES", 0.08
+        self.col.objects.link(e)
+        e.parent = self.root
+        e.matrix_basis = Matrix.Translation(self.tb(pos))
+        self.world[e.name] = e.matrix_basis.copy()
+        for k, v in props.items():
+            e[k] = v
+        self.objects[e.name] = e
+        return e
+
     def build_guns(self):
+        """Two Browning .30 calibre M2 aircraft guns low in the fuselage sides.  Each fires
+        through a blast tube that runs forward between the cylinders; the breech sits in a
+        well in the cockpit floor beside the pilot's leg."""
+        gy, z, xm, xt = GUN["y"], GUN["z"], GUN["muzzle"], GUN["tube"]
         b = Builder()
+        g = Builder()
         for s in (1, -1):
-            z = -0.16
-            b.revolve((0.90, s * 0.49, z), (1.62, s * (fus_side(1.62, z) + 0.006), z), [(0, 0.021), (1, 0.021)], n=10, caps=(False, True))
-            b.revolve((1.20, s * (fus_side(1.2, z) - 0.02), z), (0.90, s * 0.49, z), [(0, 0.016), (1, 0.016)], n=10, mat=1, caps=(False, True))
+            y = s * gy
+            # one connected shell (outside, lip, bore) so the bore faces inwards
+            circ = lambda x, r: [(x, y + r * math.cos(2 * math.pi * k / 12), z + r * math.sin(2 * math.pi * k / 12)) for k in range(12)]
+            idx = [b.ring(q) for q in (circ(1.62, 0.021), circ(xt, 0.021), circ(xt, 0.016), circ(xm + 0.02, 0.016))]
+            b.bridge(idx[0], idx[1], 0)
+            b.bridge(idx[1], idx[2], 0)
+            b.bridge(idx[2], idx[3], 1)
+            browning(g, xm, y, z, s)
         self.add("BlastTubes", b, mats=("Skin", "Black"))
+        self.add("Guns", g, mats=("GunMetal", "Steel"), smooth=40.0)
+        for s, tag in ((1, "R"), (-1, "L")):
+            self.marker("Muzzle_" + tag, (xt, s * gy, z), gun="Browning .30 M2", bore_axis="-Y (forward)")
 
     def build(self):
         self.build_fuselage()

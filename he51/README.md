@@ -53,9 +53,17 @@ blender -b -P ../p26a/tools/render.py -- He-51A-1.blend /tmp/he51_ --scale 1.3 -
 - **Airframe:** fuselage with the boxy metal nose and rounded nose bowl, upper wing with
   the centre-section cut-out, shorter lower wing set further aft, tailplane, fin.
 - **Engine bay:** a recessed exhaust trough on each side of the nose with six upright
-  stubs, gun troughs along the top of the cowl, and the radiator with shutter slats
-  under the fuselage between the gear legs. The engine itself is hidden by the cowling,
-  as on the aircraft.
+  stubs, and the radiator with shutter slats under the fuselage between the gear legs.
+  The engine itself is hidden by the cowling, as on the aircraft.
+- **Guns:** two Rheinmetall MG 17 (7.92 mm) under the cowl, just ahead of the
+  instrument panel. Each has its muzzle booster, slotted barrel jacket, receiver with
+  top cover, belt feed, case chute, buffer and mounting lugs, and fires through a blast
+  tube to a short trough in the front of the cowl (the two dark slots beside the
+  propeller). The guns are hidden by the cowling, as on the aircraft; hide
+  `He51_Fuselage` to see them (`previews/he51_guns.jpg`).
+- **Muzzle markers:** `He51_Muzzle_L` and `He51_Muzzle_R` are empties at the blast tube
+  mouths, for tracers and muzzle flash. The bore points along the aircraft's nose
+  (−Y in Blender).
 - **Propeller:** two-blade wooden propeller, small spinner and the wrapped hub.
 - **Struts and wires:** N-shaped cabane and interplane struts, flying and landing wires,
   cross bracing between the gear legs, tail bracing wires, all with end fittings.
@@ -75,7 +83,7 @@ blender -b -P ../p26a/tools/render.py -- He-51A-1.blend /tmp/he51_ --scale 1.3 -
 - **First person:** `He51_Eye` is an empty at the pilot's eye; its child camera
   `He51_Cam` has an 80° field of view.
 
-About 22,000 triangles.
+About 23,500 triangles.
 
 ## Moving parts
 
@@ -111,7 +119,7 @@ main-wheel contact point.
   along the belly, dirt beside the rib tapes and in the seams, chipped paint down to
   aluminium on the nose panels.
 - **Atlases:** `he51_ext_*` (4096 px: airframe, gear, radiator) and `he51_parts_*`
-  (2048 px: propeller, exhausts, struts, wires, cockpit parts). ORM is occlusion,
+  (2048 px: propeller, exhausts, guns, struts, wires, cockpit parts). ORM is occlusion,
   roughness and metallic in the red, green and blue channels. `he51_panel.png` is the
   instrument panel; `balkenkreuz.png` is the cross decal used by the bake.
 - The windscreen glass and the instrument rims use plain materials.
@@ -128,7 +136,11 @@ main-wheel contact point.
   period-style dials drawn for this model, not copies of the real ones.
 - **Rib, stringer and panel lines** are texture, at regular spacings; they are not copied
   from the aircraft's real structure.
-- **Not modelled:** the pilot, the engine under the cowling, the guns themselves (only
-  their troughs), the rear-view mirror, lights, control cables and horns, wheel brakes.
+- **Guns:** the MG 17's length (1.175 m) and barrel length (0.60 m) are the published
+  figures. No installation drawing was found, so the position under the cowl and the
+  detail of the receiver are approximate.
+- **Not modelled:** the pilot, the engine under the cowling, ammunition boxes and belts,
+  the synchroniser gear, the rear-view mirror, lights, control cables and horns, wheel
+  brakes.
 - **Deflection angles** in the clips are for show, not the type's rigging limits.
 - No flight model or performance data is included.
