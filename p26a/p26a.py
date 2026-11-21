@@ -471,18 +471,27 @@ class Peashooter:
             edges += [(A(s), Bp(s)), (A(s), D(s)), (D(s), C(s)), (C(s), Bp(s))]
         for p0, p1 in edges:
             f.tube(p0, p1, 0.009, n=6)
-        # gun sight: one straight tube about 0.7 m long.  A thin rod starts on
-        # a short post on the cowl, passes through the centre pane of the
-        # windscreen and, behind the glass, widens into a cone that is rounded
-        # at the pilot's end; a second post carries it there.
-        SIGHT_FRONT = 1.45
-        s0, s1 = Vector((SIGHT_FRONT, 0, fus_top(SIGHT_FRONT) + 0.07)), Vector((2.135, 0, fus_top(2.06) + 0.085))
+        # gun sight, all outside and ahead of the windscreen (from the owner's
+        # reference picture): a long thin tube on the cowl, tapered to a point
+        # at its front end just behind the engine ring, carried on two studs
+        # (the front one on a small block) and ending at the windscreen glass;
+        # a short black scope piece with a rounded front sits above its rear
+        # end on the rear stud, with a bead on top.
+        s0 = Vector((0.98, 0, fus_top(0.98) + 0.085))
+        s1 = Vector((1.875, 0, fus_top(1.83) + 0.045))
         on = lambda x: s0 + (s1 - s0) * ((x - s0.x) / (s1.x - s0.x))
         tt = lambda x: (x - s0.x) / (s1.x - s0.x)
-        f.revolve(s0, s1, [(0, 0.006), (0.02, 0.011), (tt(1.975), 0.011), (tt(2.04), 0.021), (tt(2.09), 0.029),
-                           (tt(2.105), 0.031), (tt(2.12), 0.028), (tt(2.13), 0.020), (1, 0.008)], n=16, mat=1)
-        for x in (SIGHT_FRONT + 0.07, 2.075):
-            f.tube((x, 0, fus_top(x) - 0.01), (x, 0, on(x).z - 0.008), 0.007, n=6)
+        f.revolve(s0, s1, [(0, 0.003), (tt(1.04), 0.008), (tt(1.13), 0.013), (1, 0.013)], n=12, mat=1)
+        xf, xr = 1.25, 1.75
+        zb = fus_top(xf)
+        f.box([(xf - 0.03, -0.022, zb - 0.01), (xf + 0.03, -0.022, zb - 0.01), (xf + 0.03, 0.022, zb - 0.01), (xf - 0.03, 0.022, zb - 0.01),
+               (xf - 0.025, -0.018, zb + 0.035), (xf + 0.025, -0.018, zb + 0.035), (xf + 0.025, 0.018, zb + 0.035), (xf - 0.025, 0.018, zb + 0.035)])
+        f.tube((xf, 0, zb + 0.03), (xf, 0, on(xf).z - 0.008), 0.005, n=6, mat=1)
+        zsc = on(xr).z + 0.065                                    # the short scope piece above the tube
+        f.tube((xr, 0, fus_top(xr) - 0.01), (xr, 0, zsc - 0.012), 0.005, n=6, mat=1)
+        f.revolve((1.665, 0, zsc), (1.865, 0, zsc + 0.012), [(0, 0.006), (0.05, 0.017), (0.14, 0.021), (0.25, 0.017), (0.9, 0.016),
+                                                             (1, 0.019)], n=14, mat=1)
+        f.tube((1.69, 0, zsc + 0.018), (1.69, 0, zsc + 0.04), 0.0025, n=5, mat=1)
         self.add("WindscreenFrame", f, mats=("Skin", "Black"))
         # radio mast behind the engine, raked forward, with the aerial wire to the fin
         m = Builder()
