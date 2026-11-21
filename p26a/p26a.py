@@ -471,12 +471,20 @@ class Peashooter:
             edges += [(A(s), Bp(s)), (A(s), D(s)), (D(s), C(s)), (C(s), Bp(s))]
         for p0, p1 in edges:
             f.tube(p0, p1, 0.009, n=6)
-        # telescopic sight through the centre pane, on two posts, with a rubber eyepiece
-        zt = 0.745
-        f.revolve((0.98, 0, zt), (2.10, 0, zt), [(0, 0.024), (0.03, 0.03), (0.06, 0.022), (0.94, 0.022), (1, 0.03)], n=12, mat=0)
-        f.revolve((2.10, 0, zt), (2.17, 0, zt), [(0, 0.03), (1, 0.036)], n=12, mat=1)
-        for x in (1.05, 1.70):
-            f.tube((x, 0, fus_top(x) - 0.01), (x, 0, zt - 0.02), 0.008, n=6)
+        # gun sight: a short scope on a post just behind the windscreen glass,
+        # conical (pointed towards the nose, wide at the pilot's end with a
+        # rubber eyecup), with a bead on top of its front end
+        zs = fus_top(2.06) + 0.068
+        f.revolve((1.975, 0, zs), (2.135, 0, zs), [(0, 0.005), (0.10, 0.010), (0.45, 0.021), (0.72, 0.029), (0.84, 0.031),
+                                                   (0.92, 0.028), (0.97, 0.020), (1, 0.008)], n=16, mat=1)   # rounded at the pilot's end
+        f.tube((2.075, 0, fus_top(2.075) - 0.01), (2.075, 0, zs - 0.015), 0.008, n=8, mat=1)
+        f.tube((1.98, 0, zs + 0.004), (1.98, 0, zs + 0.03), 0.0025, n=5, mat=1)
+        # thin sighting rod on the cowl ahead of the windscreen, on two short posts
+        r0, r1 = (0.98, 0, fus_top(0.98) + 0.075), (1.62, 0, fus_top(1.62) + 0.06)
+        f.revolve(r0, r1, [(0, 0.006), (0.03, 0.011), (1, 0.011)], n=8, mat=0)
+        for x in (1.06, 1.52):
+            t = (x - r0[0]) / (r1[0] - r0[0])
+            f.tube((x, 0, fus_top(x) - 0.01), (x, 0, r0[2] + (r1[2] - r0[2]) * t), 0.006, n=6)
         self.add("WindscreenFrame", f, mats=("Skin", "Black"))
         # radio mast behind the engine, raked forward, with the aerial wire to the fin
         m = Builder()
