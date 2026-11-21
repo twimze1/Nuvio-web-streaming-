@@ -107,7 +107,7 @@ def paint_panel(path):
             dial(cx, cy, R, 0, 330, ["12", "", "", "3", "", "", "6", "", "", "9", "", ""], 1, "", 0.82)
         elif face in ("temp", "press", "fuel"):
             lab = {"temp": ["0", "50", "100"], "press": ["0", "2", "4"], "fuel": ["0", "1/2", "1"]}[face]
-            dial(cx, cy, R, -120, 120, lab, 4, {"temp": "°C", "press": "kg/cm²", "fuel": "Kraftstoff"}[face], 0.45)
+            dial(cx, cy, R, -120, 120, lab, 4, {"temp": "°C", "press": "kg/cm²", "fuel": "Ltr"}[face], 0.45)
         elif face == "turn":
             d.ellipse((cx - R, cy - R, cx + R, cy + R), fill=(8, 8, 8))
             text((cx, cy - R * 0.55), "DREHT", int(R * 0.2))
