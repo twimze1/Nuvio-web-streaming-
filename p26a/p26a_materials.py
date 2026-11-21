@@ -340,8 +340,9 @@ def skin_shader(mat, mode, tex):
     thr = nt.math("SUBTRACT", 0.75, nt.math("MULTIPLY", nt.ss(fwd, 0.78, 0.99), 0.15))
     thr = nt.math("SUBTRACT", thr, nt.math("MULTIPLY", near_seam, 0.035))
     if mode == "wing":
-        walk = nt.mul(nt.ss(yd, -1.0, -0.9), nt.ss(yd, -0.5, -0.56, 1.0, 0.0), nt.ss(xd, 1.9, 2.1), nt.ss(xd, 3.15, 3.0), nt.ss(nz, 0.4, 0.7))
-        thr = nt.math("SUBTRACT", thr, nt.math("MULTIPLY", walk, 0.17))
+        # walkway: a strip on the port wing beside the fuselage only (y from -0.9 to -0.56)
+        walk = nt.mul(nt.ss(yd, -1.0, -0.9), nt.ss(yd, -0.56, -0.50, 1.0, 0.0), nt.ss(xd, 1.9, 2.1), nt.ss(xd, 3.15, 3.0), nt.ss(nz, 0.4, 0.7))
+        thr = nt.math("SUBTRACT", thr, nt.math("MULTIPLY", walk, 0.10))
     else:
         rim = nt.mul(nt.ss(zd, 0.5, 0.62), nt.ss(xd, 2.05, 2.15), nt.ss(xd, 2.85, 2.75), nt.ss(nt.math("ABSOLUTE", yd), 0.45, 0.35))
         thr = nt.math("SUBTRACT", thr, nt.math("MULTIPLY", rim, 0.12))
@@ -487,6 +488,8 @@ def unwrap(objs):
 
 
 def bake_group(group, objs, size, tex, samples):
+    """Bake one atlas.  With P26_KEEP_AO=1 and an existing ORM map, the
+    occlusion channel (geometry only, the slowest pass) is reused."""
     from PIL import Image
     sc = bpy.context.scene
     sc.render.engine = "CYCLES"
@@ -504,7 +507,13 @@ def bake_group(group, objs, size, tex, samples):
         uv0[o.name] = (lay, arr)
     res, cover = {}, None
     try:
+        old_orm = os.path.join(tex, "p26a_%s_orm.jpg" % group)
+        keep_ao = os.environ.get("P26_KEEP_AO") == "1" and os.path.exists(old_orm)
         for channel in ("basecolor", "roughness", "metallic", "normal", "ao"):
+            if channel == "ao" and keep_ao:
+                res["ao"] = np.ascontiguousarray(np.asarray(Image.open(old_orm).convert("RGB"))[::-1, :, 0])
+                print("kept", group, "ao", flush=True)
+                continue
             kind = {"normal": "NORMAL", "ao": "AO"}.get(channel, "EMIT")
             sc.cycles.samples = max(samples, 32) if channel == "ao" else samples
             rgb = channel in ("basecolor", "normal")
