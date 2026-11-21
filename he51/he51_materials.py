@@ -47,7 +47,7 @@ def paint_cross(path):
     n = 1024
     im = Image.new("RGBA", (n, n), (0, 0, 0, 0))
     d = ImageDraw.Draw(im)
-    c, a, wb, ln, L = n / 2, 0.115 * n, 0.045 * n, 0.012 * n, n / 2 - 4
+    c, a, wb, ln, L = n / 2, 0.14 * n, 0.032 * n, 0.010 * n, n / 2 - 4
     for half, col in ((a + wb + ln, (14, 14, 14, 255)), (a + wb, (228, 226, 218, 255)), (a, (14, 14, 14, 255))):
         d.rectangle((c - half, c - L, c + half, c + L), fill=col)
         d.rectangle((c - L, c - half, c + L, c + half), fill=col)
@@ -281,11 +281,11 @@ def procedural(h, tex):
         for s in o.material_slots:
             if s.material == base:
                 s.material = skins[mode]
-    worn(H.material("Wood"), (0.095, 0.03, 0.016), 0.0, 0.28, grime=0.15, scale=18.0, dark=(0.03, 0.012, 0.008))
+    worn(H.material("Wood"), (0.072, 0.023, 0.013), 0.0, 0.28, grime=0.15, scale=18.0, dark=(0.03, 0.012, 0.008))
     worn(H.material("Steel"), (0.32, 0.32, 0.33), 1.0, 0.42, grime=0.2)
     worn(H.material("Strut"), (0.09, 0.10, 0.115), 0.2, 0.42, grime=0.15, dark=(0.25, 0.25, 0.24))
     worn(H.material("Black"), (0.015, 0.015, 0.015), 0.0, 0.5, grime=0.15, dark=(0.10, 0.10, 0.10))
-    worn(H.material("Exhaust"), (0.13, 0.08, 0.05), 0.6, 0.75, grime=0.6, bump=0.002, scale=140.0)
+    worn(H.material("Exhaust"), (0.065, 0.045, 0.035), 0.6, 0.75, grime=0.6, bump=0.002, scale=140.0)
     worn(H.material("Tyre"), (0.02, 0.02, 0.02), 0.0, 0.85, grime=0.5, dark=(0.10, 0.09, 0.07), bump=0.001)
     worn(H.material("LeatherBrown"), (0.10, 0.04, 0.02), 0.0, 0.5, grime=0.3, bump=0.0015, scale=160.0)
     worn(H.material("LeatherTan"), (0.30, 0.22, 0.13), 0.0, 0.6, grime=0.3, bump=0.0012, scale=200.0)

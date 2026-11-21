@@ -45,8 +45,9 @@ EXHAUST = (0.86, 1.76, 0.16, 0.45)  # exhaust trough on each side of the nose: x
 
 # fuselage: x, half-width, z top, z bottom, section exponent
 FUS = table([
-    (0.52, 0.30, 0.47, -0.27, 2.2), (0.70, 0.40, 0.56, -0.33, 2.6), (1.11, 0.45, 0.64, -0.40, 3.0),
-    (1.86, 0.45, 0.69, -0.40, 3.0), (2.86, 0.44, 0.74, -0.44, 2.6), (3.30, 0.43, 0.74, -0.46, 2.4),
+    (0.40, 0.17, 0.21, -0.15, 2.0), (0.45, 0.27, 0.38, -0.22, 2.2),                 # rounded nose bowl behind the hub
+    (0.52, 0.32, 0.47, -0.27, 2.5), (0.70, 0.40, 0.56, -0.33, 3.0), (1.11, 0.45, 0.64, -0.40, 3.4),
+    (1.86, 0.45, 0.69, -0.40, 3.4), (2.86, 0.44, 0.74, -0.44, 2.8), (3.30, 0.43, 0.74, -0.46, 2.4),
     (3.89, 0.42, 0.74, -0.46, 2.3), (4.92, 0.34, 0.625, -0.42, 2.2), (6.03, 0.24, 0.555, -0.36, 2.1),
     (6.69, 0.17, 0.55, -0.32, 2.0), (7.64, 0.03, 0.50, -0.24, 2.0),
 ])
@@ -210,7 +211,7 @@ class He51(P.Peashooter):
     def build_fuselage(self):
         b = Builder()
         n = 44
-        xs = list(np.arange(0.52, 7.64, 0.12)) + [7.64]
+        xs = [0.40, 0.42, 0.45, 0.48] + list(np.arange(0.52, 7.64, 0.12)) + [7.64]
         b.loft([[fus_point(x, 2 * math.pi * k / n) for k in range(n)] for x in xs])
         fus = self.add("Fuselage", b, mats=("Skin", "Interior", "LeatherTan"))
         c = Builder()                                           # cockpit cavity inside the skin
@@ -237,7 +238,8 @@ class He51(P.Peashooter):
 
         # spinner and the two-blade wooden propeller
         b = Builder()
-        b.revolve((0.0, 0, 0), (0.515, 0, 0), [(0, 0.004), (0.06, 0.06), (0.2, 0.13), (0.45, 0.20), (0.75, 0.245), (1, 0.262)], n=28, mat=0)
+        b.revolve((0.0, 0, 0), (0.30, 0, 0), [(0, 0.004), (0.08, 0.05), (0.3, 0.10), (0.65, 0.145), (1, 0.168)], n=28, mat=0)
+        b.revolve((0.30, 0, 0), (0.41, 0, 0), [(0, 0.172), (1, 0.172)], n=28, mat=1)          # hub, wrapped like the blades
         Rp, xp = PROP_DIAMETER / 2, 0.34
         for sg in (-1, 1):
             rings = []
@@ -290,6 +292,9 @@ class He51(P.Peashooter):
         b.box(pts, mat=0)
         b.poly([(r0 + 0.094, -0.30, -0.42), (r0 + 0.094, 0.30, -0.42), (r0 - 0.004, 0.33, -0.68), (r0 - 0.004, -0.33, -0.68)], mat=1)
         b.poly([(r1 + 0.003, -0.30, -0.44), (r1 - 0.047, -0.33, -0.68), (r1 - 0.047, 0.33, -0.68), (r1 + 0.003, 0.30, -0.44)], mat=1)
+        for z in np.linspace(-0.455, -0.655, 6):                              # shutter slats across the front
+            xf = r0 + 0.094 - 0.098 * (-0.42 - z) / 0.26 - 0.008
+            b.bar((xf, -0.30, z), (xf, 0.30, z), 0.034, 0.004, up=(1, 0, -0.45), mat=0)
         self.add("Radiator", b, mats=("Skin", "Black"), smooth=None)
 
     def build_windscreen(self):
@@ -386,9 +391,16 @@ class He51(P.Peashooter):
                 wire((xr, s * (fus_side(xr, -0.30) + 0.01), wing_surf(LOWER, xr, 0.5, +1)), u)
             wire(w1, l1)
             wire(w2, l2)
+            # cross bracing between the main legs
+            wx, wy, wz, wr = WHEEL
+            wire((wx + 0.02, s * (wy - 0.15), wz + 0.10), (wx + 0.10, -s * 0.30, -0.43))
             # tail bracing
             wire((7.30, 0.0, 1.05), (7.20, s * 1.25, TAIL_Z + 0.03))
             wire((7.20, s * 1.25, TAIL_Z - 0.03), (7.20, s * 0.10, -0.26))
+        ys, zs0 = -(fus_side(3.40, -0.40) + 0.05), -0.42                  # foot step under the port wing root
+        for x in (3.34, 3.46):
+            w.tube((x, ys, zs0), (x, ys - 0.02, zs0 - 0.20), 0.006, n=6)
+        w.tube((3.33, ys - 0.02, zs0 - 0.20), (3.47, ys - 0.02, zs0 - 0.20), 0.008, n=6)
         self.add("Struts", b, mats=("Strut",), smooth=None)
         self.add("Wires", w, mats=("Steel",), smooth=None)
 

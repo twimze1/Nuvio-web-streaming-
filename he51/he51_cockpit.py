@@ -1,11 +1,12 @@
 """Open cockpit of the He 51 A-1, laid out from the owner's cockpit
 screenshots: a grey upper panel with the magneto switch, altimeter (Hoehe),
-airspeed (Fahrt), turn-and-bank and tachometer; a dark lower panel with the
-small engine gauges; a brown padded roll above the panel and tan leather
-round the opening; a stick with a ring grip; two yellow-knobbed levers on
-the right wall and the throttle on the left; the gun breeches above the
-panel.  PANEL lists the instruments; the panel texture is painted from the
-same list (he51_materials.paint_panel).
+airspeed (Fahrt), turn-and-bank and tachometer; a lower panel with the small
+engine gauges and the compass; the two red-knobbed gun charging handles; a
+brown padded roll above the panel and tan leather round the opening; a stick
+with a ring grip; two yellow-knobbed levers on the right wall and the
+throttle on the left; the sight mount on the cowl ahead of the roll.  PANEL
+lists the instruments; the panel texture is painted from the same list
+(he51_materials.paint_panel).
 """
 import math
 
