@@ -52,8 +52,10 @@ blender -b -P tools/render.py -- P-26A_Peashooter.blend /tmp/p26_ hero side fron
 ## What is modelled
 
 - **Airframe:** fuselage, the tall headrest fairing with its padded front, wire-braced
-  low wing, tailplane, fin, and the three-pane windscreen with the telescopic sight
-  through it.
+  low wing, tailplane, fin, and the three-pane windscreen.
+- **Gun sight:** a long thin tube on the cowl ahead of the windscreen, tapered to a
+  point at its front end, on two studs (the front one on a small block), ending at the
+  glass. It follows your close-up reference picture.
 - **Engine:** crankcase, nine finned cylinders with heads, rocker boxes and pushrod
   tubes, ignition ring, individual exhaust stubs, and the Townend ring.
 - **Propeller:** two-blade Hamilton Standard type with the ground-adjustable hub.
@@ -63,9 +65,16 @@ blender -b -P tools/render.py -- P-26A_Peashooter.blend /tmp/p26_ hero side fron
   jury struts, cross and drag wires at the gear legs, all with end fittings.
 - **Details:** gun blast tubes on the fuselage sides, radio mast and aerial wires, pitot
   head, wingtip and tail lights.
-- **Cockpit:** curved instrument panel with eleven instruments, aluminium bucket seat
-  with belts, control stick, rudder pedals, throttle quadrant, frames and stringers on
-  bare-metal walls, and the leather roll round the opening.
+- **Cockpit,** laid out from a photograph of a real P-26A cockpit (the museum
+  aircraft):
+  - a black crescent-shaped panel: airspeed, a window-type compass, tachometer and a
+    small clock in the top row; altimeter, turn-and-bank, the three-in-one engine gauge
+    and a fourth gauge below; a small gauge and the ignition switch at the far left;
+  - a pedestal under the centre with the red fuel selector and a gauge;
+  - a tall stick with a black grip, rudder pedals, the throttle quadrant on the left
+    wall, a hand crank and a lever on the right wall;
+  - an aluminium bucket seat with belts, frames and stringers on bare-metal walls, and
+    the leather roll round the opening.
 - **First person:** `P26_Eye` is an empty at the pilot's eye; its child camera `P26_Cam`
   has an 80° field of view.
 
@@ -114,8 +123,9 @@ the main-wheel contact point.
   clears the engine's published diameter; the drawing shows it nearer 1.35 m.
 - **Aerofoil:** the type used the Boeing 109 section. Its coordinates were not available,
   so the wing uses a 10 % cambered section of similar thickness.
-- **Cockpit:** the layout is representative of the type, not taken from a P-26 manual.
-  Instrument faces are generic period dials.
+- **Cockpit:** positions were read by eye from one small photograph (535 × 446 px);
+  no P-26 manual was found online. Instrument faces are period-style dials drawn for
+  this model, not copies of the real ones.
 - **Rivets and seams** are texture, at regular spacings; they are not copied from the
   aircraft's real panel layout.
 - **Not modelled:** the pilot, the guns themselves (only their blast tubes), bomb racks,
