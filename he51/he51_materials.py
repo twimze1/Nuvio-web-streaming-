@@ -23,15 +23,16 @@ import he51 as H
 import he51_cockpit as C
 from p26a_materials import NT, worn, unwrap, bake_group, image_material
 
-GREY = (0.40, 0.43, 0.385)             # RLM 63 light grey
-RED = (0.50, 0.035, 0.02)
+GREY = (0.325, 0.385, 0.375)             # RLM 63 light grey
+RED = (0.58, 0.03, 0.014)
 WHITE = (0.80, 0.80, 0.77)
 BLACK = (0.012, 0.012, 0.012)
 SOOT = (0.012, 0.011, 0.010)
 ALUMINIUM = (0.60, 0.60, 0.61)
-CROSS = dict(fuselage=(5.0, 0.10, 0.95), upper=(2.58, 4.20, 1.30), lower=(2.89, 3.20, 0.95))
+CROSS = dict(fuselage=(5.0, 0.10, 0.95), upper=(2.58, 4.30, 1.42), lower=(2.89, 3.20, 0.95))
 BANDS = (5.895, 6.035, 0.035)          # two fuselage bands: centres, half-width
-TAIL_BAND = (0.75, 1.20)               # z range of the tail markings
+TAIL_BAND = (0.57, 1.17)               # z range of the tail markings
+TAIL_DISC = (7.74, 0.23)               # white disc on the port side: centre x, radius
 GROUPS = {
     "ext": (4096, ["Fuselage", "UpperWing", "Aileron_L", "Aileron_R", "LowerWing", "Tailplane", "Elevator_L", "Elevator_R",
                    "Fin", "Rudder", "MainGear_L", "MainGear_R", "Radiator"]),
@@ -57,12 +58,13 @@ def paint_panel(path):
     from PIL import Image, ImageDraw, ImageFont
     W, H_ = 1152, 1024
     rng = np.random.default_rng(51)
-    base = np.zeros((H_, W, 3), np.float32) + np.array([112, 120, 110], np.float32)        # grey upper panel
+    base = np.zeros((H_, W, 3), np.float32) + np.array([150, 160, 156], np.float32)        # grey upper panel
     px = lambda y, z: (C.panel_uv(y, z)[0] * W, (1 - C.panel_uv(y, z)[1]) * H_)
     lw, lz0, lz1 = C.LOWER
     x0, y1 = px(-lw, lz0)
     x1, y0 = px(lw, lz1)
-    base[int(y0):int(y1), int(x0):int(x1)] = (38, 40, 42)                                   # dark lower panel
+    base[int(y0):int(y1), int(x0):int(x1)] = (132, 142, 138)                                # lower panel, set forward in the shadow
+    base[int(y0):int(y0) + 40, int(x0):int(x1)] *= np.linspace(0.55, 1.0, 40, dtype=np.float32)[:, None, None]
     base += (rng.random((H_, W, 1)) * 12 - 6)
     im = Image.fromarray(np.clip(base, 0, 255).astype(np.uint8))
     d = ImageDraw.Draw(im)
@@ -96,9 +98,9 @@ def paint_panel(path):
         cx, cy = px(y, z)
         R = r * k
         if face == "asi":
-            dial(cx, cy, R, 30, 330, ["", "100", "150", "200", "250", "300", "350", "400"], 2, "km/h", 0.0, "Fahrt")
+            dial(cx, cy, R, 215, 530, ["100", "150", "200", "250", "300", "350", "400", "450"], 5, "km/h", 0.0, "Fahrt")
         elif face == "alt":
-            dial(cx, cy, R, 0, 324, [str(i) for i in range(10)], 2, "km", 0.0, "Höhe")
+            dial(cx, cy, R, 180, 495, [str(i) for i in range(8)], 5, "km", 0.0, "Höhe")
         elif face == "tach":
             dial(cx, cy, R, -140, 140, ["6", "8", "10", "12", "14", "16", "18", "20", "22", "24"], 2, "U/min x100", 0.05)
         elif face == "clock":
@@ -128,9 +130,16 @@ def paint_panel(path):
         for a in (45, 135, 225, 315):
             sx, sy = cx + (R + 8) * math.cos(math.radians(a)), cy + (R + 8) * math.sin(math.radians(a))
             d.ellipse((sx - 3, sy - 3, sx + 3, sy + 3), fill=(60, 60, 60), outline=(110, 110, 105))
-    for dy, col in ((-0.20, (150, 26, 22)), (0.20, (190, 110, 20))):                       # red and orange switches, lower panel
-        cx, cy = px(dy, 0.10)
-        d.rounded_rectangle((cx - 16, cy - 20, cx + 16, cy + 20), 4, fill=col, outline=(20, 20, 20), width=2)
+    cx, cy = px(-0.105, 0.225)                                                              # red switch box
+    d.rounded_rectangle((cx - 26, cy - 34, cx + 26, cy + 34), 4, fill=(22, 22, 22))
+    d.rectangle((cx - 16, cy - 16, cx + 16, cy + 14), fill=(190, 70, 80))
+    cx, cy = px(0.105, 0.225)                                                               # orange push button
+    d.ellipse((cx - 30, cy - 30, cx + 30, cy + 30), fill=(18, 18, 18))
+    d.ellipse((cx - 13, cy - 13, cx + 13, cy + 13), fill=(215, 110, 40))
+    for yy, zz, lab in ((-0.215, 0.395, "Brandhahn"), (0.0, 0.395, "Kraftstoff"), (0.215, 0.395, "Kühlstoff")):
+        cx, cy = px(yy, zz)
+        d.rectangle((cx - 44, cy - 9, cx + 44, cy + 9), fill=(16, 16, 16), outline=(150, 150, 140))
+        text((cx, cy), lab, 12)
     im.save(path)
 
 
@@ -163,8 +172,11 @@ def skin(mat, mode, tex):
     # ---- structure showing through: rib tapes / stringers on fabric, seams and fasteners on metal
     if mode == "fuselage":
         girth = nt.math("MULTIPLY", nt.math("ARCTAN2", zd, yd), 0.42)
-        metal_zone = nt.ss(xd, 3.10, 3.00)                        # 1 on the metal nose, 0 on the fabric rear
-        rib = nt.mul(nt.ss(dist(girth, 0.11), 0.016, 0.006), nt.math("SUBTRACT", 1.0, metal_zone))
+        metal_zone = nt.ss(xd, 2.80, 2.72)                        # 1 on the metal nose, 0 on the fabric rear
+        fabric = nt.math("SUBTRACT", 1.0, metal_zone)
+        rd = dist(girth, 0.11)
+        rib = nt.mul(nt.ss(rd, 0.014, 0.006), fabric)
+        ridge = nt.mul(nt.ss(rd, 0.055, 0.0), fabric)
         seams = nt.math("MINIMUM", dist(nt.math("SUBTRACT", xd, 0.22), 0.62), dist(girth, 0.33))
         seam = nt.mul(nt.ss(seams, 0.0032, 0.0014), metal_zone)
         near_seam = nt.mul(nt.ss(seams, 0.035, 0.003), metal_zone)
@@ -173,7 +185,13 @@ def skin(mat, mode, tex):
     else:
         across = {"upper": yd, "lower": yd, "tail": yd, "fin": zd}[mode]
         spacing = {"upper": 0.29, "lower": 0.29, "tail": 0.24, "fin": 0.22}[mode]
-        rib = nt.ss(dist(across, spacing), 0.018, 0.007)
+        rd = dist(across, spacing)
+        fabric = 1.0
+        if mode in ("upper", "lower"):                            # plywood leading edge: no ribs show
+            w = H.UPPER if mode == "upper" else H.LOWER
+            fabric = nt.ss(xd, w["le"] + 0.13 * w["chord"], w["le"] + 0.19 * w["chord"])
+        rib = nt.mul(nt.ss(rd, 0.018, 0.007), fabric)
+        ridge = nt.mul(nt.ss(rd, spacing / 2, 0.0), fabric)
         seam = near_seam = rivet = None
 
     # ---- markings
@@ -203,27 +221,29 @@ def skin(mat, mode, tex):
         stbd = nt.ss(nyd, -0.05, 0.05)
         third = (z1 - z0) / 3
         stripes = nt.mix(nt.ss(zd, z0 + third - 0.003, z0 + third), RED, nt.mix(nt.ss(zd, z0 + 2 * third - 0.003, z0 + 2 * third), WHITE, BLACK))
-        r2 = nt.math("ADD", nt.math("POWER", nt.math("SUBTRACT", xd, 7.78), 2.0), nt.math("POWER", nt.math("SUBTRACT", zd, (z0 + z1) / 2), 2.0))
-        port = nt.mix(nt.ss(nt.math("SQRT", r2), 0.172, 0.168), RED, WHITE)
+        r2 = nt.math("ADD", nt.math("POWER", nt.math("SUBTRACT", xd, TAIL_DISC[0]), 2.0), nt.math("POWER", nt.math("SUBTRACT", zd, (z0 + z1) / 2), 2.0))
+        port = nt.mix(nt.ss(nt.math("SQRT", r2), TAIL_DISC[1] + 0.002, TAIL_DISC[1] - 0.002), RED, WHITE)
         paint = nt.mix(inband, paint, nt.mix(stbd, port, stripes))
 
     # ---- weathering
-    streak_v = nt.vec(nt.math("MULTIPLY", xd, 1.5), nt.math("MULTIPLY", yd, 24.0), nt.math("MULTIPLY", zd, 24.0))
+    streak_v = nt.vec(nt.math("MULTIPLY", xd, 2.2), nt.math("MULTIPLY", yd, 11.0), nt.math("MULTIPLY", zd, 11.0))
     streak = nt.noise(streak_v, 1.0, 4.0, 0.6)
-    grime = nt.math("ADD", nt.math("MULTIPLY", nt.ss(dist({"fuselage": zd, "fin": zd}.get(mode, yd), 0.29), 0.05, 0.015), 0.0),
-                    nt.ss(streak, 0.55, 0.85, 0.0, 0.12))
-    grime = nt.math("ADD", grime, nt.math("MULTIPLY", rib, 0.10))
+    grime = nt.ss(streak, 0.55, 0.85, 0.0, 0.10)
+    tape_edge = nt.math("SUBTRACT", nt.mul(nt.ss(rd, 0.032, 0.016), fabric), rib)       # dirt beside the rib tapes
+    grime = nt.math("ADD", grime, nt.math("MULTIPLY", tape_edge, 0.13))
     if near_seam is not None:
         grime = nt.math("ADD", grime, nt.math("MULTIPLY", near_seam, 0.30))
     if mode == "fuselage":
         zone = nt.mul(nt.ss(xd, 0.85, 1.05), nt.ss(xd, 5.2, 2.0), nt.ss(zd, -0.30, -0.05), nt.ss(zd, 0.62, 0.40))
-        soot = nt.mul(zone, nt.ss(streak, 0.25, 0.7, 0.3, 0.95))
+        soot = nt.mul(zone, nt.ss(streak, 0.3, 0.8, 0.14, 0.52))
         belly = nt.mul(nt.ss(nz, -0.5, -0.85), nt.ss(xd, 1.6, 2.2), nt.ss(streak, 0.4, 0.75), 0.8)
         grime = nt.math("ADD", grime, nt.mx(soot, belly))
     grime = nt.math("MINIMUM", nt.math("MULTIPLY", grime, nt.ss(fine, 0.2, 0.8, 0.6, 1.0)), 1.0)
     color = nt.mix(grime, paint, SOOT)
-    color = nt.mix(nt.math("MULTIPLY", rib, 0.10), color, (0.75, 0.77, 0.74))          # tapes catch the light
-    height = nt.math("MULTIPLY", rib, 0.8)
+    color = nt.mix(nt.math("MULTIPLY", rib, 0.6), color, nt.mix(1.0, color, (0.045, 0.045, 0.045), blend="ADD"))   # tapes catch the light
+    color = nt.mix(nt.math("MULTIPLY", nt.math("SUBTRACT", fabric, ridge) if fabric != 1.0 else nt.math("SUBTRACT", 1.0, ridge), 0.07),
+                   color, (0.05, 0.055, 0.05))                                         # fabric sags between the ribs
+    height = nt.math("ADD", nt.math("MULTIPLY", ridge, 3.0), nt.math("MULTIPLY", rib, 0.5))
     chip = None
     if seam is not None:
         color = nt.mix(nt.math("MULTIPLY", seam, 0.85), color, (0.01, 0.01, 0.01))
@@ -261,7 +281,7 @@ def procedural(h, tex):
         for s in o.material_slots:
             if s.material == base:
                 s.material = skins[mode]
-    worn(H.material("Wood"), (0.17, 0.055, 0.028), 0.0, 0.28, grime=0.15, scale=18.0, dark=(0.05, 0.02, 0.012))
+    worn(H.material("Wood"), (0.095, 0.03, 0.016), 0.0, 0.28, grime=0.15, scale=18.0, dark=(0.03, 0.012, 0.008))
     worn(H.material("Steel"), (0.32, 0.32, 0.33), 1.0, 0.42, grime=0.2)
     worn(H.material("Strut"), (0.09, 0.10, 0.115), 0.2, 0.42, grime=0.15, dark=(0.25, 0.25, 0.24))
     worn(H.material("Black"), (0.015, 0.015, 0.015), 0.0, 0.5, grime=0.15, dark=(0.10, 0.10, 0.10))
@@ -272,7 +292,6 @@ def procedural(h, tex):
     worn(H.material("Interior"), (0.20, 0.22, 0.19), 0.0, 0.5, grime=0.3, scale=90.0)
     worn(H.material("Belt"), (0.40, 0.36, 0.25), 0.0, 0.85, grime=0.3, bump=0.0008, scale=300.0)
     worn(H.material("KnobYellow"), (0.75, 0.55, 0.04), 0.0, 0.35, grime=0.15)
-    worn(H.material("KnobRed"), (0.5, 0.03, 0.02), 0.0, 0.35, grime=0.15)
     panel = H.material("Panel")
     nt = NT(panel)
     out = nt.node("ShaderNodeOutputMaterial")

@@ -86,7 +86,7 @@ def ground(sc, z):
 
 
 def main(argv):
-    opts = {"size": (1600, 900), "samples": 48, "clay": False, "level": False, "sun": (40.0, 150.0), "scale": 1.0}
+    opts = {"size": (1600, 900), "samples": 48, "clay": False, "level": False, "sun": (40.0, 150.0), "scale": 1.0, "exposure": 0.0}
     pos, i = [], 0
     while i < len(argv):
         a = argv[i]
@@ -98,6 +98,8 @@ def main(argv):
             opts["sun"] = (float(argv[i + 1]), float(argv[i + 2])); i += 3
         elif a == "--scale":                     # camera distances, for a larger or smaller aircraft
             opts["scale"] = float(argv[i + 1]); i += 2
+        elif a == "--exposure":                  # stops; negative for a pale aircraft
+            opts["exposure"] = float(argv[i + 1]); i += 2
         elif a in ("--clay", "--level"):
             opts[a[2:]] = True; i += 1
         else:
@@ -142,6 +144,7 @@ def main(argv):
         sc.view_settings.view_transform = "AgX"
     except TypeError:
         pass
+    sc.view_settings.exposure = opts["exposure"]
     sky(sc, opts["sun"][0], opts["sun"][1], pose)
     cam = bpy.data.objects.new("RenderCam", bpy.data.cameras.new("RenderCam"))
     sc.collection.objects.link(cam)

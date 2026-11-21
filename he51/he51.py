@@ -41,6 +41,7 @@ UPPER = dict(le=1.74, chord=1.68, z=1.18, dih=math.radians(1.5), span=11.0, tc=0
 LOWER = dict(le=2.30, chord=1.18, z=-0.375, dih=math.radians(3.0), span=8.2, tc=0.11, tip=0.60)
 AILERON = (2.16, 4.86, 0.80)       # upper wing only: inboard, outboard |y|, hinge chord fraction
 CUTOUT = (0.44, 0.833)             # upper centre-section trailing-edge cut-out: half-width, chord fraction
+EXHAUST = (0.86, 1.76, 0.16, 0.45)  # exhaust trough on each side of the nose: x front, x rear, z bottom, z top
 
 # fuselage: x, half-width, z top, z bottom, section exponent
 FUS = table([
@@ -77,6 +78,24 @@ def fus_side(x, z):
     return a * (1 - r ** e) ** (1 / e)
 
 
+def sweep(b, pts, r, n=8, mat=0, closed=False):
+    """A round bar along a polyline, with one ring at each point (smooth joints)."""
+    pts = [Vector(p) for p in pts]
+    m = len(pts)
+    rings = []
+    for i, p in enumerate(pts):
+        a = pts[(i - 1) % m] if (closed or i > 0) else p
+        c = pts[(i + 1) % m] if (closed or i < m - 1) else p
+        t = (c - a).normalized()
+        u = t.cross(Vector((0, 0, 1)))
+        u = u.normalized() if u.length > 1e-6 else Vector((1, 0, 0))
+        v = u.cross(t)
+        rings.append([tuple(p + r * (math.cos(2 * math.pi * k / n) * u + math.sin(2 * math.pi * k / n) * v)) for k in range(n)])
+    if closed:
+        rings.append(rings[0])
+    b.loft(rings, mat=mat, caps=(not closed, not closed))
+
+
 def wing_geo(w, y):
     """Leading edge x, chord and z of the chord line at span station y (rounded tips)."""
     hs, rt = w["span"] / 2, w["tip"]
@@ -103,11 +122,12 @@ def wing_surf(w, x, y, side):
 
 MATERIALS = {
     #  name          base colour (linear)        metal  rough  alpha
-    "Skin":        ((0.40, 0.43, 0.40), 0.0, 0.42, 1.0),      # RLM 63 light grey
+    "Skin":        ((0.325, 0.385, 0.375), 0.0, 0.42, 1.0),      # RLM 63 light grey
     "Wood":        ((0.16, 0.055, 0.03), 0.0, 0.30, 1.0),     # varnished laminated propeller
     "Steel":       ((0.30, 0.30, 0.31), 1.0, 0.40, 1.0),
     "Strut":       ((0.10, 0.11, 0.12), 0.3, 0.45, 1.0),      # dark blue-grey struts
     "Black":       ((0.015, 0.015, 0.015), 0.0, 0.5, 1.0),
+    "Bezel":       ((0.012, 0.012, 0.012), 0.0, 0.45, 1.0),   # instrument rims (plain, not baked)
     "Exhaust":     ((0.10, 0.07, 0.05), 0.7, 0.7, 1.0),
     "Tyre":        ((0.02, 0.02, 0.02), 0.0, 0.85, 1.0),
     "Glass":       ((0.6, 0.7, 0.7), 0.0, 0.03, 0.25),
@@ -237,21 +257,28 @@ class He51(P.Peashooter):
         self.add("Propeller", b, mats=("Skin", "Wood"), origin=(xp, 0, 0), axis=(-1, 0, 0),
                  hinge="propeller turns (clockwise seen from the cockpit)", smooth=35.0)
 
-        # exhaust: six stubs a side on a dark panel; gun troughs on the cowl; chin radiator
-        b = Builder()
+        # exhaust: a recessed trough high on each side of the nose with six upright stubs; gun troughs on the cowl
+        ex0, ex1, ez0, ez1 = EXHAUST
+        zs = np.linspace(ez0, ez1, 7)
         for s in (1, -1):
-            pts = []
-            for x in (0.82, 1.80):
-                for z in (-0.03, 0.42):
-                    pts.append((x, s * (fus_side(x, z) + 0.003), z))
-            inn = [(p[0], p[1] - s * 0.01, p[2]) for p in pts]
-            b.box([pts[0], pts[1], pts[3], pts[2], inn[0], inn[1], inn[3], inn[2]], mat=1)
+            c = Builder()
+            c.loft([[(x, s * (fus_side(x, z) - 0.03), z) for z in zs] + [(x, s * 0.7, z) for z in reversed(zs)] for x in np.linspace(ex0, ex1, 9)])
+            self.boolean(fus, c, "Black")
+        b = Builder()
+        m = 14
+        for s in (1, -1):
             for k in range(6):
-                x = 0.93 + 0.155 * k
-                p0 = Vector((x, s * (fus_side(x, 0.26) - 0.02), 0.27))
-                p1 = Vector((x + 0.05, s * (fus_side(x, 0.26) + 0.075), 0.05))
-                b.revolve(p0, p1, [(0, 0.046), (1, 0.036)], n=10, mat=0, caps=(True, False))
-                b.revolve(p1, p0, [(0, 0.031), (0.5, 0.036)], n=10, mat=1, caps=(False, True))
+                x, zc = ex0 + 0.085 + (ex1 - ex0 - 0.17) * k / 5.0, 0.5 * (ez0 + ez1)
+                def oval(scale, out, lean):
+                    pts = []
+                    for i in range(m):
+                        a = 2 * math.pi * i / m * s
+                        dx, dz = 0.036 * scale * math.cos(a), 0.105 * scale * math.sin(a)
+                        px = x + dx - 0.10 * dz + lean
+                        pts.append((px, s * (fus_side(px, zc + dz) + out), zc + dz))
+                    return pts
+                b.loft([oval(1.0, -0.032, 0.0), oval(1.0, 0.014, 0.012)], mat=0, caps=(False, False))
+                b.loft([oval(1.0, 0.014, 0.012), oval(0.78, 0.014, 0.012), oval(0.78, -0.02, 0.0)], mat=1, caps=(False, True))
             ya = s * 0.15
             b.revolve((0.66, ya, fus_top(0.66, 0.15) - 0.005), (2.80, ya, fus_top(2.80, 0.15) + 0.012), [(0, 0.012), (0.02, 0.02), (1, 0.02)], n=8, mat=2)
         self.add("Exhausts", b, mats=("Exhaust", "Black", "Skin"), smooth=35.0)
@@ -266,21 +293,24 @@ class He51(P.Peashooter):
         self.add("Radiator", b, mats=("Skin", "Black"), smooth=None)
 
     def build_windscreen(self):
-        A = lambda s: (3.02, s * 0.13, fus_top(3.02, 0.13) - 0.004)
-        Bp = lambda s: (3.25, s * 0.14, 0.94)
-        C = lambda s: (3.30, s * 0.31, fus_top(3.30, 0.31) - 0.004)
-        D = lambda s: (3.12, s * 0.26, fus_top(3.12, 0.26) - 0.004)
+        # a small frameless curved screen raked back from a black base strip on the cockpit rim
+        m = 24
+        base, top = [], []
+        for i in range(m + 1):
+            t = -1 + 2.0 * i / m
+            c, sn = math.cos(t * math.pi / 2), math.sin(t * math.pi / 2)
+            x, y = 3.30 - 0.28 * c, 0.31 * sn
+            z = fus_top(x, y) - 0.004
+            hgt = 0.215 * max(c, 0.0) ** 0.6
+            base.append((x, y, z))
+            top.append((x + 1.02 * hgt, y * (1.0 + 0.06 * c), z + hgt))
         g = Builder()
-        g.poly([A(-1), A(1), Bp(1), Bp(-1)])
-        for s in (-1, 1):
-            g.poly([A(s), D(s), C(s), Bp(s)])
-        self.add("Windscreen", g, mats=("Glass",), smooth=None)
+        for i in range(m):
+            g.poly([base[i], base[i + 1], top[i + 1], top[i]])
+        self.add("Windscreen", g, mats=("Glass",), smooth=60.0)
         f = Builder()
-        edges = [(A(-1), A(1)), (Bp(-1), Bp(1))]
-        for s in (-1, 1):
-            edges += [(A(s), Bp(s)), (A(s), D(s)), (D(s), C(s)), (C(s), Bp(s))]
-        for p0, p1 in edges:
-            f.tube(p0, p1, 0.008, n=6)
+        sweep(f, base, 0.008, n=6, mat=1)
+        sweep(f, top, 0.0035, n=6, mat=1)
         # ring-and-bead sight on the cowl
         zr = fus_top(2.86) + 0.10
         f.tube((2.86, 0, fus_top(2.86) - 0.01), (2.86, 0, zr - 0.035), 0.005, n=6, mat=1)

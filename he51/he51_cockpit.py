@@ -15,19 +15,19 @@ from mathutils import Matrix, Vector
 import he51 as H
 from p26a import Builder
 
-PANEL_X = 2.98
+PANEL_X = 3.24
 PANEL_Y, PANEL_Z = (-0.45, 0.45), (-0.05, 0.75)      # texture window in the panel plane
-LOWER = (0.27, 0.03, 0.30)                            # lower panel: half-width, bottom, top
+LOWER = (0.27, 0.15, 0.42)                            # lower panel: half-width, bottom, top
 # name, y (starboard +), z, radius, face
 PANEL = [
-    ("magneto switch", -0.285, 0.425, 0.038, "magneto"), ("altimeter", -0.165, 0.455, 0.045, "alt"),
-    ("airspeed", -0.045, 0.475, 0.050, "asi"), ("turn and bank", 0.105, 0.455, 0.047, "turn"),
-    ("tachometer", 0.225, 0.430, 0.045, "tach"), ("clock", 0.315, 0.375, 0.028, "clock"),
-    ("coolant temperature", -0.19, 0.205, 0.030, "temp"), ("oil temperature", -0.095, 0.215, 0.030, "temp"),
-    ("oil pressure", 0.0, 0.215, 0.030, "press"), ("fuel pressure", 0.095, 0.215, 0.030, "press"),
-    ("fuel quantity", 0.19, 0.205, 0.030, "fuel"), ("compass", 0.0, 0.105, 0.036, "compass"),
+    ("magneto switch", -0.285, 0.545, 0.038, "magneto"), ("altimeter", -0.165, 0.575, 0.045, "alt"),
+    ("airspeed", -0.045, 0.595, 0.050, "asi"), ("turn and bank", 0.105, 0.575, 0.047, "turn"),
+    ("tachometer", 0.225, 0.550, 0.045, "tach"), ("clock", 0.315, 0.495, 0.028, "clock"),
+    ("coolant temperature", -0.19, 0.325, 0.030, "temp"), ("oil temperature", -0.095, 0.335, 0.030, "temp"),
+    ("oil pressure", 0.0, 0.335, 0.030, "press"), ("fuel pressure", 0.095, 0.335, 0.030, "press"),
+    ("fuel quantity", 0.19, 0.325, 0.030, "fuel"), ("compass", 0.0, 0.225, 0.036, "compass"),
 ]
-EYE = (3.62, 0.0, 0.93)
+EYE = (3.72, 0.0, 0.93)
 
 
 def panel_uv(y, z):
@@ -65,26 +65,32 @@ def build(h):
         for a_, c_ in zip(idx, idx[1:]):
             b.bridge(a_, c_, 1)
         b.face(idx[3], 0, [panel_uv(q[1], q[2]) for q in circ(r, 0.003)])
-    # gun breeches above the panel, and their two red-knobbed charging handles
-    for s in (-1, 1):
-        b.box([(X - 0.01, s * 0.10, 0.60), (X + 0.20, s * 0.10, 0.60), (X + 0.20, s * 0.18, 0.60), (X - 0.01, s * 0.18, 0.60),
-               (X - 0.01, s * 0.10, 0.70), (X + 0.20, s * 0.10, 0.69), (X + 0.20, s * 0.18, 0.69), (X - 0.01, s * 0.18, 0.70)], mat=1)
-        p0, p1 = Vector((X + 0.01, s * 0.03, 0.33)), Vector((X + 0.07, s * 0.03, 0.35))
+    # the two red-knobbed gun charging handles, left of centre under the upper panel
+    for y in (-0.115, -0.055):
+        p0, p1 = Vector((X + 0.005, y, 0.435)), Vector((X + 0.06, y, 0.445))
         b.tube(p0, p1, 0.005, n=6, mat=1)
-        b.revolve(p1, p1 + Vector((0.03, 0, 0.005)), [(0, 0.008), (0.5, 0.015), (1, 0.008)], n=10, mat=2)
-    h.add("InstrumentPanel", b, mats=("Panel", "Black", "KnobRed"), collection=col, smooth=30.0)
+        b.revolve(p1, p1 + Vector((0.03, 0, 0.004)), [(0, 0.008), (0.5, 0.016), (1, 0.008)], n=10, mat=2)
+    # sight mount on the cowl ahead of the padded roll
+    zt = H.fus_top(3.15, 0.0)
+    b.box([(3.08, -0.06, zt - 0.01), (3.21, -0.06, zt - 0.01), (3.21, 0.06, zt - 0.01), (3.08, 0.06, zt - 0.01),
+           (3.10, -0.045, zt + 0.045), (3.21, -0.045, zt + 0.06), (3.21, 0.045, zt + 0.06), (3.10, 0.045, zt + 0.045)], mat=1)
+    h.add("InstrumentPanel", b, mats=("Panel", "Bezel", "KnobRed"), collection=col, smooth=30.0)
 
     # padded roll above the panel (brown) and leather round the opening (tan)
     b = Builder()
-    zc = h_top = H.fus_top(3.27, 0.0)
-    pts = [Vector((3.275, y, H.fus_top(3.275, y) + 0.012)) for y in (-0.25, -0.17, -0.08, 0.0, 0.08, 0.17, 0.25)]
-    for p0, p1 in zip(pts, pts[1:]):
-        b.tube(p0, p1, 0.045, n=10)
+    rings = []
+    for k in range(13):
+        y = -0.17 + 0.34 * k / 12.0
+        sc = 0.55 + 0.45 * math.sin(math.pi * k / 12.0) ** 0.5
+        zc = H.fus_top(3.275, y) + 0.012
+        rings.append([(3.275 + 0.05 * sc * math.cos(a), y, zc + 0.042 * sc * math.sin(a)) for a in (2 * math.pi * i / 12 for i in range(12))])
+    b.loft(rings)
     out_ = h.cockpit_outline
     rim = [Vector((x, y, H.fus_top(x, y) + 0.004)) for x, y in out_]
-    for i in range(len(rim)):
-        if rim[i].x > 3.31 or rim[(i + 1) % len(rim)].x > 3.31:
-            b.tube(rim[i], rim[(i + 1) % len(rim)], 0.024, n=8, mat=1)
+    keep = [i for i in range(len(rim)) if rim[i].x > 3.31 or abs(rim[i].y) > 0.15]
+    start = next(i for i in keep if (i - 1) % len(rim) not in keep)              # the run starts just past the padded roll
+    run = [rim[(start + k) % len(rim)] for k in range(len(keep))]
+    H.sweep(b, run, 0.024, n=10, mat=1)
     h.add("CockpitPadding", b, mats=("LeatherBrown", "LeatherTan"), collection=col, smooth=60.0)
 
     # welded steel-tube structure on the walls
@@ -114,20 +120,20 @@ def build(h):
 
     # stick with a ring grip; rudder pedals; throttle (left); two yellow-knobbed levers (right)
     b = Builder()
-    base = (3.28, 0, H.FLOOR_Z)
-    b.revolve(base, (3.28, 0, H.FLOOR_Z + 0.06), [(0, 0.045), (1, 0.028)], n=12, mat=1)
-    b.revolve((3.28, 0, H.FLOOR_Z + 0.05), (3.23, 0, 0.30), [(0, 0.012), (1, 0.011)], n=8, mat=0)
-    c = Vector((3.22, 0, 0.365))
+    base = (3.46, 0, H.FLOOR_Z)
+    b.revolve(base, (3.46, 0, H.FLOOR_Z + 0.06), [(0, 0.045), (1, 0.028)], n=12, mat=1)
+    b.revolve((3.46, 0, H.FLOOR_Z + 0.05), (3.41, 0, 0.27), [(0, 0.012), (1, 0.011)], n=8, mat=0)
+    c = Vector((3.40, 0, 0.335))
     for k in range(14):
         a0, a1 = 2 * math.pi * k / 14, 2 * math.pi * (k + 1) / 14
         b.tube(c + Vector((0, 0.06 * math.sin(a0), 0.06 * math.cos(a0))), c + Vector((0, 0.06 * math.sin(a1), 0.06 * math.cos(a1))), 0.011, n=6, mat=1)
-    h.add("Stick", b, mats=("Interior", "Black"), collection=col, origin=(3.28, 0, H.FLOOR_Z + 0.03), axis=(0, 1, 0),
+    h.add("Stick", b, mats=("Interior", "Black"), collection=col, origin=(3.46, 0, H.FLOOR_Z + 0.03), axis=(0, 1, 0),
           hinge="stick forward (nose down)")
     b = Builder()
-    b.tube((2.92, -0.22, 0.02), (2.92, 0.22, 0.02), 0.011, n=8)
+    b.tube((3.02, -0.22, 0.02), (3.02, 0.22, 0.02), 0.011, n=8)
     for s in (-1, 1):
-        b.tube((2.92, s * 0.15, 0.02), (2.95, s * 0.15, -0.16), 0.009, n=6)
-        b.bar((2.95, s * 0.09, -0.15), (2.95, s * 0.21, -0.15), 0.10, 0.012, up=(1, 0, 0.25))
+        b.tube((3.02, s * 0.15, 0.02), (3.05, s * 0.15, -0.16), 0.009, n=6)
+        b.bar((3.05, s * 0.09, -0.15), (3.05, s * 0.21, -0.15), 0.10, 0.012, up=(1, 0, 0.25))
     h.add("RudderPedals", b, mats=("Interior",), collection=col)
     b = Builder()
     yl = -(H.fus_side(3.35, 0.30) - 0.05)
@@ -145,7 +151,7 @@ def build(h):
     eye.empty_display_size = 0.1
     col.objects.link(eye)
     eye.parent = h.root
-    eye.matrix_basis = Matrix.Translation(h.tb(EYE)) @ Matrix.Rotation(math.pi, 4, "Z") @ Matrix.Rotation(math.radians(84), 4, "X")
+    eye.matrix_basis = Matrix.Translation(h.tb(EYE)) @ Matrix.Rotation(math.pi, 4, "Z") @ Matrix.Rotation(math.radians(70), 4, "X")
     h.world[eye.name] = eye.matrix_basis.copy()
     cam = bpy.data.objects.new(h.prefix + "Cam", bpy.data.cameras.new(h.prefix + "Cam"))
     cam.data.lens_unit = "FOV"
